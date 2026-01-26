@@ -2293,10 +2293,24 @@ fetchNftBtn.onclick = async () => {
     fetchedBeatData.bpm = fetchedBeatData.bpm || metadata.b || 120;
     fetchedBeatData.swing = fetchedBeatData.swing || metadata.s || 0;
     
+    // Generate preview image from beat data (since image URL isn't stored on-chain)
+    let previewImage = metadata.image || '';
+    if (!previewImage && fetchedBeatData.patterns) {
+      // Generate the beat visualization
+      const previewBeatData = {
+        name: fetchedBeatData.name,
+        bpm: fetchedBeatData.bpm,
+        swing: fetchedBeatData.swing,
+        patterns: fetchedBeatData.patterns
+      };
+      previewImage = generateBeatImage(previewBeatData);
+      console.log('Generated preview image from beat data');
+    }
+    
     // Update preview
-    document.getElementById('nftPreviewImage').src = metadata.image || '';
+    document.getElementById('nftPreviewImage').src = previewImage;
     document.getElementById('nftPreviewName').textContent = fetchedBeatData.name;
-    document.getElementById('nftPreviewDesc').textContent = metadata.description || 'Beat loaded from NFT';
+    document.getElementById('nftPreviewDesc').textContent = metadata.description || `${fetchedBeatData.bpm} BPM Beat from Solana NFT`;
     document.getElementById('nftPreviewBpm').textContent = `${fetchedBeatData.bpm} BPM`;
     document.getElementById('nftPreviewSwing').textContent = `${fetchedBeatData.swing}% Swing`;
     
