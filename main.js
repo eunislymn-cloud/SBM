@@ -1569,156 +1569,97 @@ document.getElementById('mint').onclick = async () => {
     };
     
     // Step 4: Create metadata URI with beat data
-    mintStatus.innerHTML = '<span class="mint-spinner"></span> Uploading beat data...';
+    mintStatus.innerHTML = '<span class="mint-spinner"></span> Creating metadata...';
     let metadataUri;
     
-    // Create FULL beat metadata (all patterns, volumes, effects, etc.)
-    const fullBeatData = {
-      name: beatName,
-      description: `A beat created with Seeker Beat Maker. BPM: ${bpm}, Swing: ${swing}%`,
-      bpm: bpm,
-      swing: swing,
-      patterns: patterns,
-      trackVolumes: trackVolumes,
-      trackSounds: trackSounds,
-      patternSequence: patternSequence,
-      effects: {
-        reverb: parseFloat(document.getElementById('reverb')?.value || 20),
-        delay: parseFloat(document.getElementById('delay')?.value || 0),
-        filter: parseFloat(document.getElementById('filter')?.value || 100)
-      },
-      image: imageUri || '',
-      creator: walletAddress,
-      timestamp: new Date().toISOString()
+    // Ultra-compress patterns: convert each track to hex (16 bits = 4 hex chars)
+    const compressToHex = (boolArray) => {
+      let binary = boolArray.map(v => v ? '1' : '0').join('');
+      return parseInt(binary, 2).toString(16).padStart(4, '0');
     };
     
-    console.log('Full beat data to store:', fullBeatData);
+    // Compress all 7 tracks for a pattern into a 28-char hex string
+    const trackOrder = ['kick', 'snare', 'hat', 'clap', 'crash', 'rim', 'tom'];
     
-    // Try external JSON storage services
-    let storageSuccess = false;
-    
-    // Try dpaste.org (free, no auth required)
-    try {
-      mintStatus.innerHTML = '<span class="mint-spinner"></span> Uploading to decentralized storage...';
-      
-      const formData = new FormData();
-      formData.append('content', JSON.stringify(fullBeatData));
-      formData.append('syntax', 'json');
-      formData.append('expiry_days', '365');
-      
-      const dpasteResponse = await fetch('https://dpaste.org/api/', {
-        method: 'POST',
-        body: formData
+    const compressPattern = (pattern) => {
+      let hexString = '';
+      trackOrder.forEach(track => {
+        hexString += compressToHex(pattern[track] || Array(16).fill(false));
       });
-      
-      if (dpasteResponse.ok) {
-        const pasteUrl = await dpasteResponse.text();
-        // dpaste returns URL like "https://dpaste.org/ABC123" - we need raw JSON
-        metadataUri = pasteUrl.trim() + '.txt';
-        console.log('Beat data uploaded to dpaste:', metadataUri);
-        storageSuccess = true;
-      }
-    } catch (dpasteError) {
-      console.warn('dpaste upload failed:', dpasteError);
+      return hexString;
+    };
+    
+    // Check if pattern is empty
+    const isEmpty = (hex) => hex === '0000000000000000000000000000';
+    
+    // Compress all patterns
+    const pA = compressPattern(patterns.A);
+    const pB = compressPattern(patterns.B);
+    const pC = compressPattern(patterns.C);
+    
+    // Build the most compact metadata possible
+    // Format: {n,b,A,B,C} or {n,b,A,B} or {n,b,p}
+    let compactMeta;
+    
+    // Try to fit all 3 patterns
+    if (!isEmpty(pC)) {
+      // All 3 patterns needed
+      compactMeta = {
+        n: beatName.slice(0, 3),
+        b: bpm,
+        A: pA,
+        B: pB,
+        C: pC
+      };
+    } else if (!isEmpty(pB)) {
+      // Only A and B
+      compactMeta = {
+        n: beatName.slice(0, 6),
+        b: bpm,
+        A: pA,
+        B: pB
+      };
+    } else {
+      // Only A
+      compactMeta = {
+        n: beatName.slice(0, 12),
+        b: bpm,
+        p: pA
+      };
     }
     
-    // Try rentry.co (free pastebin)
-    if (!storageSuccess) {
-      try {
-        const rentryData = new URLSearchParams();
-        rentryData.append('text', JSON.stringify(fullBeatData));
-        
-        const rentryResponse = await fetch('https://rentry.co/api/new', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: rentryData
-        });
-        
-        if (rentryResponse.ok) {
-          const rentryResult = await rentryResponse.json();
-          if (rentryResult.url) {
-            metadataUri = rentryResult.url + '/raw';
-            console.log('Beat data uploaded to rentry:', metadataUri);
-            storageSuccess = true;
-          }
-        }
-      } catch (rentryError) {
-        console.warn('rentry upload failed:', rentryError);
-      }
-    }
+    // Add swing if non-zero and we have room
+    metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
     
-    // Fallback: Use compressed on-chain storage
-    if (!storageSuccess) {
-      console.log('External storage failed, using compressed on-chain format');
-      
-      // Ultra-compress patterns: convert each track to hex (16 bits = 4 hex chars)
-      const compressToHex = (boolArray) => {
-        let binary = boolArray.map(v => v ? '1' : '0').join('');
-        let hex = parseInt(binary, 2).toString(16).padStart(4, '0');
-        return hex;
-      };
-      
-      // Compress all 7 tracks for a pattern into a 28-char hex string
-      const trackOrder = ['kick', 'snare', 'hat', 'clap', 'crash', 'rim', 'tom'];
-      
-      const compressPattern = (pattern) => {
-        let hexString = '';
-        trackOrder.forEach(track => {
-          hexString += compressToHex(pattern[track] || Array(16).fill(false));
-        });
-        return hexString;
-      };
-      
-      // Compress Patterns A and B (28 chars each = 56 chars total)
-      const pA = compressPattern(patterns.A);
-      const pB = compressPattern(patterns.B);
-      
-      // Check if B is empty (all zeros)
-      const isEmpty = (hex) => hex === '0000000000000000000000000000';
-      
-      // Build compact metadata
-      let compactMeta;
-      
-      if (isEmpty(pB)) {
-        compactMeta = {
-          n: beatName.slice(0, 12),
-          b: bpm,
-          p: pA
-        };
-        if (swing > 0) compactMeta.s = swing;
-      } else {
-        compactMeta = {
-          n: beatName.slice(0, 6),
-          b: bpm,
-          A: pA,
-          B: pB
-        };
-        if (swing > 0) compactMeta.s = swing;
-      }
-      
+    if (swing > 0 && metadataUri.length < 190) {
+      compactMeta.s = swing;
       metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
-      console.log('Using compressed on-chain metadata, length:', metadataUri.length);
-      
-      // Verify it fits
-      if (metadataUri.length > 200) {
-        compactMeta.n = beatName.slice(0, 3);
-        delete compactMeta.s;
+    }
+    
+    console.log('Compact metadata content:', JSON.stringify(compactMeta));
+    console.log('Compact metadata URI length:', metadataUri.length);
+    
+    // Verify it fits - if not, reduce
+    if (metadataUri.length > 200) {
+      // Remove C if present
+      if (compactMeta.C) {
+        delete compactMeta.C;
+        compactMeta.n = beatName.slice(0, 6);
         metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
-        
-        if (metadataUri.length > 200) {
-          compactMeta = {
-            n: beatName.slice(0, 8),
-            b: bpm,
-            p: pA
-          };
-          metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
-        }
+        console.log('Removed C, new length:', metadataUri.length);
+      }
+      
+      // Still too long? Remove B
+      if (metadataUri.length > 200 && compactMeta.B) {
+        delete compactMeta.A;
+        delete compactMeta.B;
+        compactMeta.p = pA;
+        compactMeta.n = beatName.slice(0, 10);
+        metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
+        console.log('Removed B, new length:', metadataUri.length);
       }
     }
     
-    console.log('Final metadata URI:', metadataUri);
     console.log('Final metadata URI length:', metadataUri.length);
     
     // Step 5: Connect to Solana
@@ -2175,6 +2116,21 @@ fetchNftBtn.onclick = async () => {
       };
       
       console.log('Full beat data loaded with all patterns, volumes, and effects!');
+    }
+    // Check for format with all 3 patterns (A, B, C hex strings)
+    if (metadata.A && metadata.B && metadata.C && typeof metadata.A === 'string') {
+      console.log('Detected A+B+C pattern format');
+      
+      beatDataToLoad = {
+        name: metadata.n || 'Loaded Beat',
+        bpm: metadata.b || 120,
+        swing: metadata.s || 0,
+        patterns: {
+          A: decompressPattern(metadata.A),
+          B: decompressPattern(metadata.B),
+          C: decompressPattern(metadata.C)
+        }
+      };
     }
     // Check for format with A and B patterns (hex strings)
     else if (metadata.A && metadata.B && typeof metadata.A === 'string') {
