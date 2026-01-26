@@ -2171,6 +2171,7 @@ fetchNftBtn.onclick = async () => {
       console.log('Full beat data loaded with all patterns, volumes, and effects!');
     }
     // Check for format with A and B patterns (hex strings)
+    else if (metadata.A && metadata.B && typeof metadata.A === 'string') {
       console.log('Detected A+B pattern format');
       
       beatDataToLoad = {
