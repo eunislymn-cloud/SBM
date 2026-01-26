@@ -194,7 +194,35 @@
         <button id="import" class="secondary">⬆ Import</button>
         <button id="clear" class="secondary">🗑 Clear</button>
         <button id="mint">⛓ Mint NFT</button>
+        <button id="loadNftBtn" class="secondary nft-load-btn">📥 Load from NFT</button>
         <input type="file" id="importFile" style="display:none;" accept=".json" />
+      </div>
+      
+      <!-- Load from NFT Section -->
+      <div id="loadNftSection" class="load-nft-section" style="display: none;">
+        <div class="load-nft-header">
+          <span class="load-nft-title">📥 Load Beat from NFT</span>
+          <button id="closeLoadNft" class="close-nft-btn">×</button>
+        </div>
+        <div class="load-nft-input">
+          <input type="text" id="nftMintAddress" placeholder="Enter NFT mint address..." />
+          <button id="fetchNftBtn">🔍 Fetch</button>
+        </div>
+        <div id="loadNftStatus" class="load-nft-status"></div>
+        <div id="nftPreview" class="nft-preview" style="display: none;">
+          <div class="nft-preview-header">
+            <img id="nftPreviewImage" src="" alt="Beat artwork" />
+            <div class="nft-preview-info">
+              <h3 id="nftPreviewName">Beat Name</h3>
+              <p id="nftPreviewDesc">Description</p>
+              <div class="nft-preview-stats">
+                <span id="nftPreviewBpm">120 BPM</span>
+                <span id="nftPreviewSwing">0% Swing</span>
+              </div>
+            </div>
+          </div>
+          <button id="loadNftConfirm" class="load-nft-confirm">▶ Load This Beat</button>
+        </div>
       </div>
       
       <div id="mintSection">

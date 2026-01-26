@@ -1395,3 +1395,236 @@ document.getElementById('mint').onclick = async () => {
     mintOutput.textContent = JSON.stringify({ error: error.message }, null, 2);
   }
 };
+
+// ============ LOAD BEAT FROM NFT ============
+const loadNftSection = document.getElementById('loadNftSection');
+const loadNftBtn = document.getElementById('loadNftBtn');
+const closeLoadNft = document.getElementById('closeLoadNft');
+const nftMintAddress = document.getElementById('nftMintAddress');
+const fetchNftBtn = document.getElementById('fetchNftBtn');
+const loadNftStatus = document.getElementById('loadNftStatus');
+const nftPreview = document.getElementById('nftPreview');
+const loadNftConfirm = document.getElementById('loadNftConfirm');
+
+let fetchedBeatData = null;
+
+// Toggle Load NFT section
+loadNftBtn.onclick = () => {
+  loadNftSection.style.display = loadNftSection.style.display === 'none' ? 'block' : 'none';
+  // Reset state when opening
+  if (loadNftSection.style.display === 'block') {
+    nftMintAddress.value = '';
+    loadNftStatus.className = 'load-nft-status';
+    loadNftStatus.style.display = 'none';
+    nftPreview.style.display = 'none';
+    fetchedBeatData = null;
+  }
+};
+
+closeLoadNft.onclick = () => {
+  loadNftSection.style.display = 'none';
+};
+
+// Fetch NFT metadata
+fetchNftBtn.onclick = async () => {
+  const mintAddress = nftMintAddress.value.trim();
+  
+  if (!mintAddress) {
+    loadNftStatus.className = 'load-nft-status show error';
+    loadNftStatus.textContent = 'Please enter a mint address';
+    return;
+  }
+  
+  // Validate Solana address format (base58, 32-44 chars)
+  if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(mintAddress)) {
+    loadNftStatus.className = 'load-nft-status show error';
+    loadNftStatus.textContent = 'Invalid Solana address format';
+    return;
+  }
+  
+  loadNftStatus.className = 'load-nft-status show loading';
+  loadNftStatus.innerHTML = '<span class="mint-spinner"></span> Fetching NFT metadata...';
+  nftPreview.style.display = 'none';
+  fetchedBeatData = null;
+  
+  try {
+    const connection = initSolanaConnection();
+    const { Metaplex } = window.Metaplex;
+    const metaplex = Metaplex.make(connection);
+    
+    // Fetch NFT by mint address
+    loadNftStatus.innerHTML = '<span class="mint-spinner"></span> Reading NFT from blockchain...';
+    const nft = await metaplex.nfts().findByMint({ 
+      mintAddress: new solanaWeb3.PublicKey(mintAddress) 
+    });
+    
+    if (!nft) {
+      throw new Error('NFT not found');
+    }
+    
+    console.log('NFT found:', nft);
+    
+    // Get metadata URI
+    const metadataUri = nft.uri;
+    if (!metadataUri) {
+      throw new Error('NFT has no metadata URI');
+    }
+    
+    // Fetch metadata JSON
+    loadNftStatus.innerHTML = '<span class="mint-spinner"></span> Fetching metadata...';
+    let metadata;
+    
+    if (metadataUri.startsWith('data:')) {
+      // Handle data URI
+      const base64Data = metadataUri.split(',')[1];
+      const jsonString = decodeURIComponent(escape(atob(base64Data)));
+      metadata = JSON.parse(jsonString);
+    } else {
+      // Fetch from URL (IPFS or other)
+      let fetchUrl = metadataUri;
+      
+      // Convert IPFS URLs to HTTP gateway
+      if (metadataUri.startsWith('ipfs://')) {
+        fetchUrl = metadataUri.replace('ipfs://', 'https://ipfs.io/ipfs/');
+      }
+      
+      const response = await fetch(fetchUrl);
+      if (!response.ok) {
+        throw new Error('Failed to fetch metadata');
+      }
+      metadata = await response.json();
+    }
+    
+    console.log('Metadata:', metadata);
+    
+    // Check if this is a Seeker Beat Maker NFT
+    if (!metadata.beatData) {
+      throw new Error('This NFT does not contain beat data. It may not be a Seeker Beat Maker NFT.');
+    }
+    
+    // Store fetched beat data
+    fetchedBeatData = metadata.beatData;
+    
+    // Update preview
+    document.getElementById('nftPreviewImage').src = metadata.image || '';
+    document.getElementById('nftPreviewName').textContent = metadata.name || 'Unknown Beat';
+    document.getElementById('nftPreviewDesc').textContent = metadata.description || 'No description';
+    document.getElementById('nftPreviewBpm').textContent = `${fetchedBeatData.bpm || 120} BPM`;
+    document.getElementById('nftPreviewSwing').textContent = `${fetchedBeatData.swing || 0}% Swing`;
+    
+    // Show preview
+    nftPreview.style.display = 'block';
+    loadNftStatus.className = 'load-nft-status show success';
+    loadNftStatus.textContent = '✅ Beat found! Preview below:';
+    
+  } catch (error) {
+    console.error('Error fetching NFT:', error);
+    loadNftStatus.className = 'load-nft-status show error';
+    loadNftStatus.textContent = `❌ ${error.message || 'Failed to fetch NFT'}`;
+    nftPreview.style.display = 'none';
+  }
+};
+
+// Load beat into sequencer
+loadNftConfirm.onclick = () => {
+  if (!fetchedBeatData) {
+    alert('No beat data to load!');
+    return;
+  }
+  
+  try {
+    // Load patterns
+    if (fetchedBeatData.patterns) {
+      Object.keys(fetchedBeatData.patterns).forEach(patternKey => {
+        if (patterns[patternKey]) {
+          Object.keys(fetchedBeatData.patterns[patternKey]).forEach(track => {
+            if (patterns[patternKey][track]) {
+              patterns[patternKey][track] = [...fetchedBeatData.patterns[patternKey][track]];
+            }
+          });
+        }
+      });
+    }
+    
+    // Load BPM
+    if (fetchedBeatData.bpm) {
+      bpm = fetchedBeatData.bpm;
+      document.getElementById('bpm').value = bpm;
+      document.getElementById('bpmValue').textContent = bpm;
+    }
+    
+    // Load Swing
+    if (fetchedBeatData.swing !== undefined) {
+      swing = fetchedBeatData.swing;
+      document.getElementById('swing').value = swing;
+      document.getElementById('swingValue').textContent = swing + '%';
+    }
+    
+    // Load track volumes
+    if (fetchedBeatData.trackVolumes) {
+      Object.keys(fetchedBeatData.trackVolumes).forEach(track => {
+        if (trackVolumes[track] !== undefined) {
+          trackVolumes[track] = fetchedBeatData.trackVolumes[track];
+          // Update volume slider UI
+          const trackContainer = document.querySelector(`.track-container[data-track="${track}"]`);
+          if (trackContainer) {
+            const volumeSlider = trackContainer.querySelector('.volume-control');
+            const volumeValue = trackContainer.querySelector('.volume-value');
+            if (volumeSlider) volumeSlider.value = Math.round(trackVolumes[track] * 100);
+            if (volumeValue) volumeValue.textContent = Math.round(trackVolumes[track] * 100);
+          }
+        }
+      });
+    }
+    
+    // Load pattern sequence
+    if (fetchedBeatData.patternSequence) {
+      patternSequence = [...fetchedBeatData.patternSequence];
+      document.querySelectorAll('.pattern-select').forEach((select, index) => {
+        select.value = patternSequence[index] || '';
+      });
+    }
+    
+    // Load track sounds
+    if (fetchedBeatData.trackSounds) {
+      Object.keys(fetchedBeatData.trackSounds).forEach(track => {
+        if (trackSounds[track] !== undefined) {
+          trackSounds[track] = fetchedBeatData.trackSounds[track];
+        }
+      });
+    }
+    
+    // Load beat name
+    if (fetchedBeatData.name) {
+      document.getElementById('beatName').value = fetchedBeatData.name;
+    }
+    
+    // Update grid UI
+    updateGridUI();
+    
+    // Close the load section
+    loadNftSection.style.display = 'none';
+    
+    // Show success message
+    alert(`✅ Beat "${fetchedBeatData.name || 'Untitled'}" loaded successfully!\n\nPress Play to hear it!`);
+    
+    console.log('Beat loaded from NFT:', fetchedBeatData);
+    
+  } catch (error) {
+    console.error('Error loading beat:', error);
+    alert('Failed to load beat: ' + error.message);
+  }
+};
+
+// Update grid UI to reflect loaded patterns
+function updateGridUI() {
+  document.querySelectorAll('.track-container').forEach(container => {
+    const track = container.dataset.track;
+    const steps = container.querySelectorAll('.step');
+    
+    steps.forEach((step, index) => {
+      const isActive = patterns[currentPattern][track]?.[index] || false;
+      step.classList.toggle('active', isActive);
+    });
+  });
+}
