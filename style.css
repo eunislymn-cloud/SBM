@@ -568,30 +568,87 @@ label {
 
 @media (max-width: 768px) {
   h1 {
-    font-size: 1.8em;
-  }
-  
-  .control-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .track-container {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .track-header {
-    width: 100%;
+    font-size: 1.5em;
     margin-bottom: 10px;
   }
   
+  #beatCounter {
+    font-size: 32px;
+    margin-bottom: 10px;
+  }
+  
+  .pattern-selector {
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  
+  .pattern-btn {
+    padding: 8px;
+    font-size: 12px;
+  }
+  
+  #patternSequencer {
+    padding: 8px 10px;
+    margin-bottom: 10px;
+  }
+  
+  .sequencer-header {
+    margin-bottom: 6px;
+  }
+  
+  .sequencer-title {
+    font-size: 12px;
+  }
+  
+  .seq-toggle {
+    min-width: 80px;
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+  
   .sequence-slots {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+  }
+  
+  .seq-slot {
+    padding: 4px 2px;
+    gap: 2px;
+    border-radius: 4px;
+  }
+  
+  .pattern-select {
+    padding: 2px;
+    font-size: 11px;
+    border-radius: 3px;
+  }
+  
+  .slot-number {
+    font-size: 8px;
+  }
+  
+  .control-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  
+  .track-container {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  
+  .track-header {
+    width: 80px;
+    margin-right: 10px;
+    margin-bottom: 0;
   }
   
   .packs-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
