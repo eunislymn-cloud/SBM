@@ -660,7 +660,6 @@ document.getElementById('reverb').oninput = e => {
   const val = parseInt(e.target.value);
   document.getElementById('reverbValue').textContent = val + '%';
   
-  // Adjust wet/dry mix
   const wetAmount = val / 100;
   reverbWet.gain.value = wetAmount;
   reverbDry.gain.value = 1 - wetAmount;
@@ -795,30 +794,8 @@ document.getElementById('importFile').onchange = e => {
   e.target.value = '';
 };
 
-document.getElementById('mint').onclick = () => {
-  const beatData = {
-    name: document.getElementById('beatName').value || 'Beat',
-    description: 'Created with Seeker Beat Maker',
-    bpm, 
-    swing,
-    patterns: patterns,
-    trackVolumes,
-    patternSequence,
-    trackSounds,
-    samplePack: activeSamplePack ? {
-      id: activeSamplePack,
-      name: samplePacks[activeSamplePack].name,
-      samples: samplePacks[activeSamplePack].samples
-    } : null,
-    creator: 'LOCAL_USER',
-    app: 'Seeker Beat Maker Enhanced',
-    timestamp: new Date().toISOString()
-  };
-  document.getElementById('mintOutput').textContent = JSON.stringify(beatData, null, 2);
-  alert('Beat serialized for minting! This would mint as NFT in production.');
-};
-
 updateBeatDropdown();
+
 // ============ WALLET CONNECTION ============
 let connectedWallet = null;
 let walletAddress = null;
@@ -831,7 +808,6 @@ const walletStatus = document.getElementById('walletStatus');
 // Open modal
 walletBtn.onclick = () => {
   if (connectedWallet) {
-    // Already connected - offer to disconnect
     if (confirm('Disconnect wallet?')) {
       disconnectWallet();
     }
@@ -874,14 +850,12 @@ async function connectWallet(walletType) {
     let provider = null;
     
     if (walletType === 'seedvault') {
-      // Seed Vault - Solana Mobile native wallet
       if (window.solana && window.solana.isSeedVault) {
         provider = window.solana;
       } else {
         throw new Error('Seed Vault not found. Please make sure you are using a Solana Mobile device.');
       }
     } else if (walletType === 'phantom') {
-      // Phantom wallet
       if (window.phantom?.solana) {
         provider = window.phantom.solana;
       } else if (window.solana && window.solana.isPhantom) {
@@ -890,7 +864,6 @@ async function connectWallet(walletType) {
         throw new Error('Phantom not found. Please install Phantom wallet.');
       }
     } else if (walletType === 'solflare') {
-      // Solflare wallet
       if (window.solflare) {
         provider = window.solflare;
       } else {
@@ -902,12 +875,10 @@ async function connectWallet(walletType) {
       throw new Error('Wallet not available');
     }
     
-    // Request connection
     const response = await provider.connect();
     walletAddress = response.publicKey.toString();
     connectedWallet = walletType;
     
-    // Update UI
     const shortAddress = walletAddress.slice(0, 4) + '...' + walletAddress.slice(-4);
     walletBtn.textContent = shortAddress;
     walletBtn.classList.add('connected');
@@ -915,7 +886,6 @@ async function connectWallet(walletType) {
     walletStatus.className = 'wallet-status success';
     walletStatus.textContent = 'Connected successfully!';
     
-// Close modal after short delay
     setTimeout(() => {
       walletModal.classList.remove('show');
       walletStatus.className = 'wallet-status';
@@ -941,7 +911,6 @@ function disconnectWallet() {
 
 // Check if wallet was previously connected (auto-reconnect)
 async function checkExistingConnection() {
-  // Check Phantom
   if (window.phantom?.solana?.isConnected) {
     try {
       const response = await window.phantom.solana.connect({ onlyIfTrusted: true });
@@ -951,10 +920,9 @@ async function checkExistingConnection() {
       walletBtn.textContent = shortAddress;
       walletBtn.classList.add('connected');
     } catch (e) {
-      // Silent fail - user will need to connect manually
+      // Silent fail
     }
   }
-  // Check Solflare
   else if (window.solflare?.isConnected) {
     try {
       walletAddress = window.solflare.publicKey.toString();
@@ -968,5 +936,145 @@ async function checkExistingConnection() {
   }
 }
 
-// Check for existing connection on page load
 setTimeout(checkExistingConnection, 500);
+
+// ============ NFT MINTING ============
+const SOLANA_NETWORK = 'devnet';
+const mintStatus = document.getElementById('mintStatus');
+const mintOutput = document.getElementById('mintOutput');
+
+document.getElementById('mint').onclick = async () => {
+  if (!connectedWallet || !walletAddress) {
+    alert('Please connect your wallet first!');
+    walletModal.classList.add('show');
+    return;
+  }
+  
+  const beatName = document.getElementById('beatName').value.trim() || 'Seeker Beat';
+  
+  if (!confirm(`Mint "${beatName}" as an NFT on Solana ${SOLANA_NETWORK}?\n\nThis will create a unique NFT of your beat.`)) {
+    return;
+  }
+  
+  mintStatus.className = 'mint-status show loading';
+  mintStatus.innerHTML = '<span class="mint-spinner"></span> Preparing your beat for minting...';
+  mintOutput.textContent = '';
+  
+  try {
+    const beatData = {
+      name: beatName,
+      symbol: 'BEAT',
+      description: `A unique beat created with Seeker Beat Maker. BPM: ${bpm}, Swing: ${swing}%`,
+      bpm: bpm,
+      swing: swing,
+      patterns: patterns,
+      trackVolumes: trackVolumes,
+      patternSequence: patternSequence,
+      trackSounds: trackSounds,
+      samplePack: activeSamplePack ? {
+        id: activeSamplePack,
+        name: samplePacks[activeSamplePack].name
+      } : null,
+      creator: walletAddress,
+      app: 'Seeker Beat Maker',
+      timestamp: new Date().toISOString()
+    };
+    
+    mintStatus.innerHTML = '<span class="mint-spinner"></span> Connecting to Solana...';
+    
+    const connection = new solanaWeb3.Connection(
+      solanaWeb3.clusterApiUrl(SOLANA_NETWORK),
+      'confirmed'
+    );
+    
+    let walletProvider;
+    if (connectedWallet === 'phantom') {
+      walletProvider = window.phantom?.solana || window.solana;
+    } else if (connectedWallet === 'solflare') {
+      walletProvider = window.solflare;
+    } else if (connectedWallet === 'seedvault') {
+      walletProvider = window.solana;
+    }
+    
+    if (!walletProvider) {
+      throw new Error('Wallet provider not found');
+    }
+    
+    mintStatus.innerHTML = '<span class="mint-spinner"></span> Creating NFT metadata...';
+    
+    const metadataJson = {
+      name: beatData.name,
+      symbol: beatData.symbol,
+      description: beatData.description,
+      image: 'https://arweave.net/placeholder-beat-image',
+      external_url: 'https://seeker-beat-maker.app',
+      attributes: [
+        { trait_type: 'BPM', value: beatData.bpm },
+        { trait_type: 'Swing', value: beatData.swing },
+        { trait_type: 'Patterns', value: Object.keys(beatData.patterns).length },
+        { trait_type: 'App', value: 'Seeker Beat Maker' }
+      ],
+      properties: {
+        files: [],
+        category: 'audio',
+        creators: [
+          {
+            address: walletAddress,
+            share: 100
+          }
+        ]
+      },
+      beatData: beatData
+    };
+    
+    const metadataUri = 'data:application/json;base64,' + btoa(JSON.stringify(metadataJson));
+    
+    mintStatus.innerHTML = '<span class="mint-spinner"></span> Minting your NFT... Please approve the transaction in your wallet.';
+    
+    const { Metaplex, walletAdapterIdentity } = window.Metaplex;
+    
+    const metaplex = Metaplex.make(connection).use(walletAdapterIdentity({
+      publicKey: new solanaWeb3.PublicKey(walletAddress),
+      signTransaction: async (tx) => walletProvider.signTransaction(tx),
+      signAllTransactions: async (txs) => walletProvider.signAllTransactions(txs),
+      signMessage: async (msg) => walletProvider.signMessage(msg),
+    }));
+    
+    const { nft } = await metaplex.nfts().create({
+      uri: metadataUri,
+      name: beatData.name,
+      symbol: beatData.symbol,
+      sellerFeeBasisPoints: 500,
+      creators: [
+        {
+          address: new solanaWeb3.PublicKey(walletAddress),
+          share: 100
+        }
+      ]
+    });
+    
+    mintStatus.className = 'mint-status show success';
+    mintStatus.innerHTML = `
+      ✅ NFT Minted Successfully!<br><br>
+      <strong>Mint Address:</strong> ${nft.address.toString()}<br><br>
+      <a href="https://explorer.solana.com/address/${nft.address.toString()}?cluster=${SOLANA_NETWORK}" target="_blank">
+        View on Solana Explorer →
+      </a>
+    `;
+    
+    mintOutput.textContent = JSON.stringify({
+      success: true,
+      network: SOLANA_NETWORK,
+      mintAddress: nft.address.toString(),
+      metadata: metadataJson
+    }, null, 2);
+    
+    console.log('NFT minted successfully:', nft);
+    
+  } catch (error) {
+    console.error('Minting error:', error);
+    mintStatus.className = 'mint-status show error';
+    mintStatus.innerHTML = `❌ Minting failed: ${error.message || 'Unknown error'}`;
+    mintOutput.textContent = JSON.stringify({ error: error.message }, null, 2);
+  }
+};

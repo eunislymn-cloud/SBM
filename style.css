@@ -538,6 +538,63 @@ label {
 }
 
 /* Responsive */
+
+/* Mint Section */
+#mintSection {
+  margin-top: 10px;
+}
+
+.mint-status {
+  padding: 12px 15px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 10px;
+  display: none;
+}
+
+.mint-status.show {
+  display: block;
+}
+
+.mint-status.loading {
+  background: rgba(153, 69, 255, 0.2);
+  border: 1px solid #9945FF;
+  color: #d4a5ff;
+}
+
+.mint-status.success {
+  background: rgba(20, 241, 149, 0.2);
+  border: 1px solid #14F195;
+  color: #14F195;
+}
+
+.mint-status.error {
+  background: rgba(255, 0, 0, 0.2);
+  border: 1px solid #ff6b6b;
+  color: #ff6b6b;
+}
+
+.mint-status a {
+  color: #14F195;
+  text-decoration: underline;
+}
+
+.mint-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #9945FF;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 @media (max-width: 1024px) {
   .track-grid {
     gap: 3px;

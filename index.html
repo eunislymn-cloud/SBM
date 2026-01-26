@@ -7,6 +7,31 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>Seeker Beat Maker - Enhanced</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    @media screen and (orientation: portrait) {
+      body::before {
+        content: '📱 Rotate device sideways for best experience ↻';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #9945FF, #14F195);
+        color: white;
+        text-align: center;
+        padding: 15px;
+        font-weight: bold;
+        font-size: 14px;
+        z-index: 10000;
+      }
+      
+      .container {
+        padding-top: 60px;
+      }
+    }
+  </style>
+  <!-- Solana Web3 and Metaplex -->
+  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+  <script src="https://unpkg.com/@metaplex-foundation/js@latest/dist/browser/index.iife.min.js"></script>
 </head>
 <body>
   <div class="container">
@@ -162,7 +187,10 @@
         <input type="file" id="importFile" style="display:none;" accept=".json" />
       </div>
       
-      <div id="mintOutput"></div>
+      <div id="mintSection">
+        <div id="mintStatus" class="mint-status"></div>
+        <div id="mintOutput"></div>
+      </div>
     </div>
     
     <div class="sequencer"></div>
@@ -184,8 +212,8 @@
         </div>
       </div>
     </div>
-
-<!-- Sample Packs -->
+    
+    <!-- Sample Packs -->
     <div id="samplePacks">
       <div class="packs-header">
         <span class="packs-title">🎧 Sample Packs</span>
