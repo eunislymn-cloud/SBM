@@ -576,3 +576,19 @@ label {
     grid-template-columns: 1fr;
   }
 }
+/* Landscape optimization */
+@media screen and (orientation: portrait) {
+  body::before {
+    content: '↻ Please rotate your device to landscape mode for the best experience';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #9945FF;
+    color: white;
+    text-align: center;
+    padding: 10px;
+    font-weight: bold;
+    z-index: 10000;
+  }
+}
