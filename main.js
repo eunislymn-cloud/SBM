@@ -1579,11 +1579,23 @@ document.getElementById('mint').onclick = async () => {
       return hex;
     };
     
+    // Map full track names to unique short names
+    const trackToShort = {
+      kick: 'k',
+      snare: 's', 
+      hat: 'h',
+      clap: 'c',
+      crash: 'x',  // x for crash (c is taken by clap)
+      rim: 'r',
+      tom: 't'
+    };
+    
     // Only store Pattern A, compressed to hex
     const patternA = patterns.A;
     const compressedA = {};
     Object.keys(patternA).forEach(track => {
-      compressedA[track.charAt(0)] = compressToHex(patternA[track]); // k=kick, s=snare, etc
+      const shortName = trackToShort[track] || track.charAt(0);
+      compressedA[shortName] = compressToHex(patternA[track]);
     });
     
     // Minimal metadata - should be ~120 bytes
