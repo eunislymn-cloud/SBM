@@ -1568,137 +1568,54 @@ document.getElementById('mint').onclick = async () => {
       beatData: beatData
     };
     
-    // Step 4: Upload metadata to storage
-    mintStatus.innerHTML = '<span class="mint-spinner"></span> Uploading metadata...';
+    // Step 4: Create metadata URI with beat data
+    mintStatus.innerHTML = '<span class="mint-spinner"></span> Creating metadata...';
     let metadataUri;
     
-    try {
-      // Try using npoint.io (free JSON hosting with short URLs)
-      const npointResponse = await fetch('https://api.npoint.io/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(metadataJson)
-      });
-      
-      if (npointResponse.ok) {
-        const npointData = await npointResponse.text();
-        // npoint returns just the ID
-        metadataUri = `https://api.npoint.io/${npointData}`;
-        console.log('Metadata uploaded to npoint:', metadataUri);
-      } else {
-        throw new Error('npoint upload failed');
-      }
-    } catch (npointError) {
-      console.warn('npoint upload failed:', npointError);
-      
-      try {
-        // Fallback: Try jsonblob.com
-        const jsonblobResponse = await fetch('https://jsonblob.com/api/jsonBlob', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(metadataJson)
+    // Compress patterns to binary strings to save space
+    const compressPatterns = (patternsObj) => {
+      const compressed = {};
+      Object.keys(patternsObj).forEach(patternKey => {
+        compressed[patternKey] = {};
+        Object.keys(patternsObj[patternKey]).forEach(track => {
+          compressed[patternKey][track] = patternsObj[patternKey][track]
+            .map(v => v ? '1' : '0').join('');
         });
-        
-        if (jsonblobResponse.ok) {
-          // jsonblob returns the URL in the Location header
-          const location = jsonblobResponse.headers.get('Location');
-          if (location) {
-            metadataUri = location;
-            console.log('Metadata uploaded to jsonblob:', metadataUri);
-          } else {
-            throw new Error('No location header');
-          }
-        } else {
-          throw new Error('jsonblob upload failed');
-        }
-      } catch (jsonblobError) {
-        console.warn('jsonblob upload failed:', jsonblobError);
-        
-        // Last resort: Store compressed beat data in URI
-        // Compress patterns to binary-like string (1s and 0s for each step)
-        const compressPatterns = (patterns) => {
-          const compressed = {};
-          Object.keys(patterns).forEach(patternKey => {
-            compressed[patternKey] = {};
-            Object.keys(patterns[patternKey]).forEach(track => {
-              // Convert boolean array to binary string: [true,false,true] -> "101"
-              compressed[patternKey][track] = patterns[patternKey][track]
-                .map(v => v ? '1' : '0').join('');
-            });
-          });
-          return compressed;
-        };
-        
-        const compressedPatterns = compressPatterns(beatData.patterns);
-        
-        // Build minimal metadata with beatData
-        const minimalMeta = {
-          n: beatData.name.slice(0, 15), // name shortened
-          b: beatData.bpm,
-          s: beatData.swing,
-          p: compressedPatterns,
-          v: trackVolumes
-        };
-        
-        // Wrap in beatData for compatibility
-        const wrappedMeta = {
-          name: beatData.name.slice(0, 15),
-          beatData: {
-            name: beatData.name.slice(0, 15),
-            bpm: beatData.bpm,
-            swing: beatData.swing,
-            patterns: beatData.patterns,
-            trackVolumes: trackVolumes,
-            trackSounds: trackSounds,
-            patternSequence: patternSequence
-          }
-        };
-        
-        // Check if full wrapped meta fits
-        let testUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(wrappedMeta));
-        console.log('Full wrapped meta length:', testUri.length);
-        
-        if (testUri.length <= 200) {
-          metadataUri = testUri;
-          console.log('Using full wrapped metadata, length:', testUri.length);
-        } else {
-          // Try compressed version
-          const compressedMeta = {
-            name: beatData.name.slice(0, 12),
-            beatData: {
-              name: beatData.name.slice(0, 12),
-              bpm: beatData.bpm,
-              swing: beatData.swing,
-              p: compressedPatterns // compressed patterns
-            }
-          };
-          
-          testUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compressedMeta));
-          console.log('Compressed meta length:', testUri.length);
-          
-          if (testUri.length <= 200) {
-            metadataUri = testUri;
-            console.log('Using compressed metadata, length:', testUri.length);
-          } else {
-            // Absolute minimum - just Pattern A
-            const minMeta = {
-              name: beatData.name.slice(0, 10),
-              beatData: {
-                bpm: beatData.bpm,
-                swing: beatData.swing,
-                A: compressedPatterns.A // Only pattern A
-              }
-            };
-            metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(minMeta));
-            console.log('Using minimum metadata, length:', metadataUri.length);
-          }
-        }
+      });
+      return compressed;
+    };
+    
+    const compressedPatterns = compressPatterns(patterns);
+    
+    // Create metadata with compressed beat data
+    const metaWithBeat = {
+      name: beatName.slice(0, 10),
+      beatData: {
+        name: beatName.slice(0, 10),
+        bpm: bpm,
+        swing: swing,
+        p: compressedPatterns // compressed patterns
       }
+    };
+    
+    metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(metaWithBeat));
+    console.log('Metadata URI created, length:', metadataUri.length);
+    console.log('Metadata content:', JSON.stringify(metaWithBeat));
+    
+    // Check if it fits (200 byte limit)
+    if (metadataUri.length > 200) {
+      console.warn('Metadata too long, using Pattern A only');
+      // Use only Pattern A
+      const minMeta = {
+        name: beatName.slice(0, 8),
+        beatData: {
+          bpm: bpm,
+          swing: swing,
+          p: { A: compressedPatterns.A }
+        }
+      };
+      metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(minMeta));
+      console.log('Reduced metadata URI length:', metadataUri.length);
     }
     
     // Step 5: Connect to Solana
