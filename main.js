@@ -1077,7 +1077,8 @@ const mintOutput = document.getElementById('mintOutput');
 
 // NFT.Storage API key (free tier - get yours at nft.storage)
 // For production, you should use your own API key
-const NFT_STORAGE_API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweGZFYTg0NjMyMTc1NjUwOTY1M0I0NjkyMDNGNkI2MkFBNDMzOTU5QmMiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTcwMTM4MDgwMDAwMCwibmFtZSI6InNlZWtlci1iZWF0LW1ha2VyIn0.demo-key-replace-with-your-own';
+// Upload to IPFS via Pinata
+const PINATA_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiJlMjdkOTkxZS1mZjIxLTQ4YTYtOThmMy04MDJkMGE5MjEwOGEiLCJlbWFpbCI6ImV1bmlzbHltbkBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJGUkExIn0seyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJOWUMxIn1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiNmYxM2ZiZTZmNDI4ODZiNmJkYTEiLCJzY29wZWRLZXlTZWNyZXQiOiI5MDNkZDgyNzUwYzcyZjE2Njk4M2FhZThiNWNkZTZkMDdlMWY2YWFkNGJiNzQyNDNlNGMzOTRmOTZkZDFkMTMwIiwiZXhwIjoxODAxMDA1OTAzfQ.cPnCe_7yo6GpsKIQTzQR04aChyIluN5jMabs-e77iMA';
 
 // Generate beat visualization as canvas image
 function generateBeatImage(beatData) {
@@ -1180,7 +1181,7 @@ function generateBeatImage(beatData) {
   return canvas.toDataURL('image/png');
 }
 
-// Upload to IPFS via NFT.Storage
+// Upload to IPFS via Pinata
 async function uploadToIPFS(data, filename, contentType = 'application/json') {
   let blob;
   
@@ -1201,10 +1202,10 @@ async function uploadToIPFS(data, filename, contentType = 'application/json') {
   const formData = new FormData();
   formData.append('file', blob, filename);
   
-  const response = await fetch('https://api.nft.storage/upload', {
+  const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${NFT_STORAGE_API_KEY}`
+      'Authorization': `Bearer ${PINATA_JWT}`
     },
     body: formData
   });
@@ -1215,7 +1216,9 @@ async function uploadToIPFS(data, filename, contentType = 'application/json') {
   }
   
   const result = await response.json();
-  return `https://ipfs.io/ipfs/${result.value.cid}`;
+  console.log('Pinata upload success:', result);
+  // Return gateway URL that works in wallets
+  return `https://gateway.pinata.cloud/ipfs/${result.IpfsHash}`;
 }
 
 // Alternative: Use a free public IPFS pinning service
