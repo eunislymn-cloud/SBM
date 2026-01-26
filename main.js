@@ -1603,8 +1603,9 @@ document.getElementById('mint').onclick = async () => {
     
     // Try to fit all 3 patterns with minimal keys
     if (!isEmpty(pC)) {
-      // All 3 patterns - use single letter keys, no name
+      // All 3 patterns - use single letter keys, short name
       compactMeta = {
+        n: beatName.slice(0, 2),
         b: bpm,
         a: pA,
         B: pB,  // capital B to not conflict with bpm 'b'
@@ -1613,7 +1614,14 @@ document.getElementById('mint').onclick = async () => {
       metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
       console.log('3 patterns, length:', metadataUri.length);
       
-      // If still too long, this shouldn't happen but fallback
+      // If too long, remove name
+      if (metadataUri.length > 200) {
+        delete compactMeta.n;
+        metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
+        console.log('Removed name, length:', metadataUri.length);
+      }
+      
+      // If still too long, remove C
       if (metadataUri.length > 200) {
         delete compactMeta.c;
         metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
