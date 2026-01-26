@@ -1571,17 +1571,16 @@ document.getElementById('mint').onclick = async () => {
       beatData: beatData
     };
     
-    // Step 4: Create metadata URI with beat data
-    mintStatus.innerHTML = '<span class="mint-spinner"></span> Creating metadata...';
+    // Step 4: Upload full metadata JSON to IPFS (includes image URL and beat data)
+    mintStatus.innerHTML = '<span class="mint-spinner"></span> Uploading metadata to IPFS...';
     let metadataUri;
     
-    // Ultra-compress patterns: convert each track to hex (16 bits = 4 hex chars)
+    // Compress patterns for storage in metadata
     const compressToHex = (boolArray) => {
       let binary = boolArray.map(v => v ? '1' : '0').join('');
       return parseInt(binary, 2).toString(16).padStart(4, '0');
     };
     
-    // Compress all 7 tracks for a pattern into a 28-char hex string
     const trackOrder = ['kick', 'snare', 'hat', 'clap', 'crash', 'rim', 'tom'];
     
     const compressPattern = (pattern) => {
@@ -1592,71 +1591,95 @@ document.getElementById('mint').onclick = async () => {
       return hexString;
     };
     
-    // Check if pattern is empty
     const isEmpty = (hex) => hex === '0000000000000000000000000000';
     
-    // Compress all patterns
     const pA = compressPattern(patterns.A);
     const pB = compressPattern(patterns.B);
     const pC = compressPattern(patterns.C);
     
-    // Build the most compact metadata possible
-    // Use single char keys: n=name, b=bpm, a/b/c=patterns, s=swing
-    let compactMeta;
-    
-    // Try to fit all 3 patterns with minimal keys
+    // Add compressed beat data to metadata for app loading
+    metadataJson.beatPatterns = {
+      a: pA,
+      B: pB
+    };
     if (!isEmpty(pC)) {
-      // All 3 patterns - use single letter keys, short name
-      compactMeta = {
-        n: beatName.slice(0, 2),
-        b: bpm,
-        a: pA,
-        B: pB,  // capital B to not conflict with bpm 'b'
-        c: pC
-      };
-      metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
-      console.log('3 patterns, length:', metadataUri.length);
+      metadataJson.beatPatterns.c = pC;
+    }
+    metadataJson.beatBpm = bpm;
+    metadataJson.beatSwing = swing;
+    
+    try {
+      // Upload metadata JSON to Pinata
+      const metadataBlob = new Blob([JSON.stringify(metadataJson)], { type: 'application/json' });
+      const metadataFormData = new FormData();
+      metadataFormData.append('file', metadataBlob, `${beatName.replace(/\s+/g, '-')}-metadata.json`);
       
-      // If too long, remove name
-      if (metadataUri.length > 200) {
-        delete compactMeta.n;
-        metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
-        console.log('Removed name, length:', metadataUri.length);
+      const metadataResponse = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${PINATA_JWT}`
+        },
+        body: metadataFormData
+      });
+      
+      if (!metadataResponse.ok) {
+        throw new Error('Failed to upload metadata to IPFS');
       }
       
-      // If still too long, remove C
-      if (metadataUri.length > 200) {
-        delete compactMeta.c;
+      const metadataResult = await metadataResponse.json();
+      metadataUri = `https://gateway.pinata.cloud/ipfs/${metadataResult.IpfsHash}`;
+      console.log('Metadata uploaded to IPFS:', metadataUri);
+      console.log('Metadata URI length:', metadataUri.length);
+      
+    } catch (metaUploadError) {
+      console.warn('Metadata IPFS upload failed, using compact on-chain format:', metaUploadError);
+      
+      // Fallback to compact on-chain storage
+      let compactMeta;
+      
+      if (!isEmpty(pC)) {
+        compactMeta = {
+          n: beatName.slice(0, 2),
+          b: bpm,
+          a: pA,
+          B: pB,
+          c: pC
+        };
         metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
-        console.log('Removed C, length:', metadataUri.length);
+        
+        if (metadataUri.length > 200) {
+          delete compactMeta.n;
+          metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
+        }
+        
+        if (metadataUri.length > 200) {
+          delete compactMeta.c;
+          metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
+        }
+      } else if (!isEmpty(pB)) {
+        compactMeta = {
+          n: beatName.slice(0, 5),
+          b: bpm,
+          a: pA,
+          B: pB
+        };
+        metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
+      } else {
+        compactMeta = {
+          n: beatName.slice(0, 12),
+          b: bpm,
+          p: pA
+        };
+        metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
       }
-    } else if (!isEmpty(pB)) {
-      // Only A and B
-      compactMeta = {
-        n: beatName.slice(0, 5),
-        b: bpm,
-        a: pA,
-        B: pB
-      };
-      metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
-    } else {
-      // Only A - more room for name
-      compactMeta = {
-        n: beatName.slice(0, 12),
-        b: bpm,
-        p: pA
-      };
-      metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
+      
+      if (swing > 0 && metadataUri.length < 195) {
+        compactMeta.s = swing;
+        metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
+      }
+      
+      console.log('Using compact fallback, length:', metadataUri.length);
     }
-    
-    // Add swing if non-zero and we have room
-    if (swing > 0 && metadataUri.length < 195) {
-      compactMeta.s = swing;
-      metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
-    }
-    
-    console.log('Compact metadata content:', JSON.stringify(compactMeta));
-    console.log('Final metadata URI length:', metadataUri.length);
     
     // Step 5: Connect to Solana
     mintStatus.innerHTML = '<span class="mint-spinner"></span> Connecting to Solana...';
@@ -2113,8 +2136,26 @@ fetchNftBtn.onclick = async () => {
       
       console.log('Full beat data loaded with all patterns, volumes, and effects!');
     }
+    // Check for Pinata IPFS metadata format (has beatPatterns with compressed hex)
+    else if (metadata.beatPatterns && metadata.beatPatterns.a && metadata.beatPatterns.B) {
+      console.log('Detected Pinata IPFS metadata format');
+      
+      const bp = metadata.beatPatterns;
+      beatDataToLoad = {
+        name: metadata.name || 'Loaded Beat',
+        bpm: metadata.beatBpm || metadata.bpm || 120,
+        swing: metadata.beatSwing || metadata.swing || 0,
+        patterns: {
+          A: decompressPattern(bp.a),
+          B: decompressPattern(bp.B),
+          C: bp.c ? decompressPattern(bp.c) : emptyPattern()
+        }
+      };
+      
+      console.log('Loaded from Pinata IPFS with image!');
+    }
     // Check for format with all 3 patterns (a, B, c lowercase/mixed keys)
-    if (metadata.a && metadata.B && metadata.c && typeof metadata.a === 'string') {
+    else if (metadata.a && metadata.B && metadata.c && typeof metadata.a === 'string') {
       console.log('Detected compact a+B+c pattern format');
       
       beatDataToLoad = {
