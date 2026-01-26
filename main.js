@@ -836,13 +836,13 @@ walletBtn.onclick = () => {
       disconnectWallet();
     }
   } else {
-    walletModal.style.display = 'flex';
+    walletModal.classList.add('show');
   }
 };
 
 // Close modal
 closeModal.onclick = () => {
-  walletModal.style.display = 'none';
+  walletModal.classList.remove('show');
   walletStatus.className = 'wallet-status';
   walletStatus.textContent = '';
 };
@@ -850,7 +850,7 @@ closeModal.onclick = () => {
 // Close modal when clicking outside
 walletModal.onclick = (e) => {
   if (e.target === walletModal) {
-    walletModal.style.display = 'none';
+    walletModal.classList.remove('show');
     walletStatus.className = 'wallet-status';
     walletStatus.textContent = '';
   }
@@ -915,9 +915,9 @@ async function connectWallet(walletType) {
     walletStatus.className = 'wallet-status success';
     walletStatus.textContent = 'Connected successfully!';
     
-    // Close modal after short delay
+// Close modal after short delay
     setTimeout(() => {
-      walletModal.style.display = 'none';
+      walletModal.classList.remove('show');
       walletStatus.className = 'wallet-status';
     }, 1500);
     
