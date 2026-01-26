@@ -1619,33 +1619,84 @@ document.getElementById('mint').onclick = async () => {
       } catch (jsonblobError) {
         console.warn('jsonblob upload failed:', jsonblobError);
         
-        // Last resort: Store minimal data in URI (will be truncated but at least name works)
-        // Create a minimal metadata object that fits in ~150 bytes when base64 encoded
+        // Last resort: Store compressed beat data in URI
+        // Compress patterns to binary-like string (1s and 0s for each step)
+        const compressPatterns = (patterns) => {
+          const compressed = {};
+          Object.keys(patterns).forEach(patternKey => {
+            compressed[patternKey] = {};
+            Object.keys(patterns[patternKey]).forEach(track => {
+              // Convert boolean array to binary string: [true,false,true] -> "101"
+              compressed[patternKey][track] = patterns[patternKey][track]
+                .map(v => v ? '1' : '0').join('');
+            });
+          });
+          return compressed;
+        };
+        
+        const compressedPatterns = compressPatterns(beatData.patterns);
+        
+        // Build minimal metadata with beatData
         const minimalMeta = {
-          name: beatData.name.slice(0, 20),
-          symbol: 'BEAT',
-          description: 'Seeker Beat',
+          n: beatData.name.slice(0, 15), // name shortened
+          b: beatData.bpm,
+          s: beatData.swing,
+          p: compressedPatterns,
+          v: trackVolumes
+        };
+        
+        // Wrap in beatData for compatibility
+        const wrappedMeta = {
+          name: beatData.name.slice(0, 15),
           beatData: {
+            name: beatData.name.slice(0, 15),
             bpm: beatData.bpm,
             swing: beatData.swing,
             patterns: beatData.patterns,
-            note: 'Full data stored on-chain'
+            trackVolumes: trackVolumes,
+            trackSounds: trackSounds,
+            patternSequence: patternSequence
           }
         };
         
-        // Check if we can fit it
-        const testUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(minimalMeta));
+        // Check if full wrapped meta fits
+        let testUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(wrappedMeta));
+        console.log('Full wrapped meta length:', testUri.length);
+        
         if (testUri.length <= 200) {
           metadataUri = testUri;
-          console.log('Using minimal inline metadata, length:', testUri.length);
+          console.log('Using full wrapped metadata, length:', testUri.length);
         } else {
-          // Even more minimal
-          metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify({
-            name: beatData.name.slice(0, 20),
-            symbol: 'BEAT',
-            bpm: beatData.bpm
-          }));
-          console.log('Using ultra-minimal metadata, length:', metadataUri.length);
+          // Try compressed version
+          const compressedMeta = {
+            name: beatData.name.slice(0, 12),
+            beatData: {
+              name: beatData.name.slice(0, 12),
+              bpm: beatData.bpm,
+              swing: beatData.swing,
+              p: compressedPatterns // compressed patterns
+            }
+          };
+          
+          testUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compressedMeta));
+          console.log('Compressed meta length:', testUri.length);
+          
+          if (testUri.length <= 200) {
+            metadataUri = testUri;
+            console.log('Using compressed metadata, length:', testUri.length);
+          } else {
+            // Absolute minimum - just Pattern A
+            const minMeta = {
+              name: beatData.name.slice(0, 10),
+              beatData: {
+                bpm: beatData.bpm,
+                swing: beatData.swing,
+                A: compressedPatterns.A // Only pattern A
+              }
+            };
+            metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(minMeta));
+            console.log('Using minimum metadata, length:', metadataUri.length);
+          }
         }
       }
     }
@@ -2046,12 +2097,66 @@ fetchNftBtn.onclick = async () => {
     // Store fetched beat data
     fetchedBeatData = metadata.beatData;
     
+    // Decompress patterns if needed (convert "1010" strings back to boolean arrays)
+    const decompressPatterns = (compressedPatterns) => {
+      const decompressed = {};
+      Object.keys(compressedPatterns).forEach(patternKey => {
+        decompressed[patternKey] = {};
+        Object.keys(compressedPatterns[patternKey]).forEach(track => {
+          const value = compressedPatterns[patternKey][track];
+          if (typeof value === 'string') {
+            // Convert "10101010" to [true, false, true, ...]
+            decompressed[patternKey][track] = value.split('').map(c => c === '1');
+          } else {
+            // Already an array
+            decompressed[patternKey][track] = value;
+          }
+        });
+      });
+      return decompressed;
+    };
+    
+    // Handle compressed 'p' field or 'A' only field
+    if (fetchedBeatData.p && !fetchedBeatData.patterns) {
+      fetchedBeatData.patterns = decompressPatterns(fetchedBeatData.p);
+    } else if (fetchedBeatData.A && !fetchedBeatData.patterns) {
+      // Only Pattern A was stored
+      fetchedBeatData.patterns = {
+        A: {},
+        B: {},
+        C: {}
+      };
+      Object.keys(fetchedBeatData.A).forEach(track => {
+        const value = fetchedBeatData.A[track];
+        fetchedBeatData.patterns.A[track] = typeof value === 'string' 
+          ? value.split('').map(c => c === '1')
+          : value;
+        // Initialize B and C as empty
+        fetchedBeatData.patterns.B[track] = Array(16).fill(false);
+        fetchedBeatData.patterns.C[track] = Array(16).fill(false);
+      });
+    } else if (fetchedBeatData.patterns) {
+      // Check if patterns need decompression
+      const firstPattern = Object.keys(fetchedBeatData.patterns)[0];
+      if (firstPattern) {
+        const firstTrack = Object.keys(fetchedBeatData.patterns[firstPattern])[0];
+        if (firstTrack && typeof fetchedBeatData.patterns[firstPattern][firstTrack] === 'string') {
+          fetchedBeatData.patterns = decompressPatterns(fetchedBeatData.patterns);
+        }
+      }
+    }
+    
+    // Set defaults for missing fields
+    fetchedBeatData.name = fetchedBeatData.name || metadata.name || 'Loaded Beat';
+    fetchedBeatData.bpm = fetchedBeatData.bpm || 120;
+    fetchedBeatData.swing = fetchedBeatData.swing || 0;
+    
     // Update preview
     document.getElementById('nftPreviewImage').src = metadata.image || '';
-    document.getElementById('nftPreviewName').textContent = metadata.name || 'Unknown Beat';
-    document.getElementById('nftPreviewDesc').textContent = metadata.description || 'No description';
-    document.getElementById('nftPreviewBpm').textContent = `${fetchedBeatData.bpm || 120} BPM`;
-    document.getElementById('nftPreviewSwing').textContent = `${fetchedBeatData.swing || 0}% Swing`;
+    document.getElementById('nftPreviewName').textContent = metadata.name || fetchedBeatData.name || 'Unknown Beat';
+    document.getElementById('nftPreviewDesc').textContent = metadata.description || 'Beat loaded from NFT';
+    document.getElementById('nftPreviewBpm').textContent = `${fetchedBeatData.bpm} BPM`;
+    document.getElementById('nftPreviewSwing').textContent = `${fetchedBeatData.swing}% Swing`;
     
     // Show preview
     nftPreview.style.display = 'block';
