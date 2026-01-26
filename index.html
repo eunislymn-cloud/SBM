@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seeker Beat Maker - Enhanced</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>🎵 Seeker Beat Maker</h1>
+    
+    <div id="beatCounter">1.1.01</div>
+    
+    <div class="pattern-selector">
+      <button class="pattern-btn active" data-pattern="A">Pattern A</button>
+      <button class="pattern-btn" data-pattern="B">Pattern B</button>
+      <button class="pattern-btn" data-pattern="C">Pattern C</button>
+    </div>
+    
+    <!-- Pattern Sequencer -->
+    <div id="patternSequencer">
+      <div class="sequencer-header">
+        <span class="sequencer-title">Pattern Sequencer</span>
+        <button id="seqToggle" class="secondary seq-toggle">Chain: OFF</button>
+      </div>
+      <div class="sequence-slots">
+        <div class="seq-slot" data-slot="0">
+          <select class="pattern-select">
+            <option value="">-</option>
+            <option value="A" selected>A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select>
+          <span class="slot-number">1</span>
+        </div>
+        <div class="seq-slot" data-slot="1">
+          <select class="pattern-select">
+            <option value="" selected>-</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select>
+          <span class="slot-number">2</span>
+        </div>
+        <div class="seq-slot" data-slot="2">
+          <select class="pattern-select">
+            <option value="" selected>-</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select>
+          <span class="slot-number">3</span>
+        </div>
+        <div class="seq-slot" data-slot="3">
+          <select class="pattern-select">
+            <option value="" selected>-</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select>
+          <span class="slot-number">4</span>
+        </div>
+        <div class="seq-slot" data-slot="4">
+          <select class="pattern-select">
+            <option value="" selected>-</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select>
+          <span class="slot-number">5</span>
+        </div>
+        <div class="seq-slot" data-slot="5">
+          <select class="pattern-select">
+            <option value="" selected>-</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select>
+          <span class="slot-number">6</span>
+        </div>
+        <div class="seq-slot" data-slot="6">
+          <select class="pattern-select">
+            <option value="" selected>-</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select>
+          <span class="slot-number">7</span>
+        </div>
+        <div class="seq-slot" data-slot="7">
+          <select class="pattern-select">
+            <option value="" selected>-</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select>
+          <span class="slot-number">8</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Sample Packs -->
+    <div id="samplePacks">
+      <div class="packs-header">
+        <span class="packs-title">🎧 Sample Packs</span>
+        <span class="coming-soon-badge">Coming Soon</span>
+      </div>
+      <div class="packs-grid">
+        <div class="pack-card disabled">
+          <div class="pack-icon">🔥</div>
+          <div class="pack-name">808 Kit</div>
+          <div class="pack-description">Classic 808 drum sounds</div>
+        </div>
+        <div class="pack-card disabled">
+          <div class="pack-icon">🌊</div>
+          <div class="pack-name">Trap Pack</div>
+          <div class="pack-description">Modern trap essentials</div>
+        </div>
+        <div class="pack-card disabled">
+          <div class="pack-icon">✨</div>
+          <div class="pack-name">Lo-Fi Beats</div>
+          <div class="pack-description">Chill lo-fi drums</div>
+        </div>
+        <div class="pack-card disabled">
+          <div class="pack-icon">⚡</div>
+          <div class="pack-name">EDM Kit</div>
+          <div class="pack-description">High-energy electronic</div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="controls">
+      <div class="control-row">
+        <button id="play">▶ Play</button>
+        <button id="stop" class="secondary">⏹ Stop</button>
+        <div class="control-group">
+          <label>BPM <input type="range" id="bpm" min="60" max="200" value="120"><span class="value-display" id="bpmValue">120</span></label>
+        </div>
+        <div class="control-group">
+          <label>Swing <input type="range" id="swing" min="0" max="100" value="0"><span class="value-display" id="swingValue">0%</span></label>
+        </div>
+      </div>
+      
+      <div class="control-row">
+        <div class="control-group">
+          <label>Beat Name: <input type="text" id="beatName" placeholder="My Beat" value="Untitled"></label>
+        </div>
+        <button id="save" class="secondary">💾 Save</button>
+        <select id="savedBeats"><option value="">-- Load Beat --</option></select>
+        <button id="load" class="secondary">📂 Load</button>
+      </div>
+      
+      <div class="control-row">
+        <button id="export" class="secondary">⬇ Export</button>
+        <button id="import" class="secondary">⬆ Import</button>
+        <button id="clear" class="secondary">🗑 Clear</button>
+        <button id="mint">⛓ Mint NFT</button>
+        <input type="file" id="importFile" style="display:none;" accept=".json" />
+      </div>
+      
+      <div id="mintOutput"></div>
+    </div>
+    
+    <div class="sequencer"></div>
+    
+    <div class="effects-panel">
+      <div class="effects-title">Global Effects</div>
+      <div class="effects-grid">
+        <div class="effect-control">
+          <label>Reverb <input type="range" id="reverb" min="0" max="100" value="20"><span class="value-display" id="reverbValue">20%</span></label>
+        </div>
+        <div class="effect-control">
+          <label>Delay Mix <input type="range" id="delayMix" min="0" max="100" value="0"><span class="value-display" id="delayValue">0%</span></label>
+        </div>
+        <div class="effect-control">
+          <label>Delay Time <input type="range" id="delayTime" min="50" max="1000" value="250"><span class="value-display" id="delayTimeValue">250ms</span></label>
+        </div>
+        <div class="effect-control">
+          <label>Filter <input type="range" id="filter" min="200" max="20000" value="20000"><span class="value-display" id="filterValue">20k</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="main.js"></script>
+</body>
+</html>

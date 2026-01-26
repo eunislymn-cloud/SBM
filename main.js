@@ -1,0 +1,821 @@
+// Audio Context
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const masterGain = audioCtx.createGain();
+const reverbNode = audioCtx.createConvolver();
+const reverbWet = audioCtx.createGain();
+const reverbDry = audioCtx.createGain();
+const delayNode = audioCtx.createDelay(2.0);
+const delayFeedback = audioCtx.createGain();
+const delayWet = audioCtx.createGain();
+const filterNode = audioCtx.createBiquadFilter();
+
+// Setup Effects
+filterNode.type = 'lowpass';
+filterNode.frequency.value = 20000;
+delayNode.delayTime.value = 0.25;
+delayFeedback.gain.value = 0.3;
+delayWet.gain.value = 0;
+
+// Create reverb impulse response
+function createReverb() {
+  const rate = audioCtx.sampleRate;
+  const length = rate * 2;
+  const impulse = audioCtx.createBuffer(2, length, rate);
+  for (let channel = 0; channel < 2; channel++) {
+    const channelData = impulse.getChannelData(channel);
+    for (let i = 0; i < length; i++) {
+      channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
+    }
+  }
+  reverbNode.buffer = impulse;
+}
+createReverb();
+
+// Set initial reverb mix (20% wet)
+reverbDry.gain.value = 0.8;
+reverbWet.gain.value = 0.2;
+
+// Effects Routing with Reverb
+masterGain.connect(reverbDry);
+masterGain.connect(reverbNode);
+reverbNode.connect(reverbWet);
+
+reverbDry.connect(filterNode);
+reverbWet.connect(filterNode);
+
+filterNode.connect(delayNode);
+delayNode.connect(delayFeedback);
+delayFeedback.connect(delayNode);
+delayNode.connect(delayWet);
+
+filterNode.connect(delayWet);
+delayWet.connect(audioCtx.destination);
+filterNode.connect(audioCtx.destination);
+
+const trackConfig = [
+  { name: 'kick', label: 'Kick' },
+  { name: 'snare', label: 'Snare' },
+  { name: 'hat', label: 'Hi-Hat' },
+  { name: 'clap', label: 'Clap' },
+  { name: 'crash', label: 'Crash' },
+  { name: 'rim', label: 'Rim' },
+  { name: 'tom', label: 'Tom' }
+];
+
+const steps = 16;
+let currentStep = 0;
+let isPlaying = false;
+let bpm = 120;
+let swing = 0;
+let currentPattern = 'A';
+let sequencerEnabled = false;
+let patternSequence = ['A', '', '', '', '', '', '', ''];
+let currentSequenceIndex = 0;
+const patterns = { A: {}, B: {}, C: {} };
+const trackVolumes = {};
+
+const trackSounds = {
+  kick: 'kick1',
+  snare: 'snare1',
+  hat: 'hat1',
+  clap: 'clap1',
+  crash: 'crash1',
+  rim: 'rim1',
+  tom: 'tom1'
+};
+
+// Sample Packs System
+let activeSamplePack = null;
+const samplePacks = {
+  '808kit': {
+    name: '808 Kit',
+    description: 'Classic 808 drum sounds',
+    icon: '🔥',
+    samples: {
+      kick: 'samples/808kit/kick.wav',
+      snare: 'samples/808kit/snare.wav',
+      hat: 'samples/808kit/hat.wav',
+      clap: 'samples/808kit/clap.wav',
+      crash: 'samples/808kit/crash.wav',
+      rim: 'samples/808kit/rim.wav',
+      tom: 'samples/808kit/tom.wav'
+    }
+  },
+  'trap': {
+    name: 'Trap Pack',
+    description: 'Modern trap essentials',
+    icon: '🌊',
+    samples: {
+      kick: 'samples/trap/kick.wav',
+      snare: 'samples/trap/snare.wav',
+      hat: 'samples/trap/hat.wav',
+      clap: 'samples/trap/clap.wav',
+      crash: 'samples/trap/crash.wav',
+      rim: 'samples/trap/rim.wav',
+      tom: 'samples/trap/tom.wav'
+    }
+  },
+  'lofi': {
+    name: 'Lo-Fi Beats',
+    description: 'Chill lo-fi drums',
+    icon: '✨',
+    samples: {
+      kick: 'samples/lofi/kick.wav',
+      snare: 'samples/lofi/snare.wav',
+      hat: 'samples/lofi/hat.wav',
+      clap: 'samples/lofi/clap.wav',
+      crash: 'samples/lofi/crash.wav',
+      rim: 'samples/lofi/rim.wav',
+      tom: 'samples/lofi/tom.wav'
+    }
+  },
+  'edm': {
+    name: 'EDM Kit',
+    description: 'High-energy electronic',
+    icon: '⚡',
+    samples: {
+      kick: 'samples/edm/kick.wav',
+      snare: 'samples/edm/snare.wav',
+      hat: 'samples/edm/hat.wav',
+      clap: 'samples/edm/clap.wav',
+      crash: 'samples/edm/crash.wav',
+      rim: 'samples/edm/rim.wav',
+      tom: 'samples/edm/tom.wav'
+    }
+  }
+};
+
+trackConfig.forEach(t => {
+  patterns.A[t.name] = Array(steps).fill(false);
+  patterns.B[t.name] = Array(steps).fill(false);
+  patterns.C[t.name] = Array(steps).fill(false);
+  trackVolumes[t.name] = 0.8;
+});
+
+const sequencer = document.querySelector('.sequencer');
+trackConfig.forEach(track => {
+  const container = document.createElement('div');
+  container.className = 'track-container';
+  container.dataset.track = track.name;
+  
+  const header = document.createElement('div');
+  header.className = 'track-header';
+  header.innerHTML = `
+    <div class="track-label-wrapper">
+      <div class="track-label">${track.label}</div>
+      <div class="sound-menu" style="display:none;">
+        <div class="sound-option" data-sound="${track.name}1">Sound 1</div>
+        <div class="sound-option" data-sound="${track.name}2">Sound 2</div>
+      </div>
+    </div>
+    <div class="track-volume">
+      <span>Vol</span>
+      <input type="range" min="0" max="100" value="80" class="volume-control">
+      <span class="volume-value">80</span>
+    </div>
+  `;
+  
+  const grid = document.createElement('div');
+  grid.className = 'track-grid';
+  
+  for (let i = 0; i < steps; i++) {
+    const step = document.createElement('div');
+    step.className = 'step';
+    step.dataset.index = i;
+    step.addEventListener('click', () => {
+      patterns[currentPattern][track.name][i] = !patterns[currentPattern][track.name][i];
+      step.classList.toggle('active');
+    });
+    grid.appendChild(step);
+  }
+  
+  container.appendChild(header);
+  container.appendChild(grid);
+  sequencer.appendChild(container);
+  
+  const volumeControl = header.querySelector('.volume-control');
+  const volumeValue = header.querySelector('.volume-value');
+  volumeControl.addEventListener('input', e => {
+    trackVolumes[track.name] = e.target.value / 100;
+    volumeValue.textContent = e.target.value;
+  });
+  
+  const labelWrapper = header.querySelector('.track-label-wrapper');
+  const trackLabel = header.querySelector('.track-label');
+  const soundMenu = header.querySelector('.sound-menu');
+  
+  trackLabel.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.querySelectorAll('.sound-menu').forEach(menu => {
+      if (menu !== soundMenu) menu.style.display = 'none';
+    });
+    soundMenu.style.display = soundMenu.style.display === 'none' ? 'block' : 'none';
+  });
+  
+  soundMenu.querySelectorAll('.sound-option').forEach(option => {
+    option.addEventListener('click', (e) => {
+      e.stopPropagation();
+      trackSounds[track.name] = option.dataset.sound;
+      soundMenu.style.display = 'none';
+      soundMenu.querySelectorAll('.sound-option').forEach(opt => opt.classList.remove('selected'));
+      option.classList.add('selected');
+    });
+  });
+  
+  soundMenu.querySelector(`[data-sound="${track.name}1"]`).classList.add('selected');
+});
+
+document.addEventListener('click', () => {
+  document.querySelectorAll('.sound-menu').forEach(menu => {
+    menu.style.display = 'none';
+  });
+});
+
+document.getElementById('seqToggle').onclick = () => {
+  sequencerEnabled = !sequencerEnabled;
+  const btn = document.getElementById('seqToggle');
+  btn.textContent = sequencerEnabled ? 'Chain: ON' : 'Chain: OFF';
+  btn.classList.toggle('active', sequencerEnabled);
+};
+
+document.querySelectorAll('.pattern-select').forEach((select, index) => {
+  select.addEventListener('change', (e) => {
+    patternSequence[index] = e.target.value;
+  });
+});
+
+function getActiveSequence() {
+  return patternSequence.filter(p => p !== '');
+}
+
+function updateSequenceUI() {
+  const activeSeq = getActiveSequence();
+  if (!sequencerEnabled || activeSeq.length === 0) {
+    document.querySelectorAll('.seq-slot').forEach(slot => slot.classList.remove('active'));
+    return;
+  }
+  
+  let nonEmptyCount = 0;
+  let targetSlotIndex = -1;
+  
+  for (let i = 0; i < patternSequence.length; i++) {
+    if (patternSequence[i] !== '') {
+      if (nonEmptyCount === currentSequenceIndex) {
+        targetSlotIndex = i;
+        break;
+      }
+      nonEmptyCount++;
+    }
+  }
+  
+  document.querySelectorAll('.seq-slot').forEach((slot, index) => {
+    slot.classList.toggle('active', index === targetSlotIndex);
+  });
+}
+
+function playSound(trackName) {
+  const volume = trackVolumes[trackName];
+  const time = audioCtx.currentTime;
+  const soundVariant = trackSounds[trackName];
+  
+  switch(soundVariant) {
+    case 'kick1': {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.frequency.setValueAtTime(150, time);
+      osc.frequency.exponentialRampToValueAtTime(40, time + 0.15);
+      gain.gain.setValueAtTime(volume, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+      osc.connect(gain).connect(masterGain);
+      osc.start(time);
+      osc.stop(time + 0.15);
+      break;
+    }
+    case 'kick2': {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.frequency.setValueAtTime(100, time);
+      osc.frequency.exponentialRampToValueAtTime(30, time + 0.25);
+      gain.gain.setValueAtTime(volume * 1.2, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
+      osc.connect(gain).connect(masterGain);
+      osc.start(time);
+      osc.stop(time + 0.25);
+      break;
+    }
+    case 'snare1': {
+      const noise = audioCtx.createBufferSource();
+      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.2, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      noise.buffer = buffer;
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(volume, time);
+      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+      noise.connect(gain).connect(masterGain);
+      noise.start(time);
+      break;
+    }
+    case 'snare2': {
+      const noise = audioCtx.createBufferSource();
+      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.15, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+      }
+      noise.buffer = buffer;
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(volume * 0.8, time);
+      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.15);
+      noise.connect(gain).connect(masterGain);
+      noise.start(time);
+      break;
+    }
+    case 'hat1': {
+      const noise = audioCtx.createBufferSource();
+      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.05, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.005));
+      }
+      noise.buffer = buffer;
+      
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.value = 7000;
+      
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(volume * 0.4, time);
+      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05);
+      
+      noise.connect(filter).connect(gain).connect(masterGain);
+      noise.start(time);
+      break;
+    }
+    case 'hat2': {
+      const noise = audioCtx.createBufferSource();
+      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.15, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.02));
+      }
+      noise.buffer = buffer;
+      
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.value = 6000;
+      
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(volume * 0.35, time);
+      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.15);
+      
+      noise.connect(filter).connect(gain).connect(masterGain);
+      noise.start(time);
+      break;
+    }
+    case 'clap1': {
+      const noise = audioCtx.createBufferSource();
+      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.1, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.02));
+      }
+      noise.buffer = buffer;
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(volume * 0.7, time);
+      noise.connect(gain).connect(masterGain);
+      noise.start(time);
+      break;
+    }
+    case 'clap2': {
+      for (let delay = 0; delay < 3; delay++) {
+        const noise = audioCtx.createBufferSource();
+        const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.05, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.01));
+        }
+        noise.buffer = buffer;
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(volume * 0.5, time + delay * 0.02);
+        noise.connect(gain).connect(masterGain);
+        noise.start(time + delay * 0.02);
+      }
+      break;
+    }
+    case 'crash1': {
+      const osc1 = audioCtx.createOscillator();
+      const osc2 = audioCtx.createOscillator();
+      osc1.type = 'square';
+      osc2.type = 'square';
+      osc1.frequency.value = 5000 + Math.random() * 3000;
+      osc2.frequency.value = 7000 + Math.random() * 3000;
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(volume * 0.5, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.8);
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(masterGain);
+      osc1.start(time);
+      osc2.start(time);
+      osc1.stop(time + 0.8);
+      osc2.stop(time + 0.8);
+      break;
+    }
+    case 'crash2': {
+      const osc1 = audioCtx.createOscillator();
+      const osc2 = audioCtx.createOscillator();
+      const osc3 = audioCtx.createOscillator();
+      osc1.type = 'square';
+      osc2.type = 'square';
+      osc3.type = 'square';
+      osc1.frequency.value = 4000 + Math.random() * 2000;
+      osc2.frequency.value = 6000 + Math.random() * 2000;
+      osc3.frequency.value = 8000 + Math.random() * 2000;
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(volume * 0.4, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 1.2);
+      osc1.connect(gain);
+      osc2.connect(gain);
+      osc3.connect(gain);
+      gain.connect(masterGain);
+      osc1.start(time);
+      osc2.start(time);
+      osc3.start(time);
+      osc1.stop(time + 1.2);
+      osc2.stop(time + 1.2);
+      osc3.stop(time + 1.2);
+      break;
+    }
+    case 'rim1': {
+      const osc = audioCtx.createOscillator();
+      osc.frequency.setValueAtTime(400, time);
+      osc.frequency.exponentialRampToValueAtTime(200, time + 0.02);
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(volume * 0.5, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
+      osc.connect(gain).connect(masterGain);
+      osc.start(time);
+      osc.stop(time + 0.02);
+      break;
+    }
+    case 'rim2': {
+      const osc = audioCtx.createOscillator();
+      osc.frequency.setValueAtTime(800, time);
+      osc.frequency.exponentialRampToValueAtTime(400, time + 0.015);
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(volume * 0.6, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.015);
+      osc.connect(gain).connect(masterGain);
+      osc.start(time);
+      osc.stop(time + 0.015);
+      break;
+    }
+    case 'tom1': {
+      const osc = audioCtx.createOscillator();
+      osc.frequency.setValueAtTime(200, time);
+      osc.frequency.exponentialRampToValueAtTime(80, time + 0.2);
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(volume, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+      osc.connect(gain).connect(masterGain);
+      osc.start(time);
+      osc.stop(time + 0.2);
+      break;
+    }
+    case 'tom2': {
+      const osc = audioCtx.createOscillator();
+      osc.frequency.setValueAtTime(150, time);
+      osc.frequency.exponentialRampToValueAtTime(60, time + 0.3);
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(volume * 1.1, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
+      osc.connect(gain).connect(masterGain);
+      osc.start(time);
+      osc.stop(time + 0.3);
+      break;
+    }
+  }
+}
+
+function updateBeatCounter() {
+  const bar = Math.floor(currentStep / 16) + 1;
+  const beat = Math.floor((currentStep % 16) / 4) + 1;
+  const tick = (currentStep % 4) + 1;
+  
+  let displayText = `${bar}.${beat}.${tick.toString().padStart(2, '0')}`;
+  
+  if (sequencerEnabled) {
+    const activeSeq = getActiveSequence();
+    if (activeSeq.length > 0) {
+      displayText = `[${activeSeq[currentSequenceIndex]}] ${displayText}`;
+    }
+  }
+  
+  document.getElementById('beatCounter').textContent = displayText;
+}
+
+function tick() {
+  let activePattern = currentPattern;
+  if (sequencerEnabled) {
+    const activeSeq = getActiveSequence();
+    if (activeSeq.length > 0) {
+      activePattern = activeSeq[currentSequenceIndex];
+      
+      document.querySelectorAll('.pattern-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.pattern === activePattern);
+      });
+      
+      trackConfig.forEach(track => {
+        const container = document.querySelector(`[data-track="${track.name}"]`);
+        const stepEls = container.querySelectorAll('.step');
+        stepEls.forEach((el, i) => {
+          el.classList.toggle('active', patterns[activePattern][track.name][i]);
+        });
+      });
+    }
+  }
+  
+  trackConfig.forEach(track => {
+    const container = document.querySelector(`[data-track="${track.name}"]`);
+    const stepEls = container.querySelectorAll('.step');
+    stepEls.forEach((el, i) => el.classList.toggle('playing', i === currentStep));
+    
+    if (patterns[activePattern][track.name][currentStep]) playSound(track.name);
+  });
+  
+  updateBeatCounter();
+  updateSequenceUI();
+  
+  currentStep = (currentStep + 1) % steps;
+  
+  if (sequencerEnabled && currentStep === 0) {
+    const activeSeq = getActiveSequence();
+    if (activeSeq.length > 0) {
+      currentSequenceIndex = (currentSequenceIndex + 1) % activeSeq.length;
+    }
+  }
+}
+
+function start() {
+  if (isPlaying) return;
+  isPlaying = true;
+  currentSequenceIndex = 0;
+  
+  const baseInterval = (60 / bpm) * 1000 / 4;
+  let lastTime = Date.now();
+  let stepCounter = 0;
+  
+  function scheduleTick() {
+    if (!isPlaying) return;
+    const now = Date.now();
+    let interval = baseInterval;
+    if (swing > 0 && stepCounter % 2 === 1) interval *= 1 + (swing / 100);
+    if (now - lastTime >= interval) {
+      tick();
+      lastTime = now;
+      stepCounter++;
+    }
+    requestAnimationFrame(scheduleTick);
+  }
+  scheduleTick();
+}
+
+function stop() {
+  isPlaying = false;
+  currentStep = 0;
+  currentSequenceIndex = 0;
+  updateBeatCounter();
+  updateSequenceUI();
+  
+  document.querySelectorAll('.pattern-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.pattern === currentPattern);
+  });
+  
+  trackConfig.forEach(track => {
+    const container = document.querySelector(`[data-track="${track.name}"]`);
+    container.querySelectorAll('.step').forEach(el => {
+      el.classList.remove('playing');
+      const stepEls = container.querySelectorAll('.step');
+      stepEls.forEach((step, i) => {
+        step.classList.toggle('active', patterns[currentPattern][track.name][i]);
+      });
+    });
+  });
+}
+
+document.querySelectorAll('.pattern-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.pattern-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentPattern = btn.dataset.pattern;
+    updateUI();
+  });
+});
+
+function updateUI() {
+  trackConfig.forEach(track => {
+    const container = document.querySelector(`[data-track="${track.name}"]`);
+    const stepEls = container.querySelectorAll('.step');
+    stepEls.forEach((el, i) => {
+      el.classList.toggle('active', patterns[currentPattern][track.name][i]);
+    });
+  });
+}
+
+document.getElementById('play').onclick = () => { 
+  audioCtx.resume(); 
+  start(); 
+};
+
+document.getElementById('stop').onclick = stop;
+
+document.getElementById('bpm').oninput = e => {
+  bpm = parseInt(e.target.value);
+  document.getElementById('bpmValue').textContent = bpm;
+};
+
+document.getElementById('swing').oninput = e => {
+  swing = parseInt(e.target.value);
+  document.getElementById('swingValue').textContent = swing + '%';
+};
+
+document.getElementById('delayMix').oninput = e => {
+  delayWet.gain.value = e.target.value / 100;
+  document.getElementById('delayValue').textContent = e.target.value + '%';
+};
+
+document.getElementById('delayTime').oninput = e => {
+  delayNode.delayTime.value = e.target.value / 1000;
+  document.getElementById('delayTimeValue').textContent = e.target.value + 'ms';
+};
+
+document.getElementById('filter').oninput = e => {
+  filterNode.frequency.value = parseInt(e.target.value);
+  const val = parseInt(e.target.value);
+  document.getElementById('filterValue').textContent = val >= 1000 ? (val/1000).toFixed(1)+'k' : val;
+};
+
+document.getElementById('reverb').oninput = e => {
+  const val = parseInt(e.target.value);
+  document.getElementById('reverbValue').textContent = val + '%';
+  
+  // Adjust wet/dry mix
+  const wetAmount = val / 100;
+  reverbWet.gain.value = wetAmount;
+  reverbDry.gain.value = 1 - wetAmount;
+};
+
+document.getElementById('clear').onclick = () => {
+  if (confirm('Clear current pattern?')) {
+    trackConfig.forEach(t => patterns[currentPattern][t.name].fill(false));
+    updateUI();
+  }
+};
+
+function updateBeatDropdown() {
+  const library = JSON.parse(localStorage.getItem('beatLibrary') || '{}');
+  const select = document.getElementById('savedBeats');
+  select.innerHTML = '<option value="">-- Load Beat --</option>';
+  Object.keys(library).forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    select.appendChild(opt);
+  });
+}
+
+document.getElementById('save').onclick = () => {
+  const name = document.getElementById('beatName').value.trim();
+  if (!name) return alert('Enter a beat name.');
+  const data = { bpm, swing, patterns, trackVolumes, patternSequence, trackSounds };
+  const library = JSON.parse(localStorage.getItem('beatLibrary') || '{}');
+  library[name] = data;
+  localStorage.setItem('beatLibrary', JSON.stringify(library));
+  alert(`"${name}" saved!`);
+  updateBeatDropdown();
+};
+
+document.getElementById('load').onclick = () => {
+  const name = document.getElementById('savedBeats').value;
+  if (!name) return alert('Select a beat.');
+  const library = JSON.parse(localStorage.getItem('beatLibrary') || '{}');
+  const data = library[name];
+  if (!data) return alert('Beat not found!');
+  
+  bpm = data.bpm || 120;
+  swing = data.swing || 0;
+  Object.assign(patterns, data.patterns);
+  Object.assign(trackVolumes, data.trackVolumes || {});
+  
+  if (data.patternSequence) {
+    patternSequence = data.patternSequence;
+    document.querySelectorAll('.pattern-select').forEach((select, i) => {
+      select.value = patternSequence[i] || '';
+    });
+  }
+  
+  if (data.trackSounds) {
+    Object.assign(trackSounds, data.trackSounds);
+    trackConfig.forEach(track => {
+      const soundMenu = document.querySelector(`[data-track="${track.name}"] .sound-menu`);
+      if (soundMenu) {
+        soundMenu.querySelectorAll('.sound-option').forEach(opt => {
+          opt.classList.toggle('selected', opt.dataset.sound === trackSounds[track.name]);
+        });
+      }
+    });
+  }
+  
+  document.getElementById('bpm').value = bpm;
+  document.getElementById('bpmValue').textContent = bpm;
+  document.getElementById('swing').value = swing;
+  document.getElementById('swingValue').textContent = swing + '%';
+  updateUI();
+  alert(`"${name}" loaded!`);
+};
+
+document.getElementById('export').onclick = () => {
+  const name = document.getElementById('beatName').value.trim() || 'MyBeat';
+  const data = { name, bpm, swing, patterns, trackVolumes, patternSequence, trackSounds };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${name}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+document.getElementById('import').onclick = () => document.getElementById('importFile').click();
+
+document.getElementById('importFile').onchange = e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    try {
+      const data = JSON.parse(evt.target.result);
+      bpm = data.bpm || 120;
+      swing = data.swing || 0;
+      Object.assign(patterns, data.patterns);
+      Object.assign(trackVolumes, data.trackVolumes || {});
+      
+      if (data.patternSequence) {
+        patternSequence = data.patternSequence;
+        document.querySelectorAll('.pattern-select').forEach((select, i) => {
+          select.value = patternSequence[i] || '';
+        });
+      }
+      
+      if (data.trackSounds) {
+        Object.assign(trackSounds, data.trackSounds);
+        trackConfig.forEach(track => {
+          const soundMenu = document.querySelector(`[data-track="${track.name}"] .sound-menu`);
+          if (soundMenu) {
+            soundMenu.querySelectorAll('.sound-option').forEach(opt => {
+              opt.classList.toggle('selected', opt.dataset.sound === trackSounds[track.name]);
+            });
+          }
+        });
+      }
+      
+      document.getElementById('beatName').value = data.name || '';
+      document.getElementById('bpm').value = bpm;
+      document.getElementById('bpmValue').textContent = bpm;
+      document.getElementById('swing').value = swing;
+      document.getElementById('swingValue').textContent = swing + '%';
+      updateUI();
+      alert(`"${data.name || 'Beat'}" imported!`);
+    } catch {
+      alert('Invalid file!');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+};
+
+document.getElementById('mint').onclick = () => {
+  const beatData = {
+    name: document.getElementById('beatName').value || 'Beat',
+    description: 'Created with Seeker Beat Maker',
+    bpm, 
+    swing,
+    patterns: patterns,
+    trackVolumes,
+    patternSequence,
+    trackSounds,
+    samplePack: activeSamplePack ? {
+      id: activeSamplePack,
+      name: samplePacks[activeSamplePack].name,
+      samples: samplePacks[activeSamplePack].samples
+    } : null,
+    creator: 'LOCAL_USER',
+    app: 'Seeker Beat Maker Enhanced',
+    timestamp: new Date().toISOString()
+  };
+  document.getElementById('mintOutput').textContent = JSON.stringify(beatData, null, 2);
+  alert('Beat serialized for minting! This would mint as NFT in production.');
+};
+
+updateBeatDropdown();
