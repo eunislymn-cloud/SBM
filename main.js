@@ -1598,68 +1598,53 @@ document.getElementById('mint').onclick = async () => {
     const pC = compressPattern(patterns.C);
     
     // Build the most compact metadata possible
-    // Format: {n,b,A,B,C} or {n,b,A,B} or {n,b,p}
+    // Use single char keys: n=name, b=bpm, a/b/c=patterns, s=swing
     let compactMeta;
     
-    // Try to fit all 3 patterns
+    // Try to fit all 3 patterns with minimal keys
     if (!isEmpty(pC)) {
-      // All 3 patterns needed
+      // All 3 patterns - use single letter keys, no name
       compactMeta = {
-        n: beatName.slice(0, 3),
         b: bpm,
-        A: pA,
-        B: pB,
-        C: pC
+        a: pA,
+        B: pB,  // capital B to not conflict with bpm 'b'
+        c: pC
       };
+      metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
+      console.log('3 patterns, length:', metadataUri.length);
+      
+      // If still too long, this shouldn't happen but fallback
+      if (metadataUri.length > 200) {
+        delete compactMeta.c;
+        metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
+        console.log('Removed C, length:', metadataUri.length);
+      }
     } else if (!isEmpty(pB)) {
       // Only A and B
       compactMeta = {
-        n: beatName.slice(0, 6),
+        n: beatName.slice(0, 5),
         b: bpm,
-        A: pA,
+        a: pA,
         B: pB
       };
+      metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
     } else {
-      // Only A
+      // Only A - more room for name
       compactMeta = {
         n: beatName.slice(0, 12),
         b: bpm,
         p: pA
       };
+      metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
     }
     
     // Add swing if non-zero and we have room
-    metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
-    
-    if (swing > 0 && metadataUri.length < 190) {
+    if (swing > 0 && metadataUri.length < 195) {
       compactMeta.s = swing;
       metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
     }
     
     console.log('Compact metadata content:', JSON.stringify(compactMeta));
-    console.log('Compact metadata URI length:', metadataUri.length);
-    
-    // Verify it fits - if not, reduce
-    if (metadataUri.length > 200) {
-      // Remove C if present
-      if (compactMeta.C) {
-        delete compactMeta.C;
-        compactMeta.n = beatName.slice(0, 6);
-        metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
-        console.log('Removed C, new length:', metadataUri.length);
-      }
-      
-      // Still too long? Remove B
-      if (metadataUri.length > 200 && compactMeta.B) {
-        delete compactMeta.A;
-        delete compactMeta.B;
-        compactMeta.p = pA;
-        compactMeta.n = beatName.slice(0, 10);
-        metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
-        console.log('Removed B, new length:', metadataUri.length);
-      }
-    }
-    
     console.log('Final metadata URI length:', metadataUri.length);
     
     // Step 5: Connect to Solana
@@ -2117,8 +2102,23 @@ fetchNftBtn.onclick = async () => {
       
       console.log('Full beat data loaded with all patterns, volumes, and effects!');
     }
-    // Check for format with all 3 patterns (A, B, C hex strings)
-    if (metadata.A && metadata.B && metadata.C && typeof metadata.A === 'string') {
+    // Check for format with all 3 patterns (a, B, c lowercase/mixed keys)
+    if (metadata.a && metadata.B && metadata.c && typeof metadata.a === 'string') {
+      console.log('Detected compact a+B+c pattern format');
+      
+      beatDataToLoad = {
+        name: metadata.n || 'Loaded Beat',
+        bpm: metadata.b || 120,
+        swing: metadata.s || 0,
+        patterns: {
+          A: decompressPattern(metadata.a),
+          B: decompressPattern(metadata.B),
+          C: decompressPattern(metadata.c)
+        }
+      };
+    }
+    // Check for format with all 3 patterns (A, B, C hex strings) - old format
+    else if (metadata.A && metadata.B && metadata.C && typeof metadata.A === 'string') {
       console.log('Detected A+B+C pattern format');
       
       beatDataToLoad = {
@@ -2132,7 +2132,22 @@ fetchNftBtn.onclick = async () => {
         }
       };
     }
-    // Check for format with A and B patterns (hex strings)
+    // Check for format with A and B patterns (a, B mixed keys)
+    else if (metadata.a && metadata.B && typeof metadata.a === 'string') {
+      console.log('Detected compact a+B pattern format');
+      
+      beatDataToLoad = {
+        name: metadata.n || 'Loaded Beat',
+        bpm: metadata.b || 120,
+        swing: metadata.s || 0,
+        patterns: {
+          A: decompressPattern(metadata.a),
+          B: decompressPattern(metadata.B),
+          C: emptyPattern()
+        }
+      };
+    }
+    // Check for format with A and B patterns (hex strings) - old format
     else if (metadata.A && metadata.B && typeof metadata.A === 'string') {
       console.log('Detected A+B pattern format');
       
