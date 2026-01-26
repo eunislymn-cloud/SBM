@@ -280,27 +280,57 @@ function playSound(trackName) {
   
   switch(soundVariant) {
     case 'kick1': {
+      // Classic 808 kick - punchy, tight, with click
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
-      osc.frequency.setValueAtTime(150, time);
-      osc.frequency.exponentialRampToValueAtTime(40, time + 0.15);
-      gain.gain.setValueAtTime(volume, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(160, time);
+      osc.frequency.exponentialRampToValueAtTime(50, time + 0.1);
+      gain.gain.setValueAtTime(volume * 1.2, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
+      
+      // Add click transient
+      const clickOsc = audioCtx.createOscillator();
+      const clickGain = audioCtx.createGain();
+      clickOsc.type = 'triangle';
+      clickOsc.frequency.setValueAtTime(1000, time);
+      clickOsc.frequency.exponentialRampToValueAtTime(100, time + 0.02);
+      clickGain.gain.setValueAtTime(volume * 0.5, time);
+      clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
+      
       osc.connect(gain).connect(masterGain);
+      clickOsc.connect(clickGain).connect(masterGain);
       osc.start(time);
-      osc.stop(time + 0.15);
+      osc.stop(time + 0.3);
+      clickOsc.start(time);
+      clickOsc.stop(time + 0.02);
       break;
     }
     case 'kick2': {
+      // Deep sub kick - long, boomy, sub-bass heavy
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
-      osc.frequency.setValueAtTime(100, time);
-      osc.frequency.exponentialRampToValueAtTime(30, time + 0.25);
-      gain.gain.setValueAtTime(volume * 1.2, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(80, time);
+      osc.frequency.exponentialRampToValueAtTime(30, time + 0.4);
+      gain.gain.setValueAtTime(volume * 1.5, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+      
+      // Add sub harmonic
+      const subOsc = audioCtx.createOscillator();
+      const subGain = audioCtx.createGain();
+      subOsc.type = 'sine';
+      subOsc.frequency.setValueAtTime(50, time);
+      subOsc.frequency.exponentialRampToValueAtTime(25, time + 0.5);
+      subGain.gain.setValueAtTime(volume * 0.8, time);
+      subGain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+      
       osc.connect(gain).connect(masterGain);
+      subOsc.connect(subGain).connect(masterGain);
       osc.start(time);
-      osc.stop(time + 0.25);
+      osc.stop(time + 0.5);
+      subOsc.start(time);
+      subOsc.stop(time + 0.5);
       break;
     }
     case 'snare1': {
