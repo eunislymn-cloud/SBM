@@ -762,6 +762,356 @@ document.getElementById('export').onclick = () => {
   URL.revokeObjectURL(url);
 };
 
+// Export audio as WAV
+document.getElementById('exportAudio').onclick = async () => {
+  const name = document.getElementById('beatName').value.trim() || 'MyBeat';
+  const exportBtn = document.getElementById('exportAudio');
+  const originalText = exportBtn.textContent;
+  
+  try {
+    exportBtn.textContent = 'Rendering...';
+    exportBtn.disabled = true;
+    
+    // Calculate duration based on pattern sequence or single pattern
+    const activePatterns = patternSequence.filter(p => p !== '');
+    const numPatterns = activePatterns.length > 0 ? activePatterns.length : 1;
+    const beatsPerPattern = 16;
+    const secondsPerBeat = 60 / bpm / 4; // 16th notes
+    const duration = numPatterns * beatsPerPattern * secondsPerBeat + 0.5; // Add tail for decay
+    
+    // Create offline audio context for rendering
+    const sampleRate = 44100;
+    const offlineCtx = new OfflineAudioContext(2, sampleRate * duration, sampleRate);
+    
+    // Create master gain for offline context
+    const offlineMaster = offlineCtx.createGain();
+    offlineMaster.gain.value = 0.8;
+    offlineMaster.connect(offlineCtx.destination);
+    
+    // Render each step
+    const patternsToRender = activePatterns.length > 0 ? activePatterns : [currentPattern];
+    let currentTime = 0;
+    
+    for (let patIdx = 0; patIdx < patternsToRender.length; patIdx++) {
+      const patternKey = patternsToRender[patIdx];
+      const pattern = patterns[patternKey];
+      
+      for (let step = 0; step < 16; step++) {
+        const isOddStep = step % 2 === 1;
+        const swingOffset = isOddStep ? (swing / 100) * secondsPerBeat * 0.5 : 0;
+        const stepTime = currentTime + (step * secondsPerBeat) + swingOffset;
+        
+        // Play each track
+        trackConfig.forEach(track => {
+          if (pattern[track.name] && pattern[track.name][step]) {
+            renderSoundOffline(offlineCtx, offlineMaster, track.name, stepTime, trackVolumes[track.name]);
+          }
+        });
+      }
+      
+      currentTime += 16 * secondsPerBeat;
+    }
+    
+    // Render to buffer
+    const renderedBuffer = await offlineCtx.startRendering();
+    
+    // Convert to WAV
+    const wavBlob = bufferToWav(renderedBuffer);
+    
+    // Download
+    const url = URL.createObjectURL(wavBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${name}.wav`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    exportBtn.textContent = 'Exported!';
+    setTimeout(() => {
+      exportBtn.textContent = originalText;
+      exportBtn.disabled = false;
+    }, 2000);
+    
+  } catch (error) {
+    console.error('Export failed:', error);
+    alert('Export failed: ' + error.message);
+    exportBtn.textContent = originalText;
+    exportBtn.disabled = false;
+  }
+};
+
+// Render sound to offline context
+function renderSoundOffline(ctx, master, trackName, time, volume) {
+  const soundVariant = trackSounds[trackName];
+  
+  switch(soundVariant) {
+    case 'kick1': {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.setValueAtTime(150, time);
+      osc.frequency.exponentialRampToValueAtTime(40, time + 0.15);
+      gain.gain.setValueAtTime(volume, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+      osc.connect(gain).connect(master);
+      osc.start(time);
+      osc.stop(time + 0.15);
+      break;
+    }
+    case 'kick2': {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.setValueAtTime(100, time);
+      osc.frequency.exponentialRampToValueAtTime(30, time + 0.4);
+      gain.gain.setValueAtTime(volume * 1.2, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+      osc.connect(gain).connect(master);
+      osc.start(time);
+      osc.stop(time + 0.5);
+      break;
+    }
+    case 'snare1': {
+      const noise = ctx.createBufferSource();
+      const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.2, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      noise.buffer = buffer;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(volume, time);
+      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+      noise.connect(gain).connect(master);
+      noise.start(time);
+      break;
+    }
+    case 'snare2': {
+      const noise = ctx.createBufferSource();
+      const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.3, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      noise.buffer = buffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.value = 1000;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(volume * 0.8, time);
+      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
+      noise.connect(filter).connect(gain).connect(master);
+      noise.start(time);
+      break;
+    }
+    case 'hat1': {
+      const noise = ctx.createBufferSource();
+      const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.1, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      noise.buffer = buffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.value = 7000;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(volume * 0.5, time);
+      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05);
+      noise.connect(filter).connect(gain).connect(master);
+      noise.start(time);
+      break;
+    }
+    case 'hat2': {
+      const noise = ctx.createBufferSource();
+      const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.3, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      noise.buffer = buffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.value = 6000;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(volume * 0.5, time);
+      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+      noise.connect(filter).connect(gain).connect(master);
+      noise.start(time);
+      break;
+    }
+    case 'clap1': {
+      const noise = ctx.createBufferSource();
+      const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.15, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      noise.buffer = buffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 1200;
+      filter.Q.value = 1;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(volume * 0.8, time);
+      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.15);
+      noise.connect(filter).connect(gain).connect(master);
+      noise.start(time);
+      break;
+    }
+    case 'clap2': {
+      for (let i = 0; i < 3; i++) {
+        const noise = ctx.createBufferSource();
+        const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.02, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let j = 0; j < data.length; j++) data[j] = Math.random() * 2 - 1;
+        noise.buffer = buffer;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1500;
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(volume * 0.5, time + i * 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.01, time + i * 0.015 + 0.1);
+        noise.connect(filter).connect(gain).connect(master);
+        noise.start(time + i * 0.015);
+      }
+      break;
+    }
+    case 'crash1': {
+      const bufferSize = ctx.sampleRate * 1.5;
+      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+      const noise = ctx.createBufferSource();
+      noise.buffer = noiseBuffer;
+      const highpass = ctx.createBiquadFilter();
+      highpass.type = 'highpass';
+      highpass.frequency.value = 5000;
+      const bandpass = ctx.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.frequency.value = 8000;
+      bandpass.Q.value = 0.5;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(volume * 0.6, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 1.5);
+      noise.connect(highpass).connect(bandpass).connect(gain).connect(master);
+      noise.start(time);
+      noise.stop(time + 1.5);
+      break;
+    }
+    case 'crash2': {
+      const bufferSize = ctx.sampleRate * 1.0;
+      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+      const noise = ctx.createBufferSource();
+      noise.buffer = noiseBuffer;
+      const highpass = ctx.createBiquadFilter();
+      highpass.type = 'highpass';
+      highpass.frequency.value = 7000;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(volume * 0.5, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 1.0);
+      noise.connect(highpass).connect(gain).connect(master);
+      noise.start(time);
+      noise.stop(time + 1.0);
+      break;
+    }
+    case 'rim1': {
+      const osc = ctx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.value = 800;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(volume * 0.6, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+      osc.connect(gain).connect(master);
+      osc.start(time);
+      osc.stop(time + 0.05);
+      break;
+    }
+    case 'rim2': {
+      const osc = ctx.createOscillator();
+      osc.type = 'square';
+      osc.frequency.value = 600;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(volume * 0.4, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+      osc.connect(gain).connect(master);
+      osc.start(time);
+      osc.stop(time + 0.08);
+      break;
+    }
+    case 'tom1': {
+      const osc = ctx.createOscillator();
+      osc.frequency.setValueAtTime(200, time);
+      osc.frequency.exponentialRampToValueAtTime(80, time + 0.2);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(volume * 0.9, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+      osc.connect(gain).connect(master);
+      osc.start(time);
+      osc.stop(time + 0.2);
+      break;
+    }
+    case 'tom2': {
+      const osc = ctx.createOscillator();
+      osc.frequency.setValueAtTime(150, time);
+      osc.frequency.exponentialRampToValueAtTime(60, time + 0.3);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(volume * 0.9, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
+      osc.connect(gain).connect(master);
+      osc.start(time);
+      osc.stop(time + 0.3);
+      break;
+    }
+  }
+}
+
+// Convert AudioBuffer to WAV Blob
+function bufferToWav(buffer) {
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const format = 1; // PCM
+  const bitDepth = 16;
+  
+  const bytesPerSample = bitDepth / 8;
+  const blockAlign = numChannels * bytesPerSample;
+  
+  const dataLength = buffer.length * blockAlign;
+  const bufferLength = 44 + dataLength;
+  
+  const arrayBuffer = new ArrayBuffer(bufferLength);
+  const view = new DataView(arrayBuffer);
+  
+  // WAV header
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + dataLength, true);
+  writeString(view, 8, 'WAVE');
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true); // fmt chunk size
+  view.setUint16(20, format, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitDepth, true);
+  writeString(view, 36, 'data');
+  view.setUint32(40, dataLength, true);
+  
+  // Write audio data
+  const channels = [];
+  for (let i = 0; i < numChannels; i++) {
+    channels.push(buffer.getChannelData(i));
+  }
+  
+  let offset = 44;
+  for (let i = 0; i < buffer.length; i++) {
+    for (let ch = 0; ch < numChannels; ch++) {
+      const sample = Math.max(-1, Math.min(1, channels[ch][i]));
+      const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+      view.setInt16(offset, intSample, true);
+      offset += 2;
+    }
+  }
+  
+  return new Blob([arrayBuffer], { type: 'audio/wav' });
+}
+
+function writeString(view, offset, string) {
+  for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i));
+  }
+}
+
 document.getElementById('import').onclick = () => document.getElementById('importFile').click();
 
 document.getElementById('importFile').onchange = e => {
