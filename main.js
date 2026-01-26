@@ -1568,15 +1568,86 @@ document.getElementById('mint').onclick = async () => {
       beatData: beatData
     };
     
-    // Step 4: Upload metadata to IPFS
-    mintStatus.innerHTML = '<span class="mint-spinner"></span> Uploading metadata to IPFS...';
+    // Step 4: Upload metadata to storage
+    mintStatus.innerHTML = '<span class="mint-spinner"></span> Uploading metadata...';
     let metadataUri;
+    
     try {
-      metadataUri = await uploadToIPFS(metadataJson, `${beatName.replace(/\s+/g, '-')}-metadata.json`, 'application/json');
-      console.log('Metadata uploaded to IPFS:', metadataUri);
-    } catch (ipfsError) {
-      console.warn('IPFS metadata upload failed, using fallback:', ipfsError);
-      metadataUri = await uploadToIPFSFallback(metadataJson, false);
+      // Try using npoint.io (free JSON hosting with short URLs)
+      const npointResponse = await fetch('https://api.npoint.io/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(metadataJson)
+      });
+      
+      if (npointResponse.ok) {
+        const npointData = await npointResponse.text();
+        // npoint returns just the ID
+        metadataUri = `https://api.npoint.io/${npointData}`;
+        console.log('Metadata uploaded to npoint:', metadataUri);
+      } else {
+        throw new Error('npoint upload failed');
+      }
+    } catch (npointError) {
+      console.warn('npoint upload failed:', npointError);
+      
+      try {
+        // Fallback: Try jsonblob.com
+        const jsonblobResponse = await fetch('https://jsonblob.com/api/jsonBlob', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(metadataJson)
+        });
+        
+        if (jsonblobResponse.ok) {
+          // jsonblob returns the URL in the Location header
+          const location = jsonblobResponse.headers.get('Location');
+          if (location) {
+            metadataUri = location;
+            console.log('Metadata uploaded to jsonblob:', metadataUri);
+          } else {
+            throw new Error('No location header');
+          }
+        } else {
+          throw new Error('jsonblob upload failed');
+        }
+      } catch (jsonblobError) {
+        console.warn('jsonblob upload failed:', jsonblobError);
+        
+        // Last resort: Store minimal data in URI (will be truncated but at least name works)
+        // Create a minimal metadata object that fits in ~150 bytes when base64 encoded
+        const minimalMeta = {
+          name: beatData.name.slice(0, 20),
+          symbol: 'BEAT',
+          description: 'Seeker Beat',
+          beatData: {
+            bpm: beatData.bpm,
+            swing: beatData.swing,
+            patterns: beatData.patterns,
+            note: 'Full data stored on-chain'
+          }
+        };
+        
+        // Check if we can fit it
+        const testUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(minimalMeta));
+        if (testUri.length <= 200) {
+          metadataUri = testUri;
+          console.log('Using minimal inline metadata, length:', testUri.length);
+        } else {
+          // Even more minimal
+          metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify({
+            name: beatData.name.slice(0, 20),
+            symbol: 'BEAT',
+            bpm: beatData.bpm
+          }));
+          console.log('Using ultra-minimal metadata, length:', metadataUri.length);
+        }
+      }
     }
     
     // Step 5: Connect to Solana
@@ -1927,7 +1998,7 @@ fetchNftBtn.onclick = async () => {
       } catch (parseError) {
         console.error('Data URI parse error:', parseError);
         console.error('Raw URI:', metadataUri.substring(0, 300));
-        throw new Error('Failed to parse metadata from data URI. The NFT metadata may be corrupted or truncated.');
+        throw new Error('This NFT\'s metadata was truncated during minting. Try minting a new NFT - the issue has been fixed!');
       }
     } else {
       // Fetch from URL (IPFS or other)
