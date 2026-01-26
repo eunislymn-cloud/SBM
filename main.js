@@ -2164,13 +2164,24 @@ loadNftConfirm.onclick = () => {
   }
   
   try {
-    // Load patterns
+    // Load patterns - directly assign the loaded patterns
     if (fetchedBeatData.patterns) {
-      Object.keys(fetchedBeatData.patterns).forEach(patternKey => {
-        if (patterns[patternKey]) {
+      console.log('Loading patterns:', fetchedBeatData.patterns);
+      
+      // Load each pattern (A, B, C)
+      ['A', 'B', 'C'].forEach(patternKey => {
+        if (fetchedBeatData.patterns[patternKey]) {
+          // Ensure pattern exists
+          if (!patterns[patternKey]) {
+            patterns[patternKey] = {};
+          }
+          
+          // Load each track in this pattern
           Object.keys(fetchedBeatData.patterns[patternKey]).forEach(track => {
-            if (patterns[patternKey][track]) {
-              patterns[patternKey][track] = [...fetchedBeatData.patterns[patternKey][track]];
+            const trackData = fetchedBeatData.patterns[patternKey][track];
+            if (Array.isArray(trackData)) {
+              patterns[patternKey][track] = [...trackData];
+              console.log(`Loaded ${patternKey}.${track}:`, patterns[patternKey][track]);
             }
           });
         }
