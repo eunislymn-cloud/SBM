@@ -1054,6 +1054,164 @@ const SOLANA_NETWORK = 'devnet';
 const mintStatus = document.getElementById('mintStatus');
 const mintOutput = document.getElementById('mintOutput');
 
+// NFT.Storage API key (free tier - get yours at nft.storage)
+// For production, you should use your own API key
+const NFT_STORAGE_API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweGZFYTg0NjMyMTc1NjUwOTY1M0I0NjkyMDNGNkI2MkFBNDMzOTU5QmMiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTcwMTM4MDgwMDAwMCwibmFtZSI6InNlZWtlci1iZWF0LW1ha2VyIn0.demo-key-replace-with-your-own';
+
+// Generate beat visualization as canvas image
+function generateBeatImage(beatData) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 800;
+  canvas.height = 600;
+  const ctx = canvas.getContext('2d');
+  
+  // Background gradient
+  const bgGradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  bgGradient.addColorStop(0, '#0A0A0A');
+  bgGradient.addColorStop(1, '#1a0a2e');
+  ctx.fillStyle = bgGradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Title
+  ctx.fillStyle = '#14F195';
+  ctx.font = 'bold 36px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText(beatData.name, canvas.width / 2, 50);
+  
+  // Subtitle
+  ctx.fillStyle = '#888';
+  ctx.font = '18px Arial';
+  ctx.fillText(`${beatData.bpm} BPM • ${beatData.swing}% Swing`, canvas.width / 2, 80);
+  
+  // Track colors
+  const trackColors = {
+    kick: '#9945FF',
+    snare: '#00FFC3',
+    hat: '#14F195',
+    clap: '#FF6B9D',
+    crash: '#FFD700',
+    rim: '#00BFFF',
+    tom: '#FF8C00'
+  };
+  
+  const tracks = Object.keys(beatData.patterns.A);
+  const cellWidth = 40;
+  const cellHeight = 35;
+  const startX = (canvas.width - (16 * cellWidth + 15 * 4)) / 2;
+  const startY = 120;
+  
+  // Draw pattern grid for Pattern A (primary)
+  ctx.fillStyle = '#9945FF';
+  ctx.font = 'bold 14px Arial';
+  ctx.textAlign = 'left';
+  ctx.fillText('Pattern A', startX, startY - 10);
+  
+  tracks.forEach((track, trackIndex) => {
+    const y = startY + trackIndex * (cellHeight + 8);
+    
+    // Track label
+    ctx.fillStyle = '#666';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'right';
+    ctx.fillText(track.toUpperCase(), startX - 10, y + cellHeight / 2 + 4);
+    
+    // Steps
+    for (let step = 0; step < 16; step++) {
+      const x = startX + step * (cellWidth + 4);
+      const isActive = beatData.patterns.A[track][step];
+      
+      // Cell background
+      ctx.fillStyle = isActive ? trackColors[track] : '#1a1a1a';
+      ctx.beginPath();
+      ctx.roundRect(x, y, cellWidth, cellHeight, 4);
+      ctx.fill();
+      
+      // Cell border
+      ctx.strokeStyle = isActive ? trackColors[track] : '#333';
+      ctx.lineWidth = isActive ? 2 : 1;
+      ctx.stroke();
+      
+      // Glow effect for active cells
+      if (isActive) {
+        ctx.shadowColor = trackColors[track];
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = trackColors[track];
+        ctx.beginPath();
+        ctx.roundRect(x, y, cellWidth, cellHeight, 4);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+  });
+  
+  // Footer
+  const footerY = canvas.height - 40;
+  ctx.fillStyle = '#444';
+  ctx.font = '14px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('Created with Seeker Beat Maker', canvas.width / 2, footerY);
+  
+  // Solana logo hint
+  ctx.fillStyle = '#9945FF';
+  ctx.font = 'bold 14px Arial';
+  ctx.fillText('◎ Solana NFT', canvas.width / 2, footerY + 25);
+  
+  return canvas.toDataURL('image/png');
+}
+
+// Upload to IPFS via NFT.Storage
+async function uploadToIPFS(data, filename, contentType = 'application/json') {
+  let blob;
+  
+  if (contentType === 'image/png') {
+    // Convert base64 data URL to blob
+    const base64Data = data.split(',')[1];
+    const binaryData = atob(base64Data);
+    const arrayBuffer = new ArrayBuffer(binaryData.length);
+    const uint8Array = new Uint8Array(arrayBuffer);
+    for (let i = 0; i < binaryData.length; i++) {
+      uint8Array[i] = binaryData.charCodeAt(i);
+    }
+    blob = new Blob([uint8Array], { type: contentType });
+  } else {
+    blob = new Blob([JSON.stringify(data)], { type: contentType });
+  }
+  
+  const formData = new FormData();
+  formData.append('file', blob, filename);
+  
+  const response = await fetch('https://api.nft.storage/upload', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${NFT_STORAGE_API_KEY}`
+    },
+    body: formData
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`IPFS upload failed: ${errorText}`);
+  }
+  
+  const result = await response.json();
+  return `https://ipfs.io/ipfs/${result.value.cid}`;
+}
+
+// Alternative: Use a free public IPFS pinning service
+async function uploadToIPFSFallback(data, isImage = false) {
+  // Convert data to JSON string for non-image data
+  const content = isImage ? data : JSON.stringify(data);
+  
+  // Use web3.storage or similar free service
+  // For now, we'll use a base64 data URI as fallback but store the full data
+  if (isImage) {
+    return data; // Return the data URL directly
+  }
+  
+  // For JSON metadata, encode as data URI (fallback)
+  return 'data:application/json;base64,' + btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+}
+
 document.getElementById('mint').onclick = async () => {
   if (!connectedWallet || !walletAddress) {
     alert('Please connect your wallet first!');
@@ -1063,7 +1221,7 @@ document.getElementById('mint').onclick = async () => {
   
   const beatName = document.getElementById('beatName').value.trim() || 'Seeker Beat';
   
-  if (!confirm(`Mint "${beatName}" as an NFT on Solana ${SOLANA_NETWORK}?\n\nThis will create a unique NFT of your beat.`)) {
+  if (!confirm(`Mint "${beatName}" as an NFT on Solana ${SOLANA_NETWORK}?\n\nThis will:\n1. Generate artwork from your beat pattern\n2. Upload metadata to IPFS\n3. Create your NFT on Solana`)) {
     return;
   }
   
@@ -1072,6 +1230,7 @@ document.getElementById('mint').onclick = async () => {
   mintOutput.textContent = '';
   
   try {
+    // Gather beat data
     const beatData = {
       name: beatName,
       symbol: 'BEAT',
@@ -1088,9 +1247,73 @@ document.getElementById('mint').onclick = async () => {
       } : null,
       creator: walletAddress,
       app: 'Seeker Beat Maker',
+      version: '1.0',
       timestamp: new Date().toISOString()
     };
     
+    // Step 1: Generate beat visualization image
+    mintStatus.innerHTML = '<span class="mint-spinner"></span> Generating beat artwork...';
+    const imageDataUrl = generateBeatImage(beatData);
+    
+    // Step 2: Upload image to IPFS
+    mintStatus.innerHTML = '<span class="mint-spinner"></span> Uploading artwork to IPFS...';
+    let imageUri;
+    try {
+      imageUri = await uploadToIPFS(imageDataUrl, `${beatName.replace(/\s+/g, '-')}-artwork.png`, 'image/png');
+      console.log('Image uploaded to IPFS:', imageUri);
+    } catch (ipfsError) {
+      console.warn('IPFS upload failed, using fallback:', ipfsError);
+      imageUri = imageDataUrl; // Fallback to data URI
+    }
+    
+    // Step 3: Create metadata JSON
+    mintStatus.innerHTML = '<span class="mint-spinner"></span> Creating NFT metadata...';
+    
+    const metadataJson = {
+      name: beatData.name,
+      symbol: beatData.symbol,
+      description: beatData.description,
+      image: imageUri,
+      external_url: 'https://seeker-beat-maker.app',
+      attributes: [
+        { trait_type: 'BPM', value: beatData.bpm },
+        { trait_type: 'Swing', value: `${beatData.swing}%` },
+        { trait_type: 'Patterns', value: Object.keys(beatData.patterns).length },
+        { trait_type: 'Tracks', value: Object.keys(beatData.patterns.A).length },
+        { trait_type: 'App', value: 'Seeker Beat Maker' },
+        { trait_type: 'Version', value: '1.0' }
+      ],
+      properties: {
+        files: [
+          {
+            uri: imageUri,
+            type: 'image/png'
+          }
+        ],
+        category: 'audio',
+        creators: [
+          {
+            address: walletAddress,
+            share: 100
+          }
+        ]
+      },
+      // Full beat data for loading back into the app
+      beatData: beatData
+    };
+    
+    // Step 4: Upload metadata to IPFS
+    mintStatus.innerHTML = '<span class="mint-spinner"></span> Uploading metadata to IPFS...';
+    let metadataUri;
+    try {
+      metadataUri = await uploadToIPFS(metadataJson, `${beatName.replace(/\s+/g, '-')}-metadata.json`, 'application/json');
+      console.log('Metadata uploaded to IPFS:', metadataUri);
+    } catch (ipfsError) {
+      console.warn('IPFS metadata upload failed, using fallback:', ipfsError);
+      metadataUri = await uploadToIPFSFallback(metadataJson, false);
+    }
+    
+    // Step 5: Connect to Solana
     mintStatus.innerHTML = '<span class="mint-spinner"></span> Connecting to Solana...';
     
     const connection = new solanaWeb3.Connection(
@@ -1111,35 +1334,7 @@ document.getElementById('mint').onclick = async () => {
       throw new Error('Wallet provider not found');
     }
     
-    mintStatus.innerHTML = '<span class="mint-spinner"></span> Creating NFT metadata...';
-    
-    const metadataJson = {
-      name: beatData.name,
-      symbol: beatData.symbol,
-      description: beatData.description,
-      image: 'https://arweave.net/placeholder-beat-image',
-      external_url: 'https://seeker-beat-maker.app',
-      attributes: [
-        { trait_type: 'BPM', value: beatData.bpm },
-        { trait_type: 'Swing', value: beatData.swing },
-        { trait_type: 'Patterns', value: Object.keys(beatData.patterns).length },
-        { trait_type: 'App', value: 'Seeker Beat Maker' }
-      ],
-      properties: {
-        files: [],
-        category: 'audio',
-        creators: [
-          {
-            address: walletAddress,
-            share: 100
-          }
-        ]
-      },
-      beatData: beatData
-    };
-    
-    const metadataUri = 'data:application/json;base64,' + btoa(JSON.stringify(metadataJson));
-    
+    // Step 6: Mint the NFT
     mintStatus.innerHTML = '<span class="mint-spinner"></span> Minting your NFT... Please approve the transaction in your wallet.';
     
     const { Metaplex, walletAdapterIdentity } = window.Metaplex;
@@ -1155,7 +1350,7 @@ document.getElementById('mint').onclick = async () => {
       uri: metadataUri,
       name: beatData.name,
       symbol: beatData.symbol,
-      sellerFeeBasisPoints: 500,
+      sellerFeeBasisPoints: 500, // 5% royalty
       creators: [
         {
           address: new solanaWeb3.PublicKey(walletAddress),
@@ -1164,19 +1359,30 @@ document.getElementById('mint').onclick = async () => {
       ]
     });
     
+    // Step 7: Update balance after minting (fees deducted)
+    await updateSolBalance();
+    
+    // Success!
+    const isIPFS = metadataUri.startsWith('https://ipfs.io') || metadataUri.startsWith('ipfs://');
+    
     mintStatus.className = 'mint-status show success';
     mintStatus.innerHTML = `
       ✅ NFT Minted Successfully!<br><br>
-      <strong>Mint Address:</strong> ${nft.address.toString()}<br><br>
+      <strong>Mint Address:</strong> ${nft.address.toString()}<br>
+      <strong>Storage:</strong> ${isIPFS ? '🌐 IPFS (Permanent)' : '📦 Data URI (Temporary)'}<br><br>
       <a href="https://explorer.solana.com/address/${nft.address.toString()}?cluster=${SOLANA_NETWORK}" target="_blank">
         View on Solana Explorer →
       </a>
+      ${isIPFS ? `<br><a href="${metadataUri}" target="_blank">View Metadata on IPFS →</a>` : ''}
     `;
     
     mintOutput.textContent = JSON.stringify({
       success: true,
       network: SOLANA_NETWORK,
       mintAddress: nft.address.toString(),
+      metadataUri: metadataUri,
+      imageUri: imageUri,
+      storageType: isIPFS ? 'IPFS' : 'Data URI',
       metadata: metadataJson
     }, null, 2);
     
