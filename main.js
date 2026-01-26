@@ -951,6 +951,11 @@ async function connectWallet(walletType) {
   walletStatus.style.display = 'block';
   
   try {
+    // Check if Solana Web3 is loaded
+    if (typeof solanaWeb3 === 'undefined') {
+      throw new Error('Solana Web3 library not loaded. Please refresh the page.');
+    }
+    
     let provider = null;
     
     if (walletType === 'seedvault') {
@@ -979,9 +984,11 @@ async function connectWallet(walletType) {
       throw new Error('Wallet not available');
     }
     
+    console.log('Connecting to', walletType, '...');
     const response = await provider.connect();
     walletAddress = response.publicKey.toString();
     connectedWallet = walletType;
+    console.log('Connected! Address:', walletAddress);
     
     const shortAddress = walletAddress.slice(0, 4) + '...' + walletAddress.slice(-4);
     walletBtn.textContent = shortAddress;
@@ -990,8 +997,13 @@ async function connectWallet(walletType) {
     walletStatus.className = 'wallet-status success';
     walletStatus.textContent = 'Connected successfully!';
     
-    // Fetch and display balance
-    await updateSolBalance();
+    // Fetch and display balance (with error handling)
+    try {
+      await updateSolBalance();
+    } catch (balanceError) {
+      console.error('Balance fetch error:', balanceError);
+      // Don't fail the whole connection if balance fails
+    }
     
     setTimeout(() => {
       walletModal.classList.remove('show');
@@ -1003,7 +1015,16 @@ async function connectWallet(walletType) {
   } catch (error) {
     console.error('Wallet connection error:', error);
     walletStatus.className = 'wallet-status error';
-    walletStatus.textContent = error.message || 'Failed to connect wallet';
+    
+    // More specific error messages
+    let errorMsg = error.message || 'Failed to connect wallet';
+    if (error.code === 4001) {
+      errorMsg = 'Connection rejected by user';
+    } else if (error.message?.includes('User rejected')) {
+      errorMsg = 'Connection rejected by user';
+    }
+    
+    walletStatus.textContent = errorMsg;
   }
 }
 
