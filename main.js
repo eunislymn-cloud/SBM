@@ -1720,6 +1720,7 @@ document.getElementById('mint').onclick = async () => {
     
     mintStatus.className = 'mint-status show success';
     mintStatus.innerHTML = `
+      <button class="close-mint-status" onclick="this.parentElement.style.display='none';">×</button>
       ✅ NFT Minted Successfully!<br><br>
       <strong>Mint Address:</strong> <code>${mint.toString()}</code><br>
       <strong>Storage:</strong> ${isIPFS ? '🌐 IPFS (Permanent)' : '📦 Data URI (Temporary)'}<br><br>
@@ -1727,7 +1728,7 @@ document.getElementById('mint').onclick = async () => {
         View on Solana Explorer →
       </a>
       ${isIPFS ? `<br><a href="${metadataUri}" target="_blank">View Metadata on IPFS →</a>` : ''}
-      <br><button class="show-details-btn" onclick="document.getElementById('mintOutput').classList.toggle('show'); this.textContent = this.textContent.includes('Show') ? '▲ Hide Details' : '▼ Show Details';">▼ Show Details</button>
+      <br><button class="show-details-btn" onclick="document.getElementById('mintOutput').classList.toggle('show'); document.getElementById('mintOutput').style.display = document.getElementById('mintOutput').style.display === 'none' ? 'block' : 'none'; this.textContent = this.textContent.includes('Show') ? '▲ Hide Details' : '▼ Show Details';">▼ Show Details</button>
     `;
     
     mintOutput.textContent = JSON.stringify({
@@ -1784,10 +1785,13 @@ closeLoadNft.onclick = () => {
 
 // Fetch NFT metadata
 fetchNftBtn.onclick = async () => {
+  console.log('Fetch button clicked');
   const mintAddress = nftMintAddress.value.trim();
+  console.log('Mint address:', mintAddress);
   
   if (!mintAddress) {
     loadNftStatus.className = 'load-nft-status show error';
+    loadNftStatus.style.display = 'block';
     loadNftStatus.textContent = 'Please enter a mint address';
     return;
   }
@@ -1795,11 +1799,13 @@ fetchNftBtn.onclick = async () => {
   // Validate Solana address format (base58, 32-44 chars)
   if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(mintAddress)) {
     loadNftStatus.className = 'load-nft-status show error';
+    loadNftStatus.style.display = 'block';
     loadNftStatus.textContent = 'Invalid Solana address format';
     return;
   }
   
   loadNftStatus.className = 'load-nft-status show loading';
+  loadNftStatus.style.display = 'block';
   loadNftStatus.innerHTML = '<span class="mint-spinner"></span> Fetching NFT metadata...';
   nftPreview.style.display = 'none';
   fetchedBeatData = null;
@@ -1807,6 +1813,7 @@ fetchNftBtn.onclick = async () => {
   try {
     const connection = initSolanaConnection();
     const mintPubkey = new solanaWeb3.PublicKey(mintAddress);
+    console.log('Mint pubkey:', mintPubkey.toString());
     
     // Fetch NFT by reading the metadata account directly
     loadNftStatus.innerHTML = '<span class="mint-spinner"></span> Reading NFT from blockchain...';
@@ -1820,9 +1827,11 @@ fetchNftBtn.onclick = async () => {
       ],
       TOKEN_METADATA_PROGRAM_ID
     );
+    console.log('Metadata PDA:', metadataPDA.toString());
     
     // Fetch metadata account
     const metadataAccount = await connection.getAccountInfo(metadataPDA);
+    console.log('Metadata account:', metadataAccount);
     
     if (!metadataAccount) {
       throw new Error('NFT metadata not found. This might not be an NFT.');
@@ -1884,11 +1893,13 @@ fetchNftBtn.onclick = async () => {
     // Show preview
     nftPreview.style.display = 'block';
     loadNftStatus.className = 'load-nft-status show success';
+    loadNftStatus.style.display = 'block';
     loadNftStatus.textContent = '✅ Beat found! Preview below:';
     
   } catch (error) {
     console.error('Error fetching NFT:', error);
     loadNftStatus.className = 'load-nft-status show error';
+    loadNftStatus.style.display = 'block';
     loadNftStatus.textContent = `❌ ${error.message || 'Failed to fetch NFT'}`;
     nftPreview.style.display = 'none';
   }

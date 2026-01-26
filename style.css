@@ -588,6 +588,28 @@ label {
   background: rgba(20, 241, 149, 0.2);
   border: 1px solid #14F195;
   color: #14F195;
+  position: relative;
+}
+
+.close-mint-status {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #14F195;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  line-height: 1;
+}
+
+.close-mint-status:hover {
+  color: #fff;
+  transform: none;
+  box-shadow: none;
 }
 
 .mint-status.error {
