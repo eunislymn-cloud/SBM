@@ -1969,35 +1969,52 @@ fetchNftBtn.onclick = async () => {
     if (metadataUri.startsWith('data:')) {
       // Handle data URI
       try {
-        const base64Data = metadataUri.split(',')[1];
-        console.log('Base64 data length:', base64Data?.length);
+        // Check if it's base64 or URL-encoded
+        const isBase64 = metadataUri.includes(';base64,');
         
-        if (!base64Data) {
-          throw new Error('Invalid data URI format');
+        if (isBase64) {
+          // Base64 encoded
+          const base64Data = metadataUri.split(',')[1];
+          console.log('Base64 data length:', base64Data?.length);
+          
+          if (!base64Data) {
+            throw new Error('Invalid data URI format');
+          }
+          
+          // Try decoding
+          let jsonString;
+          try {
+            // First try standard base64 decode
+            jsonString = atob(base64Data);
+          } catch (e) {
+            // Try URL-safe base64
+            const standardBase64 = base64Data.replace(/-/g, '+').replace(/_/g, '/');
+            jsonString = atob(standardBase64);
+          }
+          
+          // Handle UTF-8 encoding
+          try {
+            jsonString = decodeURIComponent(escape(jsonString));
+          } catch (e) {
+            // Already decoded or not URL encoded
+            console.log('Using raw decoded string');
+          }
+          
+          console.log('Decoded JSON string (first 200 chars):', jsonString.substring(0, 200));
+          metadata = JSON.parse(jsonString);
+        } else {
+          // URL-encoded (data:application/json,{...})
+          const jsonPart = metadataUri.split(',')[1];
+          console.log('URL-encoded data length:', jsonPart?.length);
+          
+          if (!jsonPart) {
+            throw new Error('Invalid data URI format');
+          }
+          
+          const jsonString = decodeURIComponent(jsonPart);
+          console.log('Decoded JSON string:', jsonString);
+          metadata = JSON.parse(jsonString);
         }
-        
-        // Try decoding
-        let jsonString;
-        try {
-          // First try standard base64 decode
-          jsonString = atob(base64Data);
-        } catch (e) {
-          // Try URL-safe base64
-          const standardBase64 = base64Data.replace(/-/g, '+').replace(/_/g, '/');
-          jsonString = atob(standardBase64);
-        }
-        
-        // Handle UTF-8 encoding
-        try {
-          jsonString = decodeURIComponent(escape(jsonString));
-        } catch (e) {
-          // Already decoded or not URL encoded
-          console.log('Using raw decoded string');
-        }
-        
-        console.log('Decoded JSON string (first 200 chars):', jsonString.substring(0, 200));
-        
-        metadata = JSON.parse(jsonString);
       } catch (parseError) {
         console.error('Data URI parse error:', parseError);
         console.error('Raw URI:', metadataUri.substring(0, 300));
