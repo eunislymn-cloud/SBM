@@ -1721,12 +1721,13 @@ document.getElementById('mint').onclick = async () => {
     mintStatus.className = 'mint-status show success';
     mintStatus.innerHTML = `
       ✅ NFT Minted Successfully!<br><br>
-      <strong>Mint Address:</strong> ${mint.toString()}<br>
+      <strong>Mint Address:</strong> <code>${mint.toString()}</code><br>
       <strong>Storage:</strong> ${isIPFS ? '🌐 IPFS (Permanent)' : '📦 Data URI (Temporary)'}<br><br>
       <a href="https://explorer.solana.com/address/${mint.toString()}?cluster=${SOLANA_NETWORK}" target="_blank">
         View on Solana Explorer →
       </a>
       ${isIPFS ? `<br><a href="${metadataUri}" target="_blank">View Metadata on IPFS →</a>` : ''}
+      <br><button class="show-details-btn" onclick="document.getElementById('mintOutput').classList.toggle('show'); this.textContent = this.textContent.includes('Show') ? '▲ Hide Details' : '▼ Show Details';">▼ Show Details</button>
     `;
     
     mintOutput.textContent = JSON.stringify({
@@ -1739,6 +1740,7 @@ document.getElementById('mint').onclick = async () => {
       storageType: isIPFS ? 'IPFS' : 'Data URI',
       metadata: metadataJson
     }, null, 2);
+    mintOutput.classList.remove('show'); // Ensure it's hidden by default
     
     console.log('NFT minted successfully! Mint:', mint.toString(), 'Signature:', signature);
     
@@ -1747,6 +1749,7 @@ document.getElementById('mint').onclick = async () => {
     mintStatus.className = 'mint-status show error';
     mintStatus.innerHTML = `❌ Minting failed: ${error.message || 'Unknown error'}`;
     mintOutput.textContent = JSON.stringify({ error: error.message }, null, 2);
+    mintOutput.classList.add('show'); // Show details on error for debugging
   }
 };
 

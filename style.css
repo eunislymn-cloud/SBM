@@ -529,12 +529,34 @@ label {
   padding: 15px;
   border-radius: 8px;
   border: 1px solid #333;
-  max-height: 200px;
+  max-height: 150px;
   overflow: auto;
   font-family: 'Courier New', monospace;
-  font-size: 12px;
+  font-size: 11px;
   color: #14F195;
   margin-top: 10px;
+  display: none; /* Hidden by default */
+}
+
+#mintOutput.show {
+  display: block;
+}
+
+.show-details-btn {
+  background: transparent;
+  border: 1px solid #444;
+  color: #888;
+  font-size: 11px;
+  padding: 5px 10px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+.show-details-btn:hover {
+  color: #14F195;
+  border-color: #14F195;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Responsive */
