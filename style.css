@@ -592,3 +592,24 @@ label {
     z-index: 10000;
   }
 }
+/* Landscape optimization - show message in portrait */
+@media screen and (orientation: portrait) {
+  body::before {
+    content: '📱 Rotate device sideways for best experience ↻';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, #9945FF, #14F195);
+    color: white;
+    text-align: center;
+    padding: 15px;
+    font-weight: bold;
+    font-size: 14px;
+    z-index: 10000;
+  }
+  
+  .container {
+    padding-top: 60px;
+  }
+}
