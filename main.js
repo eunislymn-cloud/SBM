@@ -1252,45 +1252,61 @@ async function getAssociatedTokenAddress(mint, owner) {
 
 // Parse Metadata Account Data
 function parseMetadataAccount(data) {
-  // Metadata account structure:
-  // - key: u8 (1 byte)
+  // Metadata account structure (Token Metadata v1.1+):
+  // - key: u8 (1 byte) - MetadataKey enum
   // - update_authority: Pubkey (32 bytes)
   // - mint: Pubkey (32 bytes)
-  // - name: String (4 bytes length + data)
-  // - symbol: String (4 bytes length + data)
-  // - uri: String (4 bytes length + data)
+  // - data: Data struct
+  //   - name: String (4 bytes length + 32 bytes padded data)
+  //   - symbol: String (4 bytes length + 10 bytes padded data)  
+  //   - uri: String (4 bytes length + 200 bytes padded data)
+  //   - seller_fee_basis_points: u16
+  //   - creators: Option<Vec<Creator>>
   // ... more fields
   
-  let offset = 1; // Skip key byte
-  
-  // Skip update authority (32 bytes)
-  offset += 32;
-  
-  // Skip mint (32 bytes)
-  offset += 32;
-  
-  // Read name
-  const nameLength = data.readUInt32LE(offset);
-  offset += 4;
-  const name = data.slice(offset, offset + nameLength).toString('utf8').replace(/\0/g, '');
-  offset += nameLength;
-  
-  // Read symbol
-  const symbolLength = data.readUInt32LE(offset);
-  offset += 4;
-  const symbol = data.slice(offset, offset + symbolLength).toString('utf8').replace(/\0/g, '');
-  offset += symbolLength;
-  
-  // Read URI
-  const uriLength = data.readUInt32LE(offset);
-  offset += 4;
-  const uri = data.slice(offset, offset + uriLength).toString('utf8').replace(/\0/g, '');
-  
-  return {
-    name: name.trim(),
-    symbol: symbol.trim(),
-    uri: uri.trim()
-  };
+  try {
+    let offset = 1; // Skip key byte
+    
+    // Skip update authority (32 bytes)
+    offset += 32;
+    
+    // Skip mint (32 bytes)
+    offset += 32;
+    
+    // Read name (4 byte length + up to 32 bytes of data)
+    const nameLength = data.readUInt32LE(offset);
+    offset += 4;
+    // Name is stored in a fixed 32-byte field
+    const nameBytes = data.slice(offset, offset + Math.min(nameLength, 32));
+    const name = nameBytes.toString('utf8').replace(/\0/g, '').trim();
+    offset += 32; // Always skip 32 bytes for name field
+    
+    // Read symbol (4 byte length + up to 10 bytes of data)
+    const symbolLength = data.readUInt32LE(offset);
+    offset += 4;
+    // Symbol is stored in a fixed 10-byte field
+    const symbolBytes = data.slice(offset, offset + Math.min(symbolLength, 10));
+    const symbol = symbolBytes.toString('utf8').replace(/\0/g, '').trim();
+    offset += 10; // Always skip 10 bytes for symbol field
+    
+    // Read URI (4 byte length + up to 200 bytes of data)
+    const uriLength = data.readUInt32LE(offset);
+    offset += 4;
+    // URI is stored in a fixed 200-byte field
+    const uriBytes = data.slice(offset, offset + Math.min(uriLength, 200));
+    const uri = uriBytes.toString('utf8').replace(/\0/g, '').trim();
+    
+    console.log('Parsed metadata - Name:', name, 'Symbol:', symbol, 'URI:', uri);
+    
+    return {
+      name: name,
+      symbol: symbol,
+      uri: uri
+    };
+  } catch (error) {
+    console.error('Error parsing metadata:', error);
+    throw new Error('Failed to parse NFT metadata from blockchain');
+  }
 }
 
 // Create Metadata Account V3 Instruction
