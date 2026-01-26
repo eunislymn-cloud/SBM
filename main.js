@@ -1579,66 +1579,40 @@ document.getElementById('mint').onclick = async () => {
       return hex;
     };
     
-    // Map full track names to unique short names
-    const trackToShort = {
-      kick: 'k',
-      snare: 's', 
-      hat: 'h',
-      clap: 'c',
-      crash: 'x',  // x for crash (c is taken by clap)
-      rim: 'r',
-      tom: 't'
-    };
-    
-    // Only store Pattern A, compressed to hex
+    // Compress all 7 tracks into a single 28-char hex string (7 tracks x 4 chars)
+    // Order: kick, snare, hat, clap, crash, rim, tom
+    const trackOrder = ['kick', 'snare', 'hat', 'clap', 'crash', 'rim', 'tom'];
     const patternA = patterns.A;
-    const compressedA = {};
-    Object.keys(patternA).forEach(track => {
-      const shortName = trackToShort[track] || track.charAt(0);
-      compressedA[shortName] = compressToHex(patternA[track]);
+    let hexString = '';
+    trackOrder.forEach(track => {
+      hexString += compressToHex(patternA[track] || Array(16).fill(false));
     });
     
-    // Minimal metadata - should be ~120 bytes
-    const minMeta = {
-      n: beatName.slice(0, 8),
+    // Super compact format: {"n":"name","b":120,"p":"28hexchars"}
+    // This should be about 60-70 chars unencoded
+    const compactMeta = {
+      n: beatName.slice(0, 12),
       b: bpm,
-      s: swing,
-      A: compressedA
+      p: hexString  // all 7 tracks as single hex string
     };
     
-    metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(minMeta));
-    // Test different name lengths to fit all 7 tracks
-    let finalMeta;
-    let nameLen = 8;
-    
-    while (nameLen >= 1) {
-      finalMeta = {
-        n: beatName.slice(0, nameLen),
-        b: bpm,
-        A: compressedA
-      };
-      
-      // Only add swing if non-zero and we have room
-      if (swing > 0 && nameLen > 4) {
-        finalMeta.s = swing;
-      }
-      
-      metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(finalMeta));
-      
-      if (metadataUri.length <= 200) {
-        console.log(`Metadata fits with name length ${nameLen}, total: ${metadataUri.length} bytes`);
-        break;
-      }
-      nameLen--;
+    // Add swing only if non-zero
+    if (swing > 0) {
+      compactMeta.s = swing;
     }
     
-    // If still doesn't fit, we have a problem - log it
+    metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
+    console.log('Compact metadata content:', JSON.stringify(compactMeta));
+    console.log('Compact metadata URI length:', metadataUri.length);
+    
+    // Verify it fits (should easily fit now)
     if (metadataUri.length > 200) {
-      console.error('WARNING: Metadata still too long:', metadataUri.length, 'bytes. Some data may be truncated on-chain.');
+      // Shorten name if somehow still too long
+      compactMeta.n = beatName.slice(0, 6);
+      delete compactMeta.s;
+      metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
+      console.log('Shortened to:', metadataUri.length, 'bytes');
     }
-    
-    console.log('Final metadata content:', JSON.stringify(finalMeta));
-    console.log('Final metadata URI length:', metadataUri.length);
     
     // Step 5: Connect to Solana
     mintStatus.innerHTML = '<span class="mint-spinner"></span> Connecting to Solana...';
@@ -2031,8 +2005,47 @@ fetchNftBtn.onclick = async () => {
     // Handle different metadata formats
     let beatDataToLoad = null;
     
-    // Check for new minimal format (n, b, s, A with hex values)
-    if (metadata.A || metadata.n) {
+    // Check for new compact format with single hex string (p field)
+    if (metadata.p && typeof metadata.p === 'string') {
+      console.log('Detected compact hex string format');
+      
+      // Decompress hex string to boolean arrays
+      // Format: 28 hex chars = 7 tracks x 4 hex chars each
+      // Order: kick, snare, hat, clap, crash, rim, tom
+      const trackOrder = ['kick', 'snare', 'hat', 'clap', 'crash', 'rim', 'tom'];
+      const hexString = metadata.p;
+      
+      const hexToBoolArray = (hex) => {
+        const binary = parseInt(hex, 16).toString(2).padStart(16, '0');
+        return binary.split('').map(c => c === '1');
+      };
+      
+      const decompressedA = {};
+      trackOrder.forEach((track, index) => {
+        const hex = hexString.substr(index * 4, 4);
+        decompressedA[track] = hexToBoolArray(hex);
+        console.log(`Decompressed ${track}: ${hex} ->`, decompressedA[track]);
+      });
+      
+      beatDataToLoad = {
+        name: metadata.n || 'Loaded Beat',
+        bpm: metadata.b || 120,
+        swing: metadata.s || 0,
+        patterns: {
+          A: decompressedA,
+          B: {},
+          C: {}
+        }
+      };
+      
+      // Fill B and C with empty patterns
+      trackOrder.forEach(track => {
+        beatDataToLoad.patterns.B[track] = Array(16).fill(false);
+        beatDataToLoad.patterns.C[track] = Array(16).fill(false);
+      });
+    }
+    // Check for old minimal hex format (A object with short track names)
+    else if (metadata.A || metadata.n) {
       console.log('Detected minimal hex format');
       
       // Decompress hex to boolean array
