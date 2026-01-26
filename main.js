@@ -1579,39 +1579,64 @@ document.getElementById('mint').onclick = async () => {
       return hex;
     };
     
-    // Compress all 7 tracks into a single 28-char hex string (7 tracks x 4 chars)
-    // Order: kick, snare, hat, clap, crash, rim, tom
+    // Compress all 7 tracks for a pattern into a 28-char hex string
     const trackOrder = ['kick', 'snare', 'hat', 'clap', 'crash', 'rim', 'tom'];
-    const patternA = patterns.A;
-    let hexString = '';
-    trackOrder.forEach(track => {
-      hexString += compressToHex(patternA[track] || Array(16).fill(false));
-    });
     
-    // Super compact format: {"n":"name","b":120,"p":"28hexchars"}
-    // This should be about 60-70 chars unencoded
-    const compactMeta = {
-      n: beatName.slice(0, 12),
-      b: bpm,
-      p: hexString  // all 7 tracks as single hex string
+    const compressPattern = (pattern) => {
+      let hexString = '';
+      trackOrder.forEach(track => {
+        hexString += compressToHex(pattern[track] || Array(16).fill(false));
+      });
+      return hexString;
     };
     
-    // Add swing only if non-zero
-    if (swing > 0) {
-      compactMeta.s = swing;
+    // Compress all 3 patterns: A, B, C (28 chars each = 84 chars total)
+    const pA = compressPattern(patterns.A);
+    const pB = compressPattern(patterns.B);
+    const pC = compressPattern(patterns.C);
+    
+    // Check if B and C are empty (all zeros)
+    const isEmpty = (hex) => hex === '0000000000000000000000000000';
+    
+    // Build compact metadata
+    // Format: {"n":"name","b":120,"a":"28hex","b":"28hex","c":"28hex"}
+    // If B & C empty, just store A to save space
+    let compactMeta;
+    
+    if (isEmpty(pB) && isEmpty(pC)) {
+      // Only Pattern A has data
+      compactMeta = {
+        n: beatName.slice(0, 12),
+        b: bpm,
+        p: pA
+      };
+      if (swing > 0) compactMeta.s = swing;
+    } else {
+      // Multiple patterns - use shorter name
+      compactMeta = {
+        n: beatName.slice(0, 4),
+        b: bpm,
+        A: pA,
+        B: pB,
+        C: pC
+      };
     }
     
     metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
     console.log('Compact metadata content:', JSON.stringify(compactMeta));
     console.log('Compact metadata URI length:', metadataUri.length);
     
-    // Verify it fits (should easily fit now)
+    // Verify it fits
     if (metadataUri.length > 200) {
-      // Shorten name if somehow still too long
-      compactMeta.n = beatName.slice(0, 6);
-      delete compactMeta.s;
+      // Too long - fall back to just Pattern A
+      console.warn('Full patterns too long, using only Pattern A');
+      compactMeta = {
+        n: beatName.slice(0, 8),
+        b: bpm,
+        p: pA
+      };
       metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
-      console.log('Shortened to:', metadataUri.length, 'bytes');
+      console.log('Fallback to Pattern A only, length:', metadataUri.length);
     }
     
     // Step 5: Connect to Solana
@@ -2005,27 +2030,44 @@ fetchNftBtn.onclick = async () => {
     // Handle different metadata formats
     let beatDataToLoad = null;
     
-    // Check for new compact format with single hex string (p field)
-    if (metadata.p && typeof metadata.p === 'string') {
-      console.log('Detected compact hex string format');
-      
-      // Decompress hex string to boolean arrays
-      // Format: 28 hex chars = 7 tracks x 4 hex chars each
-      // Order: kick, snare, hat, clap, crash, rim, tom
-      const trackOrder = ['kick', 'snare', 'hat', 'clap', 'crash', 'rim', 'tom'];
-      const hexString = metadata.p;
-      
-      const hexToBoolArray = (hex) => {
-        const binary = parseInt(hex, 16).toString(2).padStart(16, '0');
-        return binary.split('').map(c => c === '1');
-      };
-      
-      const decompressedA = {};
+    // Track order for decompression
+    const trackOrder = ['kick', 'snare', 'hat', 'clap', 'crash', 'rim', 'tom'];
+    
+    // Decompress hex string to boolean arrays for all tracks
+    const hexToBoolArray = (hex) => {
+      const binary = parseInt(hex, 16).toString(2).padStart(16, '0');
+      return binary.split('').map(c => c === '1');
+    };
+    
+    const decompressPattern = (hexString) => {
+      const pattern = {};
       trackOrder.forEach((track, index) => {
         const hex = hexString.substr(index * 4, 4);
-        decompressedA[track] = hexToBoolArray(hex);
-        console.log(`Decompressed ${track}: ${hex} ->`, decompressedA[track]);
+        pattern[track] = hexToBoolArray(hex);
       });
+      return pattern;
+    };
+    
+    // Check for format with all 3 patterns (A, B, C fields with hex strings)
+    if (metadata.A && metadata.B && metadata.C && typeof metadata.A === 'string') {
+      console.log('Detected full 3-pattern format');
+      
+      beatDataToLoad = {
+        name: metadata.n || 'Loaded Beat',
+        bpm: metadata.b || 120,
+        swing: metadata.s || 0,
+        patterns: {
+          A: decompressPattern(metadata.A),
+          B: decompressPattern(metadata.B),
+          C: decompressPattern(metadata.C)
+        }
+      };
+    }
+    // Check for compact format with single hex string (p field) - Pattern A only
+    else if (metadata.p && typeof metadata.p === 'string') {
+      console.log('Detected compact hex string format (Pattern A only)');
+      
+      const decompressedA = decompressPattern(metadata.p);
       
       beatDataToLoad = {
         name: metadata.n || 'Loaded Beat',
@@ -2045,14 +2087,8 @@ fetchNftBtn.onclick = async () => {
       });
     }
     // Check for old minimal hex format (A object with short track names)
-    else if (metadata.A || metadata.n) {
-      console.log('Detected minimal hex format');
-      
-      // Decompress hex to boolean array
-      const hexToBoolArray = (hex) => {
-        const binary = parseInt(hex, 16).toString(2).padStart(16, '0');
-        return binary.split('').map(c => c === '1');
-      };
+    else if (metadata.A && typeof metadata.A === 'object') {
+      console.log('Detected old minimal hex format');
       
       // Map short track names to full names
       const trackMap = { k: 'kick', s: 'snare', h: 'hat', c: 'clap', r: 'rim', t: 'tom', x: 'crash' };
@@ -2065,7 +2101,7 @@ fetchNftBtn.onclick = async () => {
       });
       
       // Fill in missing tracks with empty patterns
-      ['kick', 'snare', 'hat', 'clap', 'crash', 'rim', 'tom'].forEach(track => {
+      trackOrder.forEach(track => {
         if (!decompressedA[track]) {
           decompressedA[track] = Array(16).fill(false);
         }
@@ -2083,7 +2119,7 @@ fetchNftBtn.onclick = async () => {
       };
       
       // Fill B and C with empty patterns
-      Object.keys(decompressedA).forEach(track => {
+      trackOrder.forEach(track => {
         beatDataToLoad.patterns.B[track] = Array(16).fill(false);
         beatDataToLoad.patterns.C[track] = Array(16).fill(false);
       });
