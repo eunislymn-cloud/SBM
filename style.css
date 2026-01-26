@@ -548,7 +548,21 @@ label {
   }
   
   .sequence-slots {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+  }
+  
+  .seq-slot {
+    padding: 4px 2px;
+  }
+  
+  .pattern-select {
+    padding: 3px;
+    font-size: 12px;
+  }
+  
+  .slot-number {
+    font-size: 9px;
   }
 }
 
