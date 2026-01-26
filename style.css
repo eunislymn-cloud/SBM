@@ -730,6 +730,78 @@ label {
   margin-bottom: 0;
 }
 
+.wallet-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wallet-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(20, 241, 149, 0.1);
+  border: 1px solid rgba(20, 241, 149, 0.3);
+  border-radius: 20px;
+  padding: 6px 12px;
+}
+
+.balance-display {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Courier New', monospace;
+}
+
+.sol-icon {
+  font-size: 16px;
+  color: #14F195;
+}
+
+#solBalance {
+  font-size: 14px;
+  font-weight: bold;
+  color: #14F195;
+  min-width: 50px;
+}
+
+.sol-label {
+  font-size: 11px;
+  color: #888;
+  font-weight: bold;
+}
+
+.airdrop-btn {
+  background: linear-gradient(135deg, #00D4FF, #0099CC);
+  padding: 6px 12px;
+  font-size: 11px;
+  border-radius: 15px;
+  white-space: nowrap;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.airdrop-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 10px rgba(0, 212, 255, 0.4);
+}
+
+.airdrop-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.airdrop-btn.loading {
+  animation: pulse-airdrop 1s infinite;
+}
+
+@keyframes pulse-airdrop {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 .wallet-btn {
   background: linear-gradient(135deg, #9945FF, #14F195);
   padding: 10px 20px;
@@ -869,10 +941,39 @@ label {
 @media (max-width: 768px) {
   .top-bar {
     margin-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 10px;
   }
   
   .top-bar h1 {
     font-size: 1.3em;
+  }
+  
+  .wallet-area {
+    gap: 8px;
+  }
+  
+  .wallet-info {
+    padding: 4px 8px;
+    gap: 6px;
+  }
+  
+  #solBalance {
+    font-size: 12px;
+    min-width: 40px;
+  }
+  
+  .sol-icon {
+    font-size: 14px;
+  }
+  
+  .sol-label {
+    font-size: 10px;
+  }
+  
+  .airdrop-btn {
+    padding: 4px 8px;
+    font-size: 10px;
   }
   
   .wallet-btn {

@@ -37,7 +37,17 @@
   <div class="container">
     <div class="top-bar">
       <h1>🎵 Seeker Beat Maker</h1>
-      <button id="walletBtn" class="wallet-btn">Connect Wallet</button>
+      <div class="wallet-area">
+        <div id="walletInfo" class="wallet-info" style="display: none;">
+          <div class="balance-display">
+            <span class="sol-icon">◎</span>
+            <span id="solBalance">0.00</span>
+            <span class="sol-label">SOL</span>
+          </div>
+          <button id="airdropBtn" class="airdrop-btn" title="Request devnet SOL">💧 Airdrop</button>
+        </div>
+        <button id="walletBtn" class="wallet-btn">Connect Wallet</button>
+      </div>
     </div>
     
     <!-- Wallet Modal -->

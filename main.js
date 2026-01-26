@@ -799,11 +799,115 @@ updateBeatDropdown();
 // ============ WALLET CONNECTION ============
 let connectedWallet = null;
 let walletAddress = null;
+let solanaConnection = null;
 
 const walletBtn = document.getElementById('walletBtn');
 const walletModal = document.getElementById('walletModal');
 const closeModal = document.getElementById('closeModal');
 const walletStatus = document.getElementById('walletStatus');
+const walletInfo = document.getElementById('walletInfo');
+const solBalanceEl = document.getElementById('solBalance');
+const airdropBtn = document.getElementById('airdropBtn');
+
+// Initialize Solana connection
+function initSolanaConnection() {
+  if (!solanaConnection) {
+    solanaConnection = new solanaWeb3.Connection(
+      solanaWeb3.clusterApiUrl('devnet'),
+      'confirmed'
+    );
+  }
+  return solanaConnection;
+}
+
+// Fetch and display SOL balance
+async function updateSolBalance() {
+  if (!walletAddress) {
+    walletInfo.style.display = 'none';
+    return;
+  }
+  
+  try {
+    const connection = initSolanaConnection();
+    const publicKey = new solanaWeb3.PublicKey(walletAddress);
+    const balance = await connection.getBalance(publicKey);
+    const solBalance = balance / solanaWeb3.LAMPORTS_PER_SOL;
+    
+    solBalanceEl.textContent = solBalance.toFixed(4);
+    walletInfo.style.display = 'flex';
+    
+    console.log('Balance updated:', solBalance, 'SOL');
+  } catch (error) {
+    console.error('Error fetching balance:', error);
+    solBalanceEl.textContent = '-.--';
+    walletInfo.style.display = 'flex';
+  }
+}
+
+// Request devnet airdrop
+async function requestAirdrop() {
+  if (!walletAddress) {
+    alert('Please connect your wallet first!');
+    return;
+  }
+  
+  airdropBtn.disabled = true;
+  airdropBtn.classList.add('loading');
+  airdropBtn.textContent = '⏳ Requesting...';
+  
+  try {
+    const connection = initSolanaConnection();
+    const publicKey = new solanaWeb3.PublicKey(walletAddress);
+    
+    // Request 1 SOL airdrop
+    const signature = await connection.requestAirdrop(
+      publicKey,
+      1 * solanaWeb3.LAMPORTS_PER_SOL
+    );
+    
+    airdropBtn.textContent = '⏳ Confirming...';
+    
+    // Wait for confirmation
+    const latestBlockhash = await connection.getLatestBlockhash();
+    await connection.confirmTransaction({
+      signature,
+      blockhash: latestBlockhash.blockhash,
+      lastValidBlockHeight: latestBlockhash.lastValidBlockHeight
+    });
+    
+    // Update balance after airdrop
+    await updateSolBalance();
+    
+    airdropBtn.textContent = '✅ Success!';
+    setTimeout(() => {
+      airdropBtn.textContent = '💧 Airdrop';
+      airdropBtn.disabled = false;
+      airdropBtn.classList.remove('loading');
+    }, 2000);
+    
+    console.log('Airdrop successful! Signature:', signature);
+    
+  } catch (error) {
+    console.error('Airdrop error:', error);
+    
+    let errorMsg = 'Failed';
+    if (error.message?.includes('429') || error.message?.includes('rate')) {
+      errorMsg = 'Rate limited';
+    } else if (error.message?.includes('airdrop')) {
+      errorMsg = 'Try again later';
+    }
+    
+    airdropBtn.textContent = '❌ ' + errorMsg;
+    setTimeout(() => {
+      airdropBtn.textContent = '💧 Airdrop';
+      airdropBtn.disabled = false;
+      airdropBtn.classList.remove('loading');
+    }, 3000);
+  }
+}
+
+// Airdrop button click handler
+airdropBtn.onclick = requestAirdrop;
 
 // Open modal
 walletBtn.onclick = () => {
@@ -886,6 +990,9 @@ async function connectWallet(walletType) {
     walletStatus.className = 'wallet-status success';
     walletStatus.textContent = 'Connected successfully!';
     
+    // Fetch and display balance
+    await updateSolBalance();
+    
     setTimeout(() => {
       walletModal.classList.remove('show');
       walletStatus.className = 'wallet-status';
@@ -906,6 +1013,8 @@ function disconnectWallet() {
   walletAddress = null;
   walletBtn.textContent = 'Connect Wallet';
   walletBtn.classList.remove('connected');
+  walletInfo.style.display = 'none';
+  solBalanceEl.textContent = '0.00';
   console.log('Wallet disconnected');
 }
 
@@ -919,6 +1028,7 @@ async function checkExistingConnection() {
       const shortAddress = walletAddress.slice(0, 4) + '...' + walletAddress.slice(-4);
       walletBtn.textContent = shortAddress;
       walletBtn.classList.add('connected');
+      await updateSolBalance();
     } catch (e) {
       // Silent fail
     }
@@ -930,6 +1040,7 @@ async function checkExistingConnection() {
       const shortAddress = walletAddress.slice(0, 4) + '...' + walletAddress.slice(-4);
       walletBtn.textContent = shortAddress;
       walletBtn.classList.add('connected');
+      await updateSolBalance();
     } catch (e) {
       // Silent fail
     }
