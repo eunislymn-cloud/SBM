@@ -29,12 +29,16 @@
       }
     }
   </style>
+  <!-- Buffer polyfill for browser -->
+  <script src="https://bundle.run/buffer@6.0.3"></script>
+  <script>window.Buffer = window.buffer.Buffer;</script>
   <!-- Solana Web3 and SPL Token -->
   <script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
   <script src="https://unpkg.com/@solana/spl-token@0.3.9/lib/index.iife.js"></script>
   <script>
     // Log library loading status
     window.addEventListener('load', () => {
+      console.log('Buffer loaded:', typeof Buffer !== 'undefined');
       console.log('Solana Web3 loaded:', typeof solanaWeb3 !== 'undefined');
       console.log('SPL Token loaded:', typeof splToken !== 'undefined');
     });
