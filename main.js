@@ -1856,7 +1856,10 @@ document.getElementById('mint').onclick = async () => {
   } catch (error) {
     console.error('Minting error:', error);
     mintStatus.className = 'mint-status show error';
-    mintStatus.innerHTML = `❌ Minting failed: ${error.message || 'Unknown error'}`;
+    mintStatus.innerHTML = `
+      <button class="close-mint-status" onclick="this.parentElement.style.display='none';">×</button>
+      ❌ Minting failed: ${error.message || 'Unknown error'}
+    `;
     mintOutput.textContent = JSON.stringify({ error: error.message }, null, 2);
     mintOutput.classList.add('show'); // Show details on error for debugging
   }

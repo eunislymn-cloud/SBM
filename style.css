@@ -616,6 +616,7 @@ label {
   background: rgba(255, 0, 0, 0.2);
   border: 1px solid #ff6b6b;
   color: #ff6b6b;
+  position: relative;
 }
 
 .mint-status a {
