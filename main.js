@@ -1889,11 +1889,46 @@ fetchNftBtn.onclick = async () => {
     loadNftStatus.innerHTML = '<span class="mint-spinner"></span> Fetching metadata...';
     let metadata;
     
+    console.log('Metadata URI:', metadataUri);
+    console.log('URI length:', metadataUri.length);
+    
     if (metadataUri.startsWith('data:')) {
       // Handle data URI
-      const base64Data = metadataUri.split(',')[1];
-      const jsonString = decodeURIComponent(escape(atob(base64Data)));
-      metadata = JSON.parse(jsonString);
+      try {
+        const base64Data = metadataUri.split(',')[1];
+        console.log('Base64 data length:', base64Data?.length);
+        
+        if (!base64Data) {
+          throw new Error('Invalid data URI format');
+        }
+        
+        // Try decoding
+        let jsonString;
+        try {
+          // First try standard base64 decode
+          jsonString = atob(base64Data);
+        } catch (e) {
+          // Try URL-safe base64
+          const standardBase64 = base64Data.replace(/-/g, '+').replace(/_/g, '/');
+          jsonString = atob(standardBase64);
+        }
+        
+        // Handle UTF-8 encoding
+        try {
+          jsonString = decodeURIComponent(escape(jsonString));
+        } catch (e) {
+          // Already decoded or not URL encoded
+          console.log('Using raw decoded string');
+        }
+        
+        console.log('Decoded JSON string (first 200 chars):', jsonString.substring(0, 200));
+        
+        metadata = JSON.parse(jsonString);
+      } catch (parseError) {
+        console.error('Data URI parse error:', parseError);
+        console.error('Raw URI:', metadataUri.substring(0, 300));
+        throw new Error('Failed to parse metadata from data URI. The NFT metadata may be corrupted or truncated.');
+      }
     } else {
       // Fetch from URL (IPFS or other)
       let fetchUrl = metadataUri;
