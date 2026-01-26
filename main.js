@@ -1569,80 +1569,151 @@ document.getElementById('mint').onclick = async () => {
     };
     
     // Step 4: Create metadata URI with beat data
-    mintStatus.innerHTML = '<span class="mint-spinner"></span> Creating metadata...';
+    mintStatus.innerHTML = '<span class="mint-spinner"></span> Uploading beat data...';
     let metadataUri;
     
-    // Ultra-compress patterns: convert each track to hex (16 bits = 4 hex chars)
-    const compressToHex = (boolArray) => {
-      let binary = boolArray.map(v => v ? '1' : '0').join('');
-      let hex = parseInt(binary, 2).toString(16).padStart(4, '0');
-      return hex;
+    // Create FULL beat metadata (all patterns, volumes, effects, etc.)
+    const fullBeatData = {
+      name: beatName,
+      description: `A beat created with Seeker Beat Maker. BPM: ${bpm}, Swing: ${swing}%`,
+      bpm: bpm,
+      swing: swing,
+      patterns: patterns,
+      trackVolumes: trackVolumes,
+      trackSounds: trackSounds,
+      patternSequence: patternSequence,
+      effects: {
+        reverb: parseFloat(document.getElementById('reverb')?.value || 20),
+        delay: parseFloat(document.getElementById('delay')?.value || 0),
+        filter: parseFloat(document.getElementById('filter')?.value || 100)
+      },
+      image: imageUri || '',
+      creator: walletAddress,
+      timestamp: new Date().toISOString()
     };
     
-    // Compress all 7 tracks for a pattern into a 28-char hex string
-    const trackOrder = ['kick', 'snare', 'hat', 'clap', 'crash', 'rim', 'tom'];
+    console.log('Full beat data to store:', fullBeatData);
     
-    const compressPattern = (pattern) => {
-      let hexString = '';
-      trackOrder.forEach(track => {
-        hexString += compressToHex(pattern[track] || Array(16).fill(false));
+    // Try external JSON storage services
+    let storageSuccess = false;
+    
+    // Try JSONBin.io (free tier - no API key needed for public bins)
+    try {
+      mintStatus.innerHTML = '<span class="mint-spinner"></span> Uploading to decentralized storage...';
+      
+      const jsonbinResponse = await fetch('https://api.jsonbin.io/v3/b', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Bin-Private': 'false'
+        },
+        body: JSON.stringify(fullBeatData)
       });
-      return hexString;
-    };
-    
-    // Compress Patterns A and B (28 chars each = 56 chars total)
-    const pA = compressPattern(patterns.A);
-    const pB = compressPattern(patterns.B);
-    
-    // Check if B is empty (all zeros)
-    const isEmpty = (hex) => hex === '0000000000000000000000000000';
-    
-    // Build compact metadata
-    let compactMeta;
-    
-    if (isEmpty(pB)) {
-      // Only Pattern A has data - use more space for name
-      compactMeta = {
-        n: beatName.slice(0, 12),
-        b: bpm,
-        p: pA
-      };
-      if (swing > 0) compactMeta.s = swing;
-    } else {
-      // Both A and B have data
-      compactMeta = {
-        n: beatName.slice(0, 6),
-        b: bpm,
-        A: pA,
-        B: pB
-      };
-      if (swing > 0) compactMeta.s = swing;
+      
+      if (jsonbinResponse.ok) {
+        const jsonbinResult = await jsonbinResponse.json();
+        const binId = jsonbinResult.metadata.id;
+        metadataUri = `https://api.jsonbin.io/v3/b/${binId}`;
+        console.log('Beat data uploaded to JSONBin:', metadataUri);
+        storageSuccess = true;
+      }
+    } catch (jsonbinError) {
+      console.warn('JSONBin upload failed:', jsonbinError);
     }
     
-    metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
-    console.log('Compact metadata content:', JSON.stringify(compactMeta));
-    console.log('Compact metadata URI length:', metadataUri.length);
+    // Try paste.rs (simple pastebin-like service)
+    if (!storageSuccess) {
+      try {
+        const pasteResponse = await fetch('https://paste.rs/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(fullBeatData)
+        });
+        
+        if (pasteResponse.ok) {
+          const pasteUrl = await pasteResponse.text();
+          metadataUri = pasteUrl.trim();
+          console.log('Beat data uploaded to paste.rs:', metadataUri);
+          storageSuccess = true;
+        }
+      } catch (pasteError) {
+        console.warn('paste.rs upload failed:', pasteError);
+      }
+    }
     
-    // Verify it fits
-    if (metadataUri.length > 200) {
-      // Too long - shorten name
-      compactMeta.n = beatName.slice(0, 3);
-      delete compactMeta.s;
-      metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
-      console.log('Shortened metadata, length:', metadataUri.length);
+    // Fallback: Use compressed on-chain storage
+    if (!storageSuccess) {
+      console.log('External storage failed, using compressed on-chain format');
       
-      // If still too long, fall back to Pattern A only
-      if (metadataUri.length > 200) {
-        console.warn('Still too long, using Pattern A only');
+      // Ultra-compress patterns: convert each track to hex (16 bits = 4 hex chars)
+      const compressToHex = (boolArray) => {
+        let binary = boolArray.map(v => v ? '1' : '0').join('');
+        let hex = parseInt(binary, 2).toString(16).padStart(4, '0');
+        return hex;
+      };
+      
+      // Compress all 7 tracks for a pattern into a 28-char hex string
+      const trackOrder = ['kick', 'snare', 'hat', 'clap', 'crash', 'rim', 'tom'];
+      
+      const compressPattern = (pattern) => {
+        let hexString = '';
+        trackOrder.forEach(track => {
+          hexString += compressToHex(pattern[track] || Array(16).fill(false));
+        });
+        return hexString;
+      };
+      
+      // Compress Patterns A and B (28 chars each = 56 chars total)
+      const pA = compressPattern(patterns.A);
+      const pB = compressPattern(patterns.B);
+      
+      // Check if B is empty (all zeros)
+      const isEmpty = (hex) => hex === '0000000000000000000000000000';
+      
+      // Build compact metadata
+      let compactMeta;
+      
+      if (isEmpty(pB)) {
         compactMeta = {
-          n: beatName.slice(0, 8),
+          n: beatName.slice(0, 12),
           b: bpm,
           p: pA
         };
+        if (swing > 0) compactMeta.s = swing;
+      } else {
+        compactMeta = {
+          n: beatName.slice(0, 6),
+          b: bpm,
+          A: pA,
+          B: pB
+        };
+        if (swing > 0) compactMeta.s = swing;
+      }
+      
+      metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
+      console.log('Using compressed on-chain metadata, length:', metadataUri.length);
+      
+      // Verify it fits
+      if (metadataUri.length > 200) {
+        compactMeta.n = beatName.slice(0, 3);
+        delete compactMeta.s;
         metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
-        console.log('Fallback length:', metadataUri.length);
+        
+        if (metadataUri.length > 200) {
+          compactMeta = {
+            n: beatName.slice(0, 8),
+            b: bpm,
+            p: pA
+          };
+          metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(compactMeta));
+        }
       }
     }
+    
+    console.log('Final metadata URI:', metadataUri);
+    console.log('Final metadata URI length:', metadataUri.length);
     
     // Step 5: Connect to Solana
     mintStatus.innerHTML = '<span class="mint-spinner"></span> Connecting to Solana...';
@@ -2015,7 +2086,7 @@ fetchNftBtn.onclick = async () => {
         throw new Error('This NFT\'s metadata was truncated during minting. Try minting a new NFT - the issue has been fixed!');
       }
     } else {
-      // Fetch from URL (IPFS or other)
+      // Fetch from URL (IPFS, JSONBin, paste.rs, or other)
       let fetchUrl = metadataUri;
       
       // Convert IPFS URLs to HTTP gateway
@@ -2023,11 +2094,31 @@ fetchNftBtn.onclick = async () => {
         fetchUrl = metadataUri.replace('ipfs://', 'https://ipfs.io/ipfs/');
       }
       
+      console.log('Fetching from URL:', fetchUrl);
+      
       const response = await fetch(fetchUrl);
       if (!response.ok) {
         throw new Error('Failed to fetch metadata');
       }
-      metadata = await response.json();
+      
+      // Handle different response formats
+      const responseText = await response.text();
+      console.log('Response text (first 500 chars):', responseText.substring(0, 500));
+      
+      try {
+        const jsonData = JSON.parse(responseText);
+        
+        // JSONBin wraps response in { record: {...} }
+        if (jsonData.record) {
+          console.log('Detected JSONBin format');
+          metadata = jsonData.record;
+        } else {
+          metadata = jsonData;
+        }
+      } catch (e) {
+        console.error('Failed to parse JSON:', e);
+        throw new Error('Failed to parse metadata JSON');
+      }
     }
     
     console.log('Metadata:', metadata);
@@ -2062,8 +2153,24 @@ fetchNftBtn.onclick = async () => {
       return pattern;
     };
     
+    // Check for FULL beat data format (from external storage)
+    if (metadata.patterns && typeof metadata.patterns === 'object' && metadata.patterns.A && typeof metadata.patterns.A === 'object') {
+      console.log('Detected FULL beat data format (external storage)');
+      
+      beatDataToLoad = {
+        name: metadata.name || 'Loaded Beat',
+        bpm: metadata.bpm || 120,
+        swing: metadata.swing || 0,
+        patterns: metadata.patterns,
+        trackVolumes: metadata.trackVolumes || {},
+        trackSounds: metadata.trackSounds || {},
+        patternSequence: metadata.patternSequence || ['', '', '', ''],
+        effects: metadata.effects || {}
+      };
+      
+      console.log('Full beat data loaded with all patterns, volumes, and effects!');
+    }
     // Check for format with A and B patterns (hex strings)
-    if (metadata.A && metadata.B && typeof metadata.A === 'string') {
       console.log('Detected A+B pattern format');
       
       beatDataToLoad = {
@@ -2295,8 +2402,63 @@ loadNftConfirm.onclick = () => {
       Object.keys(fetchedBeatData.trackSounds).forEach(track => {
         if (trackSounds[track] !== undefined) {
           trackSounds[track] = fetchedBeatData.trackSounds[track];
+          // Update the sound selector UI if it exists
+          const trackContainer = document.querySelector(`.track-container[data-track="${track}"]`);
+          if (trackContainer) {
+            const soundSelect = trackContainer.querySelector('.sound-select');
+            if (soundSelect) {
+              soundSelect.value = trackSounds[track];
+            }
+          }
         }
       });
+    }
+    
+    // Load effects
+    if (fetchedBeatData.effects) {
+      const effects = fetchedBeatData.effects;
+      
+      // Reverb
+      if (effects.reverb !== undefined) {
+        const reverbSlider = document.getElementById('reverb');
+        const reverbValue = document.getElementById('reverbValue');
+        if (reverbSlider) {
+          reverbSlider.value = effects.reverb;
+          if (reverbValue) reverbValue.textContent = effects.reverb + '%';
+          // Update actual reverb (wet/dry mix)
+          const wetAmount = effects.reverb / 100;
+          reverbWet.gain.value = wetAmount * 0.5;
+          reverbDry.gain.value = 1 - (wetAmount * 0.3);
+        }
+      }
+      
+      // Delay
+      if (effects.delay !== undefined) {
+        const delaySlider = document.getElementById('delay');
+        const delayValueEl = document.getElementById('delayValue');
+        if (delaySlider) {
+          delaySlider.value = effects.delay;
+          if (delayValueEl) delayValueEl.textContent = effects.delay + '%';
+          delayWet.gain.value = effects.delay / 100;
+        }
+      }
+      
+      // Filter
+      if (effects.filter !== undefined) {
+        const filterSlider = document.getElementById('filter');
+        const filterValue = document.getElementById('filterValue');
+        if (filterSlider) {
+          filterSlider.value = effects.filter;
+          if (filterValue) filterValue.textContent = effects.filter + '%';
+          // Calculate filter frequency (20Hz to 20000Hz logarithmic)
+          const minFreq = 20;
+          const maxFreq = 20000;
+          const filterPercent = effects.filter / 100;
+          filterNode.frequency.value = minFreq * Math.pow(maxFreq / minFreq, filterPercent);
+        }
+      }
+      
+      console.log('Effects loaded:', effects);
     }
     
     // Load beat name
