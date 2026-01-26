@@ -1607,24 +1607,38 @@ document.getElementById('mint').onclick = async () => {
     };
     
     metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(minMeta));
-    console.log('Metadata URI created, length:', metadataUri.length);
-    console.log('Metadata content:', JSON.stringify(minMeta));
+    // Test different name lengths to fit all 7 tracks
+    let finalMeta;
+    let nameLen = 8;
     
-    // Verify it fits
-    if (metadataUri.length > 200) {
-      // Even smaller - just first 3 tracks
-      const tracks = Object.keys(compressedA).slice(0, 3);
-      const tinyA = {};
-      tracks.forEach(t => tinyA[t] = compressedA[t]);
-      
-      const tinyMeta = {
-        n: beatName.slice(0, 6),
+    while (nameLen >= 1) {
+      finalMeta = {
+        n: beatName.slice(0, nameLen),
         b: bpm,
-        A: tinyA
+        A: compressedA
       };
-      metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(tinyMeta));
-      console.log('Reduced to tiny metadata, length:', metadataUri.length);
+      
+      // Only add swing if non-zero and we have room
+      if (swing > 0 && nameLen > 4) {
+        finalMeta.s = swing;
+      }
+      
+      metadataUri = 'data:application/json,' + encodeURIComponent(JSON.stringify(finalMeta));
+      
+      if (metadataUri.length <= 200) {
+        console.log(`Metadata fits with name length ${nameLen}, total: ${metadataUri.length} bytes`);
+        break;
+      }
+      nameLen--;
     }
+    
+    // If still doesn't fit, we have a problem - log it
+    if (metadataUri.length > 200) {
+      console.error('WARNING: Metadata still too long:', metadataUri.length, 'bytes. Some data may be truncated on-chain.');
+    }
+    
+    console.log('Final metadata content:', JSON.stringify(finalMeta));
+    console.log('Final metadata URI length:', metadataUri.length);
     
     // Step 5: Connect to Solana
     mintStatus.innerHTML = '<span class="mint-spinner"></span> Connecting to Solana...';
