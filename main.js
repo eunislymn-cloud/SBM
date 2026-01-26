@@ -404,47 +404,63 @@ function playSound(trackName) {
       break;
     }
     case 'crash1': {
-      const osc1 = audioCtx.createOscillator();
-      const osc2 = audioCtx.createOscillator();
-      osc1.type = 'square';
-      osc2.type = 'square';
-      osc1.frequency.value = 5000 + Math.random() * 3000;
-      osc2.frequency.value = 7000 + Math.random() * 3000;
+      // Crash cymbal using filtered noise for realistic washy sound
+      const bufferSize = audioCtx.sampleRate * 1.5; // 1.5 second buffer
+      const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+      }
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = noiseBuffer;
+      
+      // Highpass filter for brightness
+      const highpass = audioCtx.createBiquadFilter();
+      highpass.type = 'highpass';
+      highpass.frequency.value = 5000;
+      
+      // Bandpass for character
+      const bandpass = audioCtx.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.frequency.value = 8000;
+      bandpass.Q.value = 0.5;
+      
       const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(volume * 0.5, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.8);
-      osc1.connect(gain);
-      osc2.connect(gain);
+      gain.gain.setValueAtTime(volume * 0.6, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 1.5);
+      
+      noise.connect(highpass);
+      highpass.connect(bandpass);
+      bandpass.connect(gain);
       gain.connect(masterGain);
-      osc1.start(time);
-      osc2.start(time);
-      osc1.stop(time + 0.8);
-      osc2.stop(time + 0.8);
+      noise.start(time);
+      noise.stop(time + 1.5);
       break;
     }
     case 'crash2': {
-      const osc1 = audioCtx.createOscillator();
-      const osc2 = audioCtx.createOscillator();
-      const osc3 = audioCtx.createOscillator();
-      osc1.type = 'square';
-      osc2.type = 'square';
-      osc3.type = 'square';
-      osc1.frequency.value = 4000 + Math.random() * 2000;
-      osc2.frequency.value = 6000 + Math.random() * 2000;
-      osc3.frequency.value = 8000 + Math.random() * 2000;
+      // Shorter, brighter crash
+      const bufferSize = audioCtx.sampleRate * 1.0;
+      const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+      }
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = noiseBuffer;
+      
+      const highpass = audioCtx.createBiquadFilter();
+      highpass.type = 'highpass';
+      highpass.frequency.value = 7000;
+      
       const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(volume * 0.4, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 1.2);
-      osc1.connect(gain);
-      osc2.connect(gain);
-      osc3.connect(gain);
+      gain.gain.setValueAtTime(volume * 0.5, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 1.0);
+      
+      noise.connect(highpass);
+      highpass.connect(gain);
       gain.connect(masterGain);
-      osc1.start(time);
-      osc2.start(time);
-      osc3.start(time);
-      osc1.stop(time + 1.2);
-      osc2.stop(time + 1.2);
-      osc3.stop(time + 1.2);
+      noise.start(time);
+      noise.stop(time + 1.0);
       break;
     }
     case 'rim1': {
