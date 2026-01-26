@@ -227,7 +227,7 @@ label {
 /* Sample Packs */
 #samplePacks {
   background: rgba(17, 17, 17, 0.8);
-  padding: 20px;
+  padding: 15px;
   border-radius: 12px;
   margin-bottom: 20px;
   border: 1px solid #333;
@@ -237,20 +237,20 @@ label {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .packs-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
   color: #14F195;
 }
 
 .coming-soon-badge {
   background: linear-gradient(135deg, #9945FF, #7d3acc);
-  padding: 6px 16px;
+  padding: 4px 12px;
   border-radius: 20px;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -258,14 +258,14 @@ label {
 
 .packs-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
 }
 
 .pack-card {
   background: rgba(34, 34, 34, 0.6);
-  padding: 20px;
-  border-radius: 10px;
+  padding: 10px;
+  border-radius: 8px;
   border: 2px solid #2a2a2a;
   cursor: pointer;
   transition: all 0.3s;
@@ -274,8 +274,8 @@ label {
 
 .pack-card:not(.disabled):hover {
   border-color: #9945FF;
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(153, 69, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(153, 69, 255, 0.3);
 }
 
 .pack-card.disabled {
@@ -291,9 +291,9 @@ label {
   left: 50%;
   transform: translate(-50%, -50%);
   background: rgba(0, 0, 0, 0.8);
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 10px;
   font-weight: bold;
   opacity: 0;
   transition: opacity 0.3s;
@@ -309,20 +309,32 @@ label {
 }
 
 .pack-icon {
-  font-size: 48px;
-  margin-bottom: 10px;
+  font-size: 24px;
+  margin-bottom: 5px;
 }
 
 .pack-name {
-  font-size: 16px;
+  font-size: 12px;
   font-weight: bold;
-  margin-bottom: 8px;
+  margin-bottom: 2px;
   color: #fff;
 }
 
 .pack-description {
-  font-size: 13px;
+  font-size: 10px;
   color: #888;
+}
+
+@media (max-width: 768px) {
+  .packs-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .packs-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* Sequencer */
