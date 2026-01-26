@@ -1212,6 +1212,235 @@ async function uploadToIPFSFallback(data, isImage = false) {
   return 'data:application/json;base64,' + btoa(unescape(encodeURIComponent(JSON.stringify(data))));
 }
 
+// ============ TOKEN METADATA HELPERS ============
+// Token Metadata Program ID
+const TOKEN_METADATA_PROGRAM_ID = new solanaWeb3.PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
+
+// Get Associated Token Address
+async function getAssociatedTokenAddress(mint, owner) {
+  const [address] = solanaWeb3.PublicKey.findProgramAddressSync(
+    [
+      owner.toBuffer(),
+      splToken.TOKEN_PROGRAM_ID.toBuffer(),
+      mint.toBuffer(),
+    ],
+    splToken.ASSOCIATED_TOKEN_PROGRAM_ID
+  );
+  return address;
+}
+
+// Parse Metadata Account Data
+function parseMetadataAccount(data) {
+  // Metadata account structure:
+  // - key: u8 (1 byte)
+  // - update_authority: Pubkey (32 bytes)
+  // - mint: Pubkey (32 bytes)
+  // - name: String (4 bytes length + data)
+  // - symbol: String (4 bytes length + data)
+  // - uri: String (4 bytes length + data)
+  // ... more fields
+  
+  let offset = 1; // Skip key byte
+  
+  // Skip update authority (32 bytes)
+  offset += 32;
+  
+  // Skip mint (32 bytes)
+  offset += 32;
+  
+  // Read name
+  const nameLength = data.readUInt32LE(offset);
+  offset += 4;
+  const name = data.slice(offset, offset + nameLength).toString('utf8').replace(/\0/g, '');
+  offset += nameLength;
+  
+  // Read symbol
+  const symbolLength = data.readUInt32LE(offset);
+  offset += 4;
+  const symbol = data.slice(offset, offset + symbolLength).toString('utf8').replace(/\0/g, '');
+  offset += symbolLength;
+  
+  // Read URI
+  const uriLength = data.readUInt32LE(offset);
+  offset += 4;
+  const uri = data.slice(offset, offset + uriLength).toString('utf8').replace(/\0/g, '');
+  
+  return {
+    name: name.trim(),
+    symbol: symbol.trim(),
+    uri: uri.trim()
+  };
+}
+
+// Create Metadata Account V3 Instruction
+function createMetadataAccountV3Instruction(
+  metadataAccount,
+  mint,
+  mintAuthority,
+  payer,
+  updateAuthority,
+  data,
+  isMutable,
+  collectionDetails
+) {
+  const keys = [
+    { pubkey: metadataAccount, isSigner: false, isWritable: true },
+    { pubkey: mint, isSigner: false, isWritable: false },
+    { pubkey: mintAuthority, isSigner: true, isWritable: false },
+    { pubkey: payer, isSigner: true, isWritable: true },
+    { pubkey: updateAuthority, isSigner: false, isWritable: false },
+    { pubkey: solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
+    { pubkey: solanaWeb3.SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
+  ];
+
+  // Serialize the CreateMetadataAccountArgsV3
+  const nameBuffer = Buffer.alloc(36);
+  nameBuffer.write(data.name);
+  
+  const symbolBuffer = Buffer.alloc(14);
+  symbolBuffer.write(data.symbol);
+  
+  const uriBuffer = Buffer.alloc(204);
+  uriBuffer.write(data.uri);
+  
+  // Build instruction data
+  const instructionData = Buffer.concat([
+    Buffer.from([33]), // CreateMetadataAccountV3 discriminator
+    // Data struct
+    Buffer.from([data.name.length, 0, 0, 0]), // name length (u32 le)
+    Buffer.from(data.name),
+    Buffer.from([data.symbol.length, 0, 0, 0]), // symbol length (u32 le)
+    Buffer.from(data.symbol),
+    Buffer.from([data.uri.length, 0, 0, 0, 0]), // uri length (u32 le, but we need padding)
+  ]);
+  
+  // Simplified: Use a pre-built buffer approach
+  const buffer = Buffer.alloc(1 + 4 + 32 + 4 + 10 + 4 + 200 + 2 + 1 + 1 + 34 + 2 + 2 + 1 + 1);
+  let offset = 0;
+  
+  // Instruction discriminator (33 for CreateMetadataAccountV3)
+  buffer.writeUInt8(33, offset);
+  offset += 1;
+  
+  // Name (length-prefixed string)
+  const nameBytes = Buffer.from(data.name.slice(0, 32));
+  buffer.writeUInt32LE(nameBytes.length, offset);
+  offset += 4;
+  nameBytes.copy(buffer, offset);
+  offset += nameBytes.length;
+  
+  // Symbol (length-prefixed string)
+  const symbolBytes = Buffer.from(data.symbol.slice(0, 10));
+  buffer.writeUInt32LE(symbolBytes.length, offset);
+  offset += 4;
+  symbolBytes.copy(buffer, offset);
+  offset += symbolBytes.length;
+  
+  // URI (length-prefixed string)
+  const uriBytes = Buffer.from(data.uri.slice(0, 200));
+  buffer.writeUInt32LE(uriBytes.length, offset);
+  offset += 4;
+  uriBytes.copy(buffer, offset);
+  offset += uriBytes.length;
+  
+  // Seller fee basis points (u16)
+  buffer.writeUInt16LE(data.sellerFeeBasisPoints, offset);
+  offset += 2;
+  
+  // Creators (Option<Vec<Creator>>)
+  if (data.creators && data.creators.length > 0) {
+    buffer.writeUInt8(1, offset); // Some
+    offset += 1;
+    buffer.writeUInt32LE(data.creators.length, offset); // Vec length
+    offset += 4;
+    
+    for (const creator of data.creators) {
+      creator.address.toBuffer().copy(buffer, offset);
+      offset += 32;
+      buffer.writeUInt8(creator.verified ? 1 : 0, offset);
+      offset += 1;
+      buffer.writeUInt8(creator.share, offset);
+      offset += 1;
+    }
+  } else {
+    buffer.writeUInt8(0, offset); // None
+    offset += 1;
+  }
+  
+  // Collection (Option<Collection>) - None
+  buffer.writeUInt8(0, offset);
+  offset += 1;
+  
+  // Uses (Option<Uses>) - None
+  buffer.writeUInt8(0, offset);
+  offset += 1;
+  
+  // isMutable
+  buffer.writeUInt8(isMutable ? 1 : 0, offset);
+  offset += 1;
+  
+  // CollectionDetails (Option<CollectionDetails>) - None
+  buffer.writeUInt8(0, offset);
+  offset += 1;
+
+  return new solanaWeb3.TransactionInstruction({
+    keys,
+    programId: TOKEN_METADATA_PROGRAM_ID,
+    data: buffer.slice(0, offset),
+  });
+}
+
+// Create Master Edition V3 Instruction
+function createMasterEditionV3Instruction(
+  masterEdition,
+  mint,
+  updateAuthority,
+  mintAuthority,
+  payer,
+  metadata,
+  maxSupply
+) {
+  const keys = [
+    { pubkey: masterEdition, isSigner: false, isWritable: true },
+    { pubkey: mint, isSigner: false, isWritable: true },
+    { pubkey: updateAuthority, isSigner: true, isWritable: false },
+    { pubkey: mintAuthority, isSigner: true, isWritable: false },
+    { pubkey: payer, isSigner: true, isWritable: true },
+    { pubkey: metadata, isSigner: false, isWritable: true },
+    { pubkey: splToken.TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+    { pubkey: solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
+    { pubkey: solanaWeb3.SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
+  ];
+
+  // CreateMasterEditionV3 instruction
+  // Discriminator: 17 (for CreateMasterEditionV3)
+  const buffer = Buffer.alloc(1 + 1 + 8);
+  let offset = 0;
+  
+  buffer.writeUInt8(17, offset); // Discriminator
+  offset += 1;
+  
+  // Max supply (Option<u64>)
+  if (maxSupply !== null && maxSupply !== undefined) {
+    buffer.writeUInt8(1, offset); // Some
+    offset += 1;
+    // Write u64 as two u32s (little endian)
+    buffer.writeUInt32LE(maxSupply, offset);
+    offset += 4;
+    buffer.writeUInt32LE(0, offset); // High bits
+    offset += 4;
+  } else {
+    buffer.writeUInt8(0, offset); // None - unlimited
+    offset += 1;
+  }
+
+  return new solanaWeb3.TransactionInstruction({
+    keys,
+    programId: TOKEN_METADATA_PROGRAM_ID,
+    data: buffer.slice(0, offset),
+  });
+}
+
 document.getElementById('mint').onclick = async () => {
   if (!connectedWallet || !walletAddress) {
     alert('Please connect your wallet first!');
@@ -1334,37 +1563,153 @@ document.getElementById('mint').onclick = async () => {
       throw new Error('Wallet provider not found');
     }
     
-    // Step 6: Mint the NFT
-    mintStatus.innerHTML = '<span class="mint-spinner"></span> Minting your NFT... Please approve the transaction in your wallet.';
+    // Step 6: Mint the NFT using Token Metadata Program
+    mintStatus.innerHTML = '<span class="mint-spinner"></span> Creating mint account...';
     
-    // Get Metaplex - handle different ways it might be exposed
-    const MetaplexLib = window.Metaplex || window.metaplex || (typeof Metaplex !== 'undefined' ? Metaplex : null);
+    const payer = new solanaWeb3.PublicKey(walletAddress);
     
-    if (!MetaplexLib) {
-      throw new Error('Metaplex library not loaded. Please refresh the page and try again.');
-    }
+    // Generate new mint keypair
+    const mintKeypair = solanaWeb3.Keypair.generate();
+    const mint = mintKeypair.publicKey;
     
-    const { walletAdapterIdentity } = MetaplexLib;
-    const MetaplexClass = MetaplexLib.Metaplex || MetaplexLib;
+    // Derive metadata PDA
+    const [metadataPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from('metadata'),
+        TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+        mint.toBuffer(),
+      ],
+      TOKEN_METADATA_PROGRAM_ID
+    );
     
-    const metaplex = MetaplexClass.make(connection).use(walletAdapterIdentity({
-      publicKey: new solanaWeb3.PublicKey(walletAddress),
-      signTransaction: async (tx) => walletProvider.signTransaction(tx),
-      signAllTransactions: async (txs) => walletProvider.signAllTransactions(txs),
-      signMessage: async (msg) => walletProvider.signMessage(msg),
-    }));
+    // Derive master edition PDA
+    const [masterEditionPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from('metadata'),
+        TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+        mint.toBuffer(),
+        Buffer.from('edition'),
+      ],
+      TOKEN_METADATA_PROGRAM_ID
+    );
     
-    const { nft } = await metaplex.nfts().create({
-      uri: metadataUri,
-      name: beatData.name,
-      symbol: beatData.symbol,
-      sellerFeeBasisPoints: 500, // 5% royalty
-      creators: [
-        {
-          address: new solanaWeb3.PublicKey(walletAddress),
-          share: 100
-        }
-      ]
+    // Get associated token account for the payer
+    const associatedTokenAddress = await getAssociatedTokenAddress(mint, payer);
+    
+    mintStatus.innerHTML = '<span class="mint-spinner"></span> Building transaction...';
+    
+    // Create transaction
+    const transaction = new solanaWeb3.Transaction();
+    
+    // Get minimum rent for mint account
+    const mintRent = await connection.getMinimumBalanceForRentExemption(82); // Mint account size
+    
+    // 1. Create mint account
+    transaction.add(
+      solanaWeb3.SystemProgram.createAccount({
+        fromPubkey: payer,
+        newAccountPubkey: mint,
+        space: 82,
+        lamports: mintRent,
+        programId: splToken.TOKEN_PROGRAM_ID,
+      })
+    );
+    
+    // 2. Initialize mint (0 decimals for NFT)
+    transaction.add(
+      splToken.createInitializeMintInstruction(
+        mint,
+        0, // 0 decimals for NFT
+        payer,
+        payer,
+        splToken.TOKEN_PROGRAM_ID
+      )
+    );
+    
+    // 3. Create associated token account
+    transaction.add(
+      splToken.createAssociatedTokenAccountInstruction(
+        payer,
+        associatedTokenAddress,
+        payer,
+        mint
+      )
+    );
+    
+    // 4. Mint 1 token to the associated token account
+    transaction.add(
+      splToken.createMintToInstruction(
+        mint,
+        associatedTokenAddress,
+        payer,
+        1 // Mint 1 token (NFT)
+      )
+    );
+    
+    // 5. Create metadata account instruction (Token Metadata Program)
+    const createMetadataInstruction = createMetadataAccountV3Instruction(
+      metadataPDA,
+      mint,
+      payer,
+      payer,
+      payer,
+      {
+        name: beatData.name.slice(0, 32), // Max 32 chars
+        symbol: beatData.symbol.slice(0, 10), // Max 10 chars
+        uri: metadataUri,
+        sellerFeeBasisPoints: 500, // 5% royalty
+        creators: [
+          {
+            address: payer,
+            verified: true,
+            share: 100,
+          }
+        ],
+        collection: null,
+        uses: null,
+      },
+      true, // isMutable
+      true, // collectionDetails
+    );
+    transaction.add(createMetadataInstruction);
+    
+    // 6. Create master edition instruction
+    const createMasterEditionInstruction = createMasterEditionV3Instruction(
+      masterEditionPDA,
+      mint,
+      payer,
+      payer,
+      payer,
+      metadataPDA,
+      0 // Max supply 0 = unlimited prints disabled (unique NFT)
+    );
+    transaction.add(createMasterEditionInstruction);
+    
+    // Set recent blockhash and fee payer
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = payer;
+    
+    // Partial sign with mint keypair
+    transaction.partialSign(mintKeypair);
+    
+    mintStatus.innerHTML = '<span class="mint-spinner"></span> Please approve the transaction in your wallet...';
+    
+    // Sign with wallet
+    const signedTransaction = await walletProvider.signTransaction(transaction);
+    
+    mintStatus.innerHTML = '<span class="mint-spinner"></span> Sending transaction...';
+    
+    // Send transaction
+    const signature = await connection.sendRawTransaction(signedTransaction.serialize());
+    
+    mintStatus.innerHTML = '<span class="mint-spinner"></span> Confirming transaction...';
+    
+    // Confirm transaction
+    await connection.confirmTransaction({
+      signature,
+      blockhash,
+      lastValidBlockHeight,
     });
     
     // Step 7: Update balance after minting (fees deducted)
@@ -1376,9 +1721,9 @@ document.getElementById('mint').onclick = async () => {
     mintStatus.className = 'mint-status show success';
     mintStatus.innerHTML = `
       ✅ NFT Minted Successfully!<br><br>
-      <strong>Mint Address:</strong> ${nft.address.toString()}<br>
+      <strong>Mint Address:</strong> ${mint.toString()}<br>
       <strong>Storage:</strong> ${isIPFS ? '🌐 IPFS (Permanent)' : '📦 Data URI (Temporary)'}<br><br>
-      <a href="https://explorer.solana.com/address/${nft.address.toString()}?cluster=${SOLANA_NETWORK}" target="_blank">
+      <a href="https://explorer.solana.com/address/${mint.toString()}?cluster=${SOLANA_NETWORK}" target="_blank">
         View on Solana Explorer →
       </a>
       ${isIPFS ? `<br><a href="${metadataUri}" target="_blank">View Metadata on IPFS →</a>` : ''}
@@ -1387,14 +1732,15 @@ document.getElementById('mint').onclick = async () => {
     mintOutput.textContent = JSON.stringify({
       success: true,
       network: SOLANA_NETWORK,
-      mintAddress: nft.address.toString(),
+      mintAddress: mint.toString(),
+      signature: signature,
       metadataUri: metadataUri,
       imageUri: imageUri,
       storageType: isIPFS ? 'IPFS' : 'Data URI',
       metadata: metadataJson
     }, null, 2);
     
-    console.log('NFT minted successfully:', nft);
+    console.log('NFT minted successfully! Mint:', mint.toString(), 'Signature:', signature);
     
   } catch (error) {
     console.error('Minting error:', error);
@@ -1457,31 +1803,35 @@ fetchNftBtn.onclick = async () => {
   
   try {
     const connection = initSolanaConnection();
+    const mintPubkey = new solanaWeb3.PublicKey(mintAddress);
     
-    // Get Metaplex - handle different ways it might be exposed
-    const MetaplexLib = window.Metaplex || window.metaplex || (typeof Metaplex !== 'undefined' ? Metaplex : null);
-    
-    if (!MetaplexLib) {
-      throw new Error('Metaplex library not loaded. Please refresh the page and try again.');
-    }
-    
-    const MetaplexClass = MetaplexLib.Metaplex || MetaplexLib;
-    const metaplex = MetaplexClass.make(connection);
-    
-    // Fetch NFT by mint address
+    // Fetch NFT by reading the metadata account directly
     loadNftStatus.innerHTML = '<span class="mint-spinner"></span> Reading NFT from blockchain...';
-    const nft = await metaplex.nfts().findByMint({ 
-      mintAddress: new solanaWeb3.PublicKey(mintAddress) 
-    });
     
-    if (!nft) {
-      throw new Error('NFT not found');
+    // Derive metadata PDA
+    const [metadataPDA] = solanaWeb3.PublicKey.findProgramAddressSync(
+      [
+        Buffer.from('metadata'),
+        TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+        mintPubkey.toBuffer(),
+      ],
+      TOKEN_METADATA_PROGRAM_ID
+    );
+    
+    // Fetch metadata account
+    const metadataAccount = await connection.getAccountInfo(metadataPDA);
+    
+    if (!metadataAccount) {
+      throw new Error('NFT metadata not found. This might not be an NFT.');
     }
     
-    console.log('NFT found:', nft);
+    // Parse metadata account data
+    const metadataData = parseMetadataAccount(metadataAccount.data);
+    
+    console.log('NFT found:', metadataData);
     
     // Get metadata URI
-    const metadataUri = nft.uri;
+    const metadataUri = metadataData.uri;
     if (!metadataUri) {
       throw new Error('NFT has no metadata URI');
     }

@@ -29,17 +29,14 @@
       }
     }
   </style>
-  <!-- Solana Web3 and Metaplex -->
+  <!-- Solana Web3 and SPL Token -->
   <script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
-  <script src="https://unpkg.com/@metaplex-foundation/js@0.19.4/dist/browser/index.iife.min.js"></script>
+  <script src="https://unpkg.com/@solana/spl-token@0.3.9/lib/index.iife.js"></script>
   <script>
-    // Ensure Metaplex is available globally after load
+    // Log library loading status
     window.addEventListener('load', () => {
-      if (typeof window.Metaplex === 'undefined' && typeof Metaplex !== 'undefined') {
-        window.Metaplex = Metaplex;
-      }
       console.log('Solana Web3 loaded:', typeof solanaWeb3 !== 'undefined');
-      console.log('Metaplex loaded:', typeof window.Metaplex !== 'undefined' || typeof Metaplex !== 'undefined');
+      console.log('SPL Token loaded:', typeof splToken !== 'undefined');
     });
   </script>
 </head>
