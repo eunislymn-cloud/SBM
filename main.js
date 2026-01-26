@@ -819,3 +819,154 @@ document.getElementById('mint').onclick = () => {
 };
 
 updateBeatDropdown();
+// ============ WALLET CONNECTION ============
+let connectedWallet = null;
+let walletAddress = null;
+
+const walletBtn = document.getElementById('walletBtn');
+const walletModal = document.getElementById('walletModal');
+const closeModal = document.getElementById('closeModal');
+const walletStatus = document.getElementById('walletStatus');
+
+// Open modal
+walletBtn.onclick = () => {
+  if (connectedWallet) {
+    // Already connected - offer to disconnect
+    if (confirm('Disconnect wallet?')) {
+      disconnectWallet();
+    }
+  } else {
+    walletModal.style.display = 'flex';
+  }
+};
+
+// Close modal
+closeModal.onclick = () => {
+  walletModal.style.display = 'none';
+  walletStatus.className = 'wallet-status';
+  walletStatus.textContent = '';
+};
+
+// Close modal when clicking outside
+walletModal.onclick = (e) => {
+  if (e.target === walletModal) {
+    walletModal.style.display = 'none';
+    walletStatus.className = 'wallet-status';
+    walletStatus.textContent = '';
+  }
+};
+
+// Wallet option click handlers
+document.querySelectorAll('.wallet-option').forEach(option => {
+  option.onclick = async () => {
+    const walletType = option.dataset.wallet;
+    await connectWallet(walletType);
+  };
+});
+
+// Connect wallet function
+async function connectWallet(walletType) {
+  walletStatus.className = 'wallet-status';
+  walletStatus.textContent = 'Connecting...';
+  walletStatus.style.display = 'block';
+  
+  try {
+    let provider = null;
+    
+    if (walletType === 'seedvault') {
+      // Seed Vault - Solana Mobile native wallet
+      if (window.solana && window.solana.isSeedVault) {
+        provider = window.solana;
+      } else {
+        throw new Error('Seed Vault not found. Please make sure you are using a Solana Mobile device.');
+      }
+    } else if (walletType === 'phantom') {
+      // Phantom wallet
+      if (window.phantom?.solana) {
+        provider = window.phantom.solana;
+      } else if (window.solana && window.solana.isPhantom) {
+        provider = window.solana;
+      } else {
+        throw new Error('Phantom not found. Please install Phantom wallet.');
+      }
+    } else if (walletType === 'solflare') {
+      // Solflare wallet
+      if (window.solflare) {
+        provider = window.solflare;
+      } else {
+        throw new Error('Solflare not found. Please install Solflare wallet.');
+      }
+    }
+    
+    if (!provider) {
+      throw new Error('Wallet not available');
+    }
+    
+    // Request connection
+    const response = await provider.connect();
+    walletAddress = response.publicKey.toString();
+    connectedWallet = walletType;
+    
+    // Update UI
+    const shortAddress = walletAddress.slice(0, 4) + '...' + walletAddress.slice(-4);
+    walletBtn.textContent = shortAddress;
+    walletBtn.classList.add('connected');
+    
+    walletStatus.className = 'wallet-status success';
+    walletStatus.textContent = 'Connected successfully!';
+    
+    // Close modal after short delay
+    setTimeout(() => {
+      walletModal.style.display = 'none';
+      walletStatus.className = 'wallet-status';
+    }, 1500);
+    
+    console.log('Connected to', walletType, 'Address:', walletAddress);
+    
+  } catch (error) {
+    console.error('Wallet connection error:', error);
+    walletStatus.className = 'wallet-status error';
+    walletStatus.textContent = error.message || 'Failed to connect wallet';
+  }
+}
+
+// Disconnect wallet function
+function disconnectWallet() {
+  connectedWallet = null;
+  walletAddress = null;
+  walletBtn.textContent = 'Connect Wallet';
+  walletBtn.classList.remove('connected');
+  console.log('Wallet disconnected');
+}
+
+// Check if wallet was previously connected (auto-reconnect)
+async function checkExistingConnection() {
+  // Check Phantom
+  if (window.phantom?.solana?.isConnected) {
+    try {
+      const response = await window.phantom.solana.connect({ onlyIfTrusted: true });
+      walletAddress = response.publicKey.toString();
+      connectedWallet = 'phantom';
+      const shortAddress = walletAddress.slice(0, 4) + '...' + walletAddress.slice(-4);
+      walletBtn.textContent = shortAddress;
+      walletBtn.classList.add('connected');
+    } catch (e) {
+      // Silent fail - user will need to connect manually
+    }
+  }
+  // Check Solflare
+  else if (window.solflare?.isConnected) {
+    try {
+      walletAddress = window.solflare.publicKey.toString();
+      connectedWallet = 'solflare';
+      const shortAddress = walletAddress.slice(0, 4) + '...' + walletAddress.slice(-4);
+      walletBtn.textContent = shortAddress;
+      walletBtn.classList.add('connected');
+    } catch (e) {
+      // Silent fail
+    }
+  }
+}
+
+// Check for existing connection on page load
+setTimeout(checkExistingConnection, 500);
