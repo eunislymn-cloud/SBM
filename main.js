@@ -1597,49 +1597,55 @@ document.getElementById('mint').onclick = async () => {
     // Try external JSON storage services
     let storageSuccess = false;
     
-    // Try JSONBin.io (free tier - no API key needed for public bins)
+    // Try dpaste.org (free, no auth required)
     try {
       mintStatus.innerHTML = '<span class="mint-spinner"></span> Uploading to decentralized storage...';
       
-      const jsonbinResponse = await fetch('https://api.jsonbin.io/v3/b', {
+      const formData = new FormData();
+      formData.append('content', JSON.stringify(fullBeatData));
+      formData.append('syntax', 'json');
+      formData.append('expiry_days', '365');
+      
+      const dpasteResponse = await fetch('https://dpaste.org/api/', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Bin-Private': 'false'
-        },
-        body: JSON.stringify(fullBeatData)
+        body: formData
       });
       
-      if (jsonbinResponse.ok) {
-        const jsonbinResult = await jsonbinResponse.json();
-        const binId = jsonbinResult.metadata.id;
-        metadataUri = `https://api.jsonbin.io/v3/b/${binId}`;
-        console.log('Beat data uploaded to JSONBin:', metadataUri);
+      if (dpasteResponse.ok) {
+        const pasteUrl = await dpasteResponse.text();
+        // dpaste returns URL like "https://dpaste.org/ABC123" - we need raw JSON
+        metadataUri = pasteUrl.trim() + '.txt';
+        console.log('Beat data uploaded to dpaste:', metadataUri);
         storageSuccess = true;
       }
-    } catch (jsonbinError) {
-      console.warn('JSONBin upload failed:', jsonbinError);
+    } catch (dpasteError) {
+      console.warn('dpaste upload failed:', dpasteError);
     }
     
-    // Try paste.rs (simple pastebin-like service)
+    // Try rentry.co (free pastebin)
     if (!storageSuccess) {
       try {
-        const pasteResponse = await fetch('https://paste.rs/', {
+        const rentryData = new URLSearchParams();
+        rentryData.append('text', JSON.stringify(fullBeatData));
+        
+        const rentryResponse = await fetch('https://rentry.co/api/new', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/x-www-form-urlencoded',
           },
-          body: JSON.stringify(fullBeatData)
+          body: rentryData
         });
         
-        if (pasteResponse.ok) {
-          const pasteUrl = await pasteResponse.text();
-          metadataUri = pasteUrl.trim();
-          console.log('Beat data uploaded to paste.rs:', metadataUri);
-          storageSuccess = true;
+        if (rentryResponse.ok) {
+          const rentryResult = await rentryResponse.json();
+          if (rentryResult.url) {
+            metadataUri = rentryResult.url + '/raw';
+            console.log('Beat data uploaded to rentry:', metadataUri);
+            storageSuccess = true;
+          }
         }
-      } catch (pasteError) {
-        console.warn('paste.rs upload failed:', pasteError);
+      } catch (rentryError) {
+        console.warn('rentry upload failed:', rentryError);
       }
     }
     
