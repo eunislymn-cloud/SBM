@@ -30,8 +30,18 @@
     }
   </style>
   <!-- Solana Web3 and Metaplex -->
-  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-  <script src="https://unpkg.com/@metaplex-foundation/js@latest/dist/browser/index.iife.min.js"></script>
+  <script src="https://unpkg.com/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
+  <script src="https://unpkg.com/@metaplex-foundation/js@0.19.4/dist/browser/index.iife.min.js"></script>
+  <script>
+    // Ensure Metaplex is available globally after load
+    window.addEventListener('load', () => {
+      if (typeof window.Metaplex === 'undefined' && typeof Metaplex !== 'undefined') {
+        window.Metaplex = Metaplex;
+      }
+      console.log('Solana Web3 loaded:', typeof solanaWeb3 !== 'undefined');
+      console.log('Metaplex loaded:', typeof window.Metaplex !== 'undefined' || typeof Metaplex !== 'undefined');
+    });
+  </script>
 </head>
 <body>
   <div class="container">

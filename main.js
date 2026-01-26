@@ -1337,9 +1337,17 @@ document.getElementById('mint').onclick = async () => {
     // Step 6: Mint the NFT
     mintStatus.innerHTML = '<span class="mint-spinner"></span> Minting your NFT... Please approve the transaction in your wallet.';
     
-    const { Metaplex, walletAdapterIdentity } = window.Metaplex;
+    // Get Metaplex - handle different ways it might be exposed
+    const MetaplexLib = window.Metaplex || window.metaplex || (typeof Metaplex !== 'undefined' ? Metaplex : null);
     
-    const metaplex = Metaplex.make(connection).use(walletAdapterIdentity({
+    if (!MetaplexLib) {
+      throw new Error('Metaplex library not loaded. Please refresh the page and try again.');
+    }
+    
+    const { walletAdapterIdentity } = MetaplexLib;
+    const MetaplexClass = MetaplexLib.Metaplex || MetaplexLib;
+    
+    const metaplex = MetaplexClass.make(connection).use(walletAdapterIdentity({
       publicKey: new solanaWeb3.PublicKey(walletAddress),
       signTransaction: async (tx) => walletProvider.signTransaction(tx),
       signAllTransactions: async (txs) => walletProvider.signAllTransactions(txs),
@@ -1449,8 +1457,16 @@ fetchNftBtn.onclick = async () => {
   
   try {
     const connection = initSolanaConnection();
-    const { Metaplex } = window.Metaplex;
-    const metaplex = Metaplex.make(connection);
+    
+    // Get Metaplex - handle different ways it might be exposed
+    const MetaplexLib = window.Metaplex || window.metaplex || (typeof Metaplex !== 'undefined' ? Metaplex : null);
+    
+    if (!MetaplexLib) {
+      throw new Error('Metaplex library not loaded. Please refresh the page and try again.');
+    }
+    
+    const MetaplexClass = MetaplexLib.Metaplex || MetaplexLib;
+    const metaplex = MetaplexClass.make(connection);
     
     // Fetch NFT by mint address
     loadNftStatus.innerHTML = '<span class="mint-spinner"></span> Reading NFT from blockchain...';
