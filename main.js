@@ -698,6 +698,70 @@ document.querySelectorAll('.pattern-btn').forEach(btn => {
   });
 });
 
+// Copy/Paste Pattern functionality
+let copiedPattern = null;
+
+document.getElementById('copyPattern').onclick = () => {
+  // Deep copy the current pattern
+  copiedPattern = {};
+  trackConfig.forEach(track => {
+    copiedPattern[track.name] = [...patterns[currentPattern][track.name]];
+  });
+  
+  // Enable paste button and update UI
+  const pasteBtn = document.getElementById('pastePattern');
+  pasteBtn.disabled = false;
+  pasteBtn.textContent = `📥 Paste ${currentPattern} to...`;
+  
+  // Visual feedback
+  const copyBtn = document.getElementById('copyPattern');
+  copyBtn.textContent = '✓ Copied!';
+  setTimeout(() => {
+    copyBtn.textContent = '📋 Copy';
+  }, 1000);
+};
+
+document.getElementById('pastePattern').onclick = () => {
+  if (!copiedPattern) return;
+  
+  // Get available patterns to paste to (excluding current if it's the source)
+  const otherPatterns = ['A', 'B', 'C'].filter(p => p !== currentPattern);
+  
+  const choice = prompt(
+    `Paste to which pattern?\n\n` +
+    `Current: Pattern ${currentPattern}\n\n` +
+    `Enter: ${otherPatterns.join(', ')}, or "ALL" to paste to both`
+  );
+  
+  if (!choice) return;
+  
+  const upperChoice = choice.toUpperCase().trim();
+  
+  if (upperChoice === 'ALL') {
+    // Paste to all other patterns
+    otherPatterns.forEach(targetPattern => {
+      trackConfig.forEach(track => {
+        patterns[targetPattern][track.name] = [...copiedPattern[track.name]];
+      });
+    });
+    alert(`Pattern pasted to ${otherPatterns.join(' and ')}!`);
+  } else if (['A', 'B', 'C'].includes(upperChoice)) {
+    // Paste to specific pattern
+    trackConfig.forEach(track => {
+      patterns[upperChoice][track.name] = [...copiedPattern[track.name]];
+    });
+    alert(`Pattern pasted to ${upperChoice}!`);
+    
+    // Switch to the pasted pattern
+    document.querySelectorAll('.pattern-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`[data-pattern="${upperChoice}"]`).classList.add('active');
+    currentPattern = upperChoice;
+    updateUI();
+  } else {
+    alert('Invalid choice. Enter A, B, C, or ALL');
+  }
+};
+
 function updateUI() {
   trackConfig.forEach(track => {
     const container = document.querySelector(`[data-track="${track.name}"]`);

@@ -137,7 +137,8 @@ label {
 .pattern-selector { 
   display: flex; 
   gap: 10px; 
-  margin-bottom: 20px; 
+  margin-bottom: 20px;
+  align-items: center;
 }
 
 .pattern-btn {
@@ -149,6 +150,23 @@ label {
 
 .pattern-btn.active { 
   background: linear-gradient(135deg, #9945FF, #7d3acc); 
+}
+
+.pattern-divider {
+  color: #444;
+  font-size: 20px;
+  margin: 0 5px;
+}
+
+.pattern-copy-btn {
+  padding: 10px 15px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.pattern-copy-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Pattern Sequencer */
