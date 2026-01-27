@@ -1357,23 +1357,7 @@ label {
 /* Landscape optimization */
 @media screen and (orientation: portrait) {
   body::before {
-    content: '↻ Please rotate your device to landscape mode for the best experience';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: #9945FF;
-    color: white;
-    text-align: center;
-    padding: 10px;
-    font-weight: bold;
-    z-index: 10000;
-  }
-}
-/* Landscape optimization - show message in portrait */
-@media screen and (orientation: portrait) {
-  body::before {
-    content: '📱 Rotate device sideways for best experience ↻';
+    content: '📱 Tip: Rotate sideways for best view ↻';
     position: fixed;
     top: 0;
     left: 0;
@@ -1381,13 +1365,80 @@ label {
     background: linear-gradient(135deg, #9945FF, #14F195);
     color: white;
     text-align: center;
-    padding: 15px;
+    padding: 8px;
     font-weight: bold;
-    font-size: 14px;
+    font-size: 12px;
     z-index: 10000;
   }
   
   .container {
-    padding-top: 60px;
+    padding-top: 40px;
+  }
+  
+  /* Make sequencer scroll horizontally in portrait */
+  .track-container {
+    display: flex;
+    flex-wrap: nowrap;
+  }
+  
+  .track-header {
+    min-width: 70px;
+    flex-shrink: 0;
+  }
+  
+  .track-grid {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    min-width: 320px;
+    padding-bottom: 5px;
+  }
+  
+  .step {
+    min-width: 22px;
+    flex-shrink: 0;
+  }
+  
+  /* Stack controls vertically */
+  .control-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .control-row button {
+    width: 100%;
+    margin-bottom: 5px;
+  }
+  
+  /* Smaller pattern buttons */
+  .pattern-selector {
+    flex-wrap: wrap;
+  }
+  
+  .pattern-btn {
+    flex: 1 1 30%;
+    padding: 10px;
+    font-size: 14px;
+  }
+  
+  .pattern-copy-btn {
+    flex: 1 1 45%;
+  }
+  
+  /* Compact logo */
+  .logo-title .logo-tagline {
+    display: none;
+  }
+  
+  .logo-name {
+    font-size: 20px;
+  }
+  
+  .logo-pad {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .logo-text {
+    font-size: 14px;
   }
 }
