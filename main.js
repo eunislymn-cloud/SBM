@@ -1446,7 +1446,16 @@ async function connectWallet(walletType) {
     
     console.log('Connecting to', walletType, '...');
     const response = await provider.connect();
-    walletAddress = response.publicKey.toString();
+    
+    // Handle different wallet response formats
+    if (response && response.publicKey) {
+      walletAddress = response.publicKey.toString();
+    } else if (provider.publicKey) {
+      walletAddress = provider.publicKey.toString();
+    } else {
+      throw new Error('Could not get wallet address');
+    }
+    
     connectedWallet = walletType;
     console.log('Connected! Address:', walletAddress);
     
