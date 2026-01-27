@@ -1382,37 +1382,41 @@ label {
   }
   
   .track-header {
-    min-width: 60px;
+    min-width: 50px;
+    max-width: 50px;
     flex-shrink: 0;
+    padding: 5px;
   }
   
-  /* Smaller volume controls */
+  /* Hide volume controls in portrait - make room for bigger steps */
   .track-volume {
-    transform: scale(0.7);
-    margin: -5px 0;
+    display: none !important;
   }
   
-  .track-volume span {
+  /* Smaller track label */
+  .track-label {
+    font-size: 11px;
+    padding: 4px 6px;
+  }
+  
+  .sound-menu {
     font-size: 10px;
-  }
-  
-  .volume-control {
-    width: 40px;
   }
   
   .track-grid {
     overflow-x: auto;
     flex-wrap: nowrap;
-    min-width: 320px;
+    gap: 3px;
     padding-bottom: 5px;
   }
   
-  /* Bigger sequencer steps */
+  /* Much bigger sequencer steps */
   .step {
-    min-width: 28px;
-    width: 28px;
-    height: 28px;
+    min-width: 38px !important;
+    width: 38px !important;
+    height: 38px !important;
     flex-shrink: 0;
+    border-radius: 4px;
   }
   
   /* Stack controls vertically */
