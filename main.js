@@ -78,8 +78,8 @@ const trackConfig = [
   { name: 'kick', label: 'Kick' },
   { name: 'snare', label: 'Snare' },
   { name: 'hat', label: 'Hi-Hat' },
+  { name: 'openhat', label: 'Open Hi-Hat' },
   { name: 'clap', label: 'Clap' },
-  { name: 'openhat', label: 'Open Hat' },
   { name: 'rim', label: 'Rim' },
   { name: 'tom', label: 'Tom' }
 ];
@@ -551,8 +551,8 @@ function playSound(trackName) {
       break;
     }
     case 'openhat1': {
-      // Open hi-hat 1 - classic sizzle
-      const bufferSize = audioCtx.sampleRate * 0.5;
+      // Open hi-hat 1 - classic open hat
+      const bufferSize = audioCtx.sampleRate * 0.25;
       const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
       const output = noiseBuffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) {
@@ -574,19 +574,19 @@ function playSound(trackName) {
       
       const gain = audioCtx.createGain();
       gain.gain.setValueAtTime(volume * 0.5, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.4);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
       
       noise.connect(highpass);
       highpass.connect(bandpass);
       bandpass.connect(gain);
       gain.connect(masterGain);
       noise.start(time);
-      noise.stop(time + 0.5);
+      noise.stop(time + 0.25);
       break;
     }
     case 'openhat2': {
-      // Open hi-hat 2 - longer, washy
-      const bufferSize = audioCtx.sampleRate * 0.8;
+      // Open hi-hat 2 - slightly longer
+      const bufferSize = audioCtx.sampleRate * 0.35;
       const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
       const output = noiseBuffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) {
@@ -606,14 +606,14 @@ function playSound(trackName) {
       
       const gain = audioCtx.createGain();
       gain.gain.setValueAtTime(volume * 0.45, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.7);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
       
       noise.connect(highpass);
       highpass.connect(bandpass);
       bandpass.connect(gain);
       gain.connect(masterGain);
       noise.start(time);
-      noise.stop(time + 0.8);
+      noise.stop(time + 0.35);
       break;
     }
     case 'rim1': {
@@ -1231,7 +1231,7 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
       break;
     }
     case 'openhat1': {
-      const bufferSize = ctx.sampleRate * 0.5;
+      const bufferSize = ctx.sampleRate * 0.25;
       const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const output = noiseBuffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
@@ -1246,14 +1246,14 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
       bandpass.Q.value = 1;
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(volume * 0.5, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.4);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
       noise.connect(highpass).connect(bandpass).connect(gain).connect(master);
       noise.start(time);
-      noise.stop(time + 0.5);
+      noise.stop(time + 0.25);
       break;
     }
     case 'openhat2': {
-      const bufferSize = ctx.sampleRate * 0.8;
+      const bufferSize = ctx.sampleRate * 0.35;
       const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const output = noiseBuffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
@@ -1268,10 +1268,10 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
       bandpass.Q.value = 0.8;
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(volume * 0.45, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.7);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
       noise.connect(highpass).connect(bandpass).connect(gain).connect(master);
       noise.start(time);
-      noise.stop(time + 0.8);
+      noise.stop(time + 0.35);
       break;
     }
     case 'rim1': {
@@ -2209,7 +2209,7 @@ document.getElementById('mint').onclick = async () => {
       return parseInt(binary, 2).toString(16).padStart(4, '0');
     };
     
-    const trackOrder = ['kick', 'snare', 'hat', 'clap', 'openhat', 'rim', 'tom'];
+    const trackOrder = ['kick', 'snare', 'hat', 'openhat', 'clap', 'rim', 'tom'];
     
     const compressPattern = (pattern) => {
       let hexString = '';
@@ -2726,7 +2726,7 @@ fetchNftBtn.onclick = async () => {
     let beatDataToLoad = null;
     
     // Track order for decompression
-    const trackOrder = ['kick', 'snare', 'hat', 'clap', 'openhat', 'rim', 'tom'];
+    const trackOrder = ['kick', 'snare', 'hat', 'openhat', 'clap', 'rim', 'tom'];
     
     // Decompress hex string to boolean arrays for all tracks
     const hexToBoolArray = (hex) => {
