@@ -1357,7 +1357,8 @@ label {
 /* Landscape optimization */
 @media screen and (orientation: portrait) {
   body::before {
-    content: '📱 Rotate sideways for best experience (Note: Wallet browsers may not rotate)';
+    content: '📱 Rotate sideways for best experience\A(Note: Wallet browsers may not rotate)';
+    white-space: pre-wrap;
     position: fixed;
     top: 0;
     left: 0;
@@ -1365,7 +1366,7 @@ label {
     background: linear-gradient(135deg, #9945FF, #14F195);
     color: white;
     text-align: center;
-    padding: 15px;
+    padding: 12px 15px;
     font-weight: bold;
     font-size: 13px;
     z-index: 10000;
