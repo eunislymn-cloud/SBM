@@ -371,27 +371,83 @@ function playSound(trackName) {
   
   switch(soundVariant) {
     case 'kick1': {
+      // 808 style kick - deep sub bass punch
       const osc = audioCtx.createOscillator();
+      const osc2 = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
+      const gain2 = audioCtx.createGain();
+      
+      // Main sub oscillator
+      osc.type = 'sine';
       osc.frequency.setValueAtTime(150, time);
-      osc.frequency.exponentialRampToValueAtTime(40, time + 0.15);
-      gain.gain.setValueAtTime(volume, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+      osc.frequency.exponentialRampToValueAtTime(35, time + 0.08);
+      osc.frequency.setValueAtTime(35, time + 0.08);
+      osc.frequency.exponentialRampToValueAtTime(25, time + 0.5);
+      
+      // Click/attack oscillator
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(400, time);
+      osc2.frequency.exponentialRampToValueAtTime(60, time + 0.02);
+      
+      // Main envelope - long sustain for that 808 boom
+      gain.gain.setValueAtTime(volume * 1.5, time);
+      gain.gain.setValueAtTime(volume * 1.2, time + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.6);
+      
+      // Click envelope - short
+      gain2.gain.setValueAtTime(volume * 0.8, time);
+      gain2.gain.exponentialRampToValueAtTime(0.001, time + 0.03);
+      
       osc.connect(gain).connect(masterGain);
+      osc2.connect(gain2).connect(masterGain);
       osc.start(time);
-      osc.stop(time + 0.15);
+      osc.stop(time + 0.6);
+      osc2.start(time);
+      osc2.stop(time + 0.03);
       break;
     }
     case 'kick2': {
+      // 909 style kick - punchy with click
       const osc = audioCtx.createOscillator();
+      const clickOsc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
-      osc.frequency.setValueAtTime(100, time);
-      osc.frequency.exponentialRampToValueAtTime(30, time + 0.4);
-      gain.gain.setValueAtTime(volume * 1.2, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
-      osc.connect(gain).connect(masterGain);
+      const clickGain = audioCtx.createGain();
+      const distortion = audioCtx.createWaveShaper();
+      
+      // Distortion curve for punch
+      const curve = new Float32Array(256);
+      for (let i = 0; i < 256; i++) {
+        const x = (i / 128) - 1;
+        curve[i] = Math.tanh(x * 2);
+      }
+      distortion.curve = curve;
+      
+      // Main body - tighter than 808
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(180, time);
+      osc.frequency.exponentialRampToValueAtTime(50, time + 0.05);
+      osc.frequency.exponentialRampToValueAtTime(40, time + 0.15);
+      
+      // Click transient
+      clickOsc.type = 'square';
+      clickOsc.frequency.setValueAtTime(800, time);
+      clickOsc.frequency.exponentialRampToValueAtTime(100, time + 0.01);
+      
+      // Main envelope - punchy
+      gain.gain.setValueAtTime(volume * 1.4, time);
+      gain.gain.exponentialRampToValueAtTime(volume * 0.8, time + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
+      
+      // Click envelope
+      clickGain.gain.setValueAtTime(volume * 0.5, time);
+      clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.015);
+      
+      osc.connect(distortion).connect(gain).connect(masterGain);
+      clickOsc.connect(clickGain).connect(masterGain);
       osc.start(time);
-      osc.stop(time + 0.5);
+      osc.stop(time + 0.25);
+      clickOsc.start(time);
+      clickOsc.stop(time + 0.015);
       break;
     }
     case 'snare1': {
@@ -1010,27 +1066,66 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
   
   switch(soundVariant) {
     case 'kick1': {
+      // 808 style kick - deep sub bass punch
       const osc = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
       const gain = ctx.createGain();
+      const gain2 = ctx.createGain();
+      
+      osc.type = 'sine';
       osc.frequency.setValueAtTime(150, time);
-      osc.frequency.exponentialRampToValueAtTime(40, time + 0.15);
-      gain.gain.setValueAtTime(volume, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+      osc.frequency.exponentialRampToValueAtTime(35, time + 0.08);
+      osc.frequency.setValueAtTime(35, time + 0.08);
+      osc.frequency.exponentialRampToValueAtTime(25, time + 0.5);
+      
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(400, time);
+      osc2.frequency.exponentialRampToValueAtTime(60, time + 0.02);
+      
+      gain.gain.setValueAtTime(volume * 1.5, time);
+      gain.gain.setValueAtTime(volume * 1.2, time + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.6);
+      
+      gain2.gain.setValueAtTime(volume * 0.8, time);
+      gain2.gain.exponentialRampToValueAtTime(0.001, time + 0.03);
+      
       osc.connect(gain).connect(master);
+      osc2.connect(gain2).connect(master);
       osc.start(time);
-      osc.stop(time + 0.15);
+      osc.stop(time + 0.6);
+      osc2.start(time);
+      osc2.stop(time + 0.03);
       break;
     }
     case 'kick2': {
+      // 909 style kick - punchy with click
       const osc = ctx.createOscillator();
+      const clickOsc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.frequency.setValueAtTime(100, time);
-      osc.frequency.exponentialRampToValueAtTime(30, time + 0.4);
-      gain.gain.setValueAtTime(volume * 1.2, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+      const clickGain = ctx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(180, time);
+      osc.frequency.exponentialRampToValueAtTime(50, time + 0.05);
+      osc.frequency.exponentialRampToValueAtTime(40, time + 0.15);
+      
+      clickOsc.type = 'square';
+      clickOsc.frequency.setValueAtTime(800, time);
+      clickOsc.frequency.exponentialRampToValueAtTime(100, time + 0.01);
+      
+      gain.gain.setValueAtTime(volume * 1.4, time);
+      gain.gain.exponentialRampToValueAtTime(volume * 0.8, time + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
+      
+      clickGain.gain.setValueAtTime(volume * 0.5, time);
+      clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.015);
+      
       osc.connect(gain).connect(master);
+      clickOsc.connect(clickGain).connect(master);
       osc.start(time);
-      osc.stop(time + 0.5);
+      osc.stop(time + 0.25);
+      clickOsc.start(time);
+      clickOsc.stop(time + 0.015);
       break;
     }
     case 'snare1': {
