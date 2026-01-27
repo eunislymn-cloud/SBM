@@ -79,7 +79,7 @@ const trackConfig = [
   { name: 'snare', label: 'Snare' },
   { name: 'hat', label: 'Hi-Hat' },
   { name: 'clap', label: 'Clap' },
-  { name: 'crash', label: 'Crash' },
+  { name: 'openhat', label: 'Open Hat' },
   { name: 'rim', label: 'Rim' },
   { name: 'tom', label: 'Tom' }
 ];
@@ -101,7 +101,7 @@ const trackSounds = {
   snare: 'snare1',
   hat: 'hat1',
   clap: 'clap1',
-  crash: 'crash1',
+  openhat: 'openhat1',
   rim: 'rim1',
   tom: 'tom1'
 };
@@ -118,7 +118,7 @@ const samplePacks = {
       snare: 'samples/808kit/snare.wav',
       hat: 'samples/808kit/hat.wav',
       clap: 'samples/808kit/clap.wav',
-      crash: 'samples/808kit/crash.wav',
+      openhat: 'samples/808kit/openhat.wav',
       rim: 'samples/808kit/rim.wav',
       tom: 'samples/808kit/tom.wav'
     }
@@ -132,7 +132,7 @@ const samplePacks = {
       snare: 'samples/trap/snare.wav',
       hat: 'samples/trap/hat.wav',
       clap: 'samples/trap/clap.wav',
-      crash: 'samples/trap/crash.wav',
+      openhat: 'samples/trap/openhat.wav',
       rim: 'samples/trap/rim.wav',
       tom: 'samples/trap/tom.wav'
     }
@@ -146,7 +146,7 @@ const samplePacks = {
       snare: 'samples/lofi/snare.wav',
       hat: 'samples/lofi/hat.wav',
       clap: 'samples/lofi/clap.wav',
-      crash: 'samples/lofi/crash.wav',
+      openhat: 'samples/lofi/openhat.wav',
       rim: 'samples/lofi/rim.wav',
       tom: 'samples/lofi/tom.wav'
     }
@@ -160,7 +160,7 @@ const samplePacks = {
       snare: 'samples/edm/snare.wav',
       hat: 'samples/edm/hat.wav',
       clap: 'samples/edm/clap.wav',
-      crash: 'samples/edm/crash.wav',
+      openhat: 'samples/edm/openhat.wav',
       rim: 'samples/edm/rim.wav',
       tom: 'samples/edm/tom.wav'
     }
@@ -550,9 +550,9 @@ function playSound(trackName) {
       }
       break;
     }
-    case 'crash1': {
-      // Crash cymbal using filtered noise for realistic washy sound
-      const bufferSize = audioCtx.sampleRate * 1.5; // 1.5 second buffer
+    case 'openhat1': {
+      // Open hi-hat 1 - classic sizzle
+      const bufferSize = audioCtx.sampleRate * 0.5;
       const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
       const output = noiseBuffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) {
@@ -561,32 +561,32 @@ function playSound(trackName) {
       const noise = audioCtx.createBufferSource();
       noise.buffer = noiseBuffer;
       
-      // Highpass filter for brightness
+      // Highpass for that metallic hi-hat sound
       const highpass = audioCtx.createBiquadFilter();
       highpass.type = 'highpass';
-      highpass.frequency.value = 5000;
+      highpass.frequency.value = 7000;
       
       // Bandpass for character
       const bandpass = audioCtx.createBiquadFilter();
       bandpass.type = 'bandpass';
-      bandpass.frequency.value = 8000;
-      bandpass.Q.value = 0.5;
+      bandpass.frequency.value = 10000;
+      bandpass.Q.value = 1;
       
       const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(volume * 0.6, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 1.5);
+      gain.gain.setValueAtTime(volume * 0.5, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.4);
       
       noise.connect(highpass);
       highpass.connect(bandpass);
       bandpass.connect(gain);
       gain.connect(masterGain);
       noise.start(time);
-      noise.stop(time + 1.5);
+      noise.stop(time + 0.5);
       break;
     }
-    case 'crash2': {
-      // Shorter, brighter crash
-      const bufferSize = audioCtx.sampleRate * 1.0;
+    case 'openhat2': {
+      // Open hi-hat 2 - longer, washy
+      const bufferSize = audioCtx.sampleRate * 0.8;
       const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
       const output = noiseBuffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) {
@@ -597,17 +597,23 @@ function playSound(trackName) {
       
       const highpass = audioCtx.createBiquadFilter();
       highpass.type = 'highpass';
-      highpass.frequency.value = 7000;
+      highpass.frequency.value = 6000;
+      
+      const bandpass = audioCtx.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.frequency.value = 9000;
+      bandpass.Q.value = 0.8;
       
       const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(volume * 0.5, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 1.0);
+      gain.gain.setValueAtTime(volume * 0.45, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.7);
       
       noise.connect(highpass);
-      highpass.connect(gain);
+      highpass.connect(bandpass);
+      bandpass.connect(gain);
       gain.connect(masterGain);
       noise.start(time);
-      noise.stop(time + 1.0);
+      noise.stop(time + 0.8);
       break;
     }
     case 'rim1': {
@@ -1224,30 +1230,8 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
       }
       break;
     }
-    case 'crash1': {
-      const bufferSize = ctx.sampleRate * 1.5;
-      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const output = noiseBuffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
-      const noise = ctx.createBufferSource();
-      noise.buffer = noiseBuffer;
-      const highpass = ctx.createBiquadFilter();
-      highpass.type = 'highpass';
-      highpass.frequency.value = 5000;
-      const bandpass = ctx.createBiquadFilter();
-      bandpass.type = 'bandpass';
-      bandpass.frequency.value = 8000;
-      bandpass.Q.value = 0.5;
-      const gain = ctx.createGain();
-      gain.gain.setValueAtTime(volume * 0.6, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 1.5);
-      noise.connect(highpass).connect(bandpass).connect(gain).connect(master);
-      noise.start(time);
-      noise.stop(time + 1.5);
-      break;
-    }
-    case 'crash2': {
-      const bufferSize = ctx.sampleRate * 1.0;
+    case 'openhat1': {
+      const bufferSize = ctx.sampleRate * 0.5;
       const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const output = noiseBuffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
@@ -1256,12 +1240,38 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
       const highpass = ctx.createBiquadFilter();
       highpass.type = 'highpass';
       highpass.frequency.value = 7000;
+      const bandpass = ctx.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.frequency.value = 10000;
+      bandpass.Q.value = 1;
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(volume * 0.5, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 1.0);
-      noise.connect(highpass).connect(gain).connect(master);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.4);
+      noise.connect(highpass).connect(bandpass).connect(gain).connect(master);
       noise.start(time);
-      noise.stop(time + 1.0);
+      noise.stop(time + 0.5);
+      break;
+    }
+    case 'openhat2': {
+      const bufferSize = ctx.sampleRate * 0.8;
+      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+      const noise = ctx.createBufferSource();
+      noise.buffer = noiseBuffer;
+      const highpass = ctx.createBiquadFilter();
+      highpass.type = 'highpass';
+      highpass.frequency.value = 6000;
+      const bandpass = ctx.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.frequency.value = 9000;
+      bandpass.Q.value = 0.8;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(volume * 0.45, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.7);
+      noise.connect(highpass).connect(bandpass).connect(gain).connect(master);
+      noise.start(time);
+      noise.stop(time + 0.8);
       break;
     }
     case 'rim1': {
@@ -1729,7 +1739,7 @@ function generateBeatImage(beatData) {
     snare: '#00FFC3',
     hat: '#14F195',
     clap: '#FF6B9D',
-    crash: '#FFD700',
+    openhat: '#FFD700',
     rim: '#00BFFF',
     tom: '#FF8C00'
   };
@@ -2199,7 +2209,7 @@ document.getElementById('mint').onclick = async () => {
       return parseInt(binary, 2).toString(16).padStart(4, '0');
     };
     
-    const trackOrder = ['kick', 'snare', 'hat', 'clap', 'crash', 'rim', 'tom'];
+    const trackOrder = ['kick', 'snare', 'hat', 'clap', 'openhat', 'rim', 'tom'];
     
     const compressPattern = (pattern) => {
       let hexString = '';
@@ -2716,7 +2726,7 @@ fetchNftBtn.onclick = async () => {
     let beatDataToLoad = null;
     
     // Track order for decompression
-    const trackOrder = ['kick', 'snare', 'hat', 'clap', 'crash', 'rim', 'tom'];
+    const trackOrder = ['kick', 'snare', 'hat', 'clap', 'openhat', 'rim', 'tom'];
     
     // Decompress hex string to boolean arrays for all tracks
     const hexToBoolArray = (hex) => {
@@ -2857,7 +2867,7 @@ fetchNftBtn.onclick = async () => {
       console.log('Detected old minimal hex format');
       
       // Map short track names to full names
-      const trackMap = { k: 'kick', s: 'snare', h: 'hat', c: 'clap', r: 'rim', t: 'tom', x: 'crash' };
+      const trackMap = { k: 'kick', s: 'snare', h: 'hat', c: 'clap', r: 'rim', t: 'tom', o: 'openhat' };
       
       const decompressedA = {};
       const patternA = metadata.A;

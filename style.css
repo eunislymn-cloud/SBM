@@ -556,7 +556,7 @@ label {
   border-color: #FF6B9D; 
 }
 
-.track-container[data-track="crash"] .step.active { 
+.track-container[data-track="openhat"] .step.active { 
   background: #FFA500; 
   border-color: #FFA500; 
 }
