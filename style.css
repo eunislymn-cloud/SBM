@@ -1357,7 +1357,7 @@ label {
 /* Landscape optimization */
 @media screen and (orientation: portrait) {
   body::before {
-    content: '📱 Rotate device sideways for best experience ↻';
+    content: '📱 Rotate sideways for best experience (Note: Wallet browsers may not rotate)';
     position: fixed;
     top: 0;
     left: 0;
@@ -1367,7 +1367,7 @@ label {
     text-align: center;
     padding: 15px;
     font-weight: bold;
-    font-size: 14px;
+    font-size: 13px;
     z-index: 10000;
   }
   
