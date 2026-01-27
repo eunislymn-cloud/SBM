@@ -182,10 +182,7 @@ trackConfig.forEach(track => {
     const step = document.createElement('div');
     step.className = 'step';
     step.dataset.index = i;
-    step.addEventListener('click', () => {
-      patterns[currentPattern][track.name][i] = !patterns[currentPattern][track.name][i];
-      step.classList.toggle('active');
-    });
+    step.dataset.track = track.name;
     grid.appendChild(step);
   }
   
@@ -229,6 +226,78 @@ document.addEventListener('click', () => {
   document.querySelectorAll('.sound-menu').forEach(menu => {
     menu.style.display = 'none';
   });
+});
+
+// Drag-to-fill functionality for step sequencer
+let isDragging = false;
+let dragFillState = null; // true = filling, false = clearing
+let dragTrack = null;
+
+document.addEventListener('mousedown', (e) => {
+  const step = e.target.closest('.step');
+  if (step) {
+    e.preventDefault();
+    isDragging = true;
+    dragTrack = step.dataset.track;
+    const index = parseInt(step.dataset.index);
+    
+    // Toggle the clicked step and remember the new state for drag-fill
+    patterns[currentPattern][dragTrack][index] = !patterns[currentPattern][dragTrack][index];
+    dragFillState = patterns[currentPattern][dragTrack][index];
+    step.classList.toggle('active', dragFillState);
+  }
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (!isDragging || dragTrack === null) return;
+  
+  const step = e.target.closest('.step');
+  if (step && step.dataset.track === dragTrack) {
+    const index = parseInt(step.dataset.index);
+    patterns[currentPattern][dragTrack][index] = dragFillState;
+    step.classList.toggle('active', dragFillState);
+  }
+});
+
+document.addEventListener('mouseup', () => {
+  isDragging = false;
+  dragFillState = null;
+  dragTrack = null;
+});
+
+// Touch support for mobile
+document.addEventListener('touchstart', (e) => {
+  const step = e.target.closest('.step');
+  if (step) {
+    e.preventDefault();
+    isDragging = true;
+    dragTrack = step.dataset.track;
+    const index = parseInt(step.dataset.index);
+    
+    patterns[currentPattern][dragTrack][index] = !patterns[currentPattern][dragTrack][index];
+    dragFillState = patterns[currentPattern][dragTrack][index];
+    step.classList.toggle('active', dragFillState);
+  }
+}, { passive: false });
+
+document.addEventListener('touchmove', (e) => {
+  if (!isDragging || dragTrack === null) return;
+  
+  const touch = e.touches[0];
+  const element = document.elementFromPoint(touch.clientX, touch.clientY);
+  const step = element?.closest('.step');
+  
+  if (step && step.dataset.track === dragTrack) {
+    const index = parseInt(step.dataset.index);
+    patterns[currentPattern][dragTrack][index] = dragFillState;
+    step.classList.toggle('active', dragFillState);
+  }
+}, { passive: false });
+
+document.addEventListener('touchend', () => {
+  isDragging = false;
+  dragFillState = null;
+  dragTrack = null;
 });
 
 document.getElementById('seqToggle').onclick = () => {
