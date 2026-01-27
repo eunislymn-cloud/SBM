@@ -5,7 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>Seeker Beat Maker - Enhanced</title>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#9945FF">
+  <meta name="description" content="MPSeeker - Create beats, mint NFTs, and export audio on Solana">
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="mpseeker-logo.png">
+  <link rel="icon" type="image/png" href="mpseeker-logo.png">
+  
+  <title>MPSeeker - Beat Maker on Solana</title>
   <link rel="stylesheet" href="style.css" />
   <style>
     @media screen and (orientation: portrait) {
@@ -355,5 +364,15 @@
     </div>
   </div>
   <script src="main.js"></script>
+  <script>
+    // Register PWA Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(reg => console.log('MPSeeker: PWA ready!', reg.scope))
+          .catch(err => console.log('MPSeeker: PWA registration failed', err));
+      });
+    }
+  </script>
 </body>
 </html>
