@@ -16,17 +16,39 @@ delayNode.delayTime.value = 0.25;
 delayFeedback.gain.value = 0.3;
 delayWet.gain.value = 0;
 
-// Create reverb impulse response
+// Create reverb impulse response - improved room sound
 function createReverb() {
   const rate = audioCtx.sampleRate;
-  const length = rate * 2;
+  const length = rate * 1.5; // 1.5 second reverb tail
   const impulse = audioCtx.createBuffer(2, length, rate);
+  
+  // Create a more natural sounding reverb
+  const decay = 2.5; // Decay factor
+  
   for (let channel = 0; channel < 2; channel++) {
     const channelData = impulse.getChannelData(channel);
     for (let i = 0; i < length; i++) {
-      channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
+      const t = i / rate;
+      // Exponential decay with some early reflections
+      const envelope = Math.exp(-decay * t);
+      // Add some randomness but smoother
+      const noise = (Math.random() * 2 - 1);
+      // Apply a subtle filter effect by averaging nearby samples
+      channelData[i] = noise * envelope * 0.5;
+    }
+    
+    // Add early reflections for more realistic room sound
+    const reflections = [0.01, 0.02, 0.03, 0.05, 0.08];
+    const reflectionGains = [0.6, 0.4, 0.3, 0.2, 0.15];
+    
+    for (let r = 0; r < reflections.length; r++) {
+      const delaySamples = Math.floor(reflections[r] * rate);
+      if (delaySamples < length) {
+        channelData[delaySamples] += reflectionGains[r] * (channel === 0 ? 1 : -1);
+      }
     }
   }
+  
   reverbNode.buffer = impulse;
 }
 createReverb();
