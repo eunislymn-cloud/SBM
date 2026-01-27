@@ -653,60 +653,55 @@ function playSound(trackName) {
       break;
     }
     case 'rim1': {
-      // Rimshot - sharp attack with stick click
-      const clickOsc = audioCtx.createOscillator();
-      const clickGain = audioCtx.createGain();
-      clickOsc.type = 'square';
-      clickOsc.frequency.setValueAtTime(1800, time);
-      clickOsc.frequency.exponentialRampToValueAtTime(400, time + 0.008);
-      clickGain.gain.setValueAtTime(volume * 0.9, time);
-      clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
-      clickOsc.connect(clickGain).connect(masterGain);
-      clickOsc.start(time);
-      clickOsc.stop(time + 0.025);
-      
-      // Body resonance
-      const bodyOsc = audioCtx.createOscillator();
-      const bodyGain = audioCtx.createGain();
-      bodyOsc.type = 'triangle';
-      bodyOsc.frequency.setValueAtTime(350, time);
-      bodyOsc.frequency.exponentialRampToValueAtTime(250, time + 0.03);
-      bodyGain.gain.setValueAtTime(volume * 0.5, time);
-      bodyGain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
-      bodyOsc.connect(bodyGain).connect(masterGain);
-      bodyOsc.start(time);
-      bodyOsc.stop(time + 0.04);
-      break;
-    }
-    case 'rim2': {
-      // Cross-stick - woody click
-      const clickOsc = audioCtx.createOscillator();
-      const clickGain = audioCtx.createGain();
-      clickOsc.type = 'square';
-      clickOsc.frequency.setValueAtTime(2500, time);
-      clickOsc.frequency.exponentialRampToValueAtTime(800, time + 0.005);
-      clickGain.gain.setValueAtTime(volume * 0.8, time);
-      clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
-      clickOsc.connect(clickGain).connect(masterGain);
-      clickOsc.start(time);
-      clickOsc.stop(time + 0.02);
-      
-      // Sharp noise transient
+      // Rimshot - stick hitting rim + head
+      // High frequency crack
       const noise = audioCtx.createBufferSource();
-      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.02, audioCtx.sampleRate);
+      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.03, audioCtx.sampleRate);
       const data = buffer.getChannelData(0);
       for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
       noise.buffer = buffer;
       
-      const filter = audioCtx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.value = 3000;
-      filter.Q.value = 2;
+      const bandpass = audioCtx.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.frequency.value = 1500;
+      bandpass.Q.value = 3;
       
       const noiseGain = audioCtx.createGain();
-      noiseGain.gain.setValueAtTime(volume * 0.4, time);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.015);
-      noise.connect(filter).connect(noiseGain).connect(masterGain);
+      noiseGain.gain.setValueAtTime(volume * 1.2, time);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.03);
+      noise.connect(bandpass).connect(noiseGain).connect(masterGain);
+      noise.start(time);
+      
+      // Low thud from head
+      const osc = audioCtx.createOscillator();
+      const oscGain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(280, time);
+      osc.frequency.exponentialRampToValueAtTime(150, time + 0.015);
+      oscGain.gain.setValueAtTime(volume * 0.4, time);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
+      osc.connect(oscGain).connect(masterGain);
+      osc.start(time);
+      osc.stop(time + 0.025);
+      break;
+    }
+    case 'rim2': {
+      // Sidestick / cross-stick - drier, clickier
+      const noise = audioCtx.createBufferSource();
+      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.025, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      noise.buffer = buffer;
+      
+      const bandpass = audioCtx.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.frequency.value = 2200;
+      bandpass.Q.value = 4;
+      
+      const noiseGain = audioCtx.createGain();
+      noiseGain.gain.setValueAtTime(volume * 1.0, time);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
+      noise.connect(bandpass).connect(noiseGain).connect(masterGain);
       noise.start(time);
       break;
     }
@@ -1372,56 +1367,49 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
       break;
     }
     case 'rim1': {
-      // Rimshot - sharp attack
-      const clickOsc = ctx.createOscillator();
-      const clickGain = ctx.createGain();
-      clickOsc.type = 'square';
-      clickOsc.frequency.setValueAtTime(1800, time);
-      clickOsc.frequency.exponentialRampToValueAtTime(400, time + 0.008);
-      clickGain.gain.setValueAtTime(volume * 0.9, time);
-      clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
-      clickOsc.connect(clickGain).connect(master);
-      clickOsc.start(time);
-      clickOsc.stop(time + 0.025);
-      
-      const bodyOsc = ctx.createOscillator();
-      const bodyGain = ctx.createGain();
-      bodyOsc.type = 'triangle';
-      bodyOsc.frequency.setValueAtTime(350, time);
-      bodyOsc.frequency.exponentialRampToValueAtTime(250, time + 0.03);
-      bodyGain.gain.setValueAtTime(volume * 0.5, time);
-      bodyGain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
-      bodyOsc.connect(bodyGain).connect(master);
-      bodyOsc.start(time);
-      bodyOsc.stop(time + 0.04);
-      break;
-    }
-    case 'rim2': {
-      // Cross-stick - woody click
-      const clickOsc = ctx.createOscillator();
-      const clickGain = ctx.createGain();
-      clickOsc.type = 'square';
-      clickOsc.frequency.setValueAtTime(2500, time);
-      clickOsc.frequency.exponentialRampToValueAtTime(800, time + 0.005);
-      clickGain.gain.setValueAtTime(volume * 0.8, time);
-      clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
-      clickOsc.connect(clickGain).connect(master);
-      clickOsc.start(time);
-      clickOsc.stop(time + 0.02);
-      
+      // Rimshot
       const noise = ctx.createBufferSource();
-      const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.02, ctx.sampleRate);
+      const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.03, ctx.sampleRate);
       const data = buffer.getChannelData(0);
       for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
       noise.buffer = buffer;
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.value = 3000;
-      filter.Q.value = 2;
+      const bandpass = ctx.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.frequency.value = 1500;
+      bandpass.Q.value = 3;
       const noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(volume * 0.4, time);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.015);
-      noise.connect(filter).connect(noiseGain).connect(master);
+      noiseGain.gain.setValueAtTime(volume * 1.2, time);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.03);
+      noise.connect(bandpass).connect(noiseGain).connect(master);
+      noise.start(time);
+      
+      const osc = ctx.createOscillator();
+      const oscGain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(280, time);
+      osc.frequency.exponentialRampToValueAtTime(150, time + 0.015);
+      oscGain.gain.setValueAtTime(volume * 0.4, time);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
+      osc.connect(oscGain).connect(master);
+      osc.start(time);
+      osc.stop(time + 0.025);
+      break;
+    }
+    case 'rim2': {
+      // Sidestick
+      const noise = ctx.createBufferSource();
+      const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.025, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      noise.buffer = buffer;
+      const bandpass = ctx.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.frequency.value = 2200;
+      bandpass.Q.value = 4;
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(volume * 1.0, time);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
+      noise.connect(bandpass).connect(noiseGain).connect(master);
       noise.start(time);
       break;
     }
