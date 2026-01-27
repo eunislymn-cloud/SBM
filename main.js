@@ -1498,7 +1498,20 @@ async function connectWallet(walletType) {
 }
 
 // Disconnect wallet function
-function disconnectWallet() {
+async function disconnectWallet() {
+  // Actually disconnect from the wallet provider
+  try {
+    if (connectedWallet === 'phantom' && window.phantom?.solana) {
+      await window.phantom.solana.disconnect();
+    } else if (connectedWallet === 'solflare' && window.solflare) {
+      await window.solflare.disconnect();
+    } else if (window.solana) {
+      await window.solana.disconnect();
+    }
+  } catch (e) {
+    console.log('Disconnect error (ignoring):', e);
+  }
+  
   connectedWallet = null;
   walletAddress = null;
   walletBtn.textContent = 'Connect Wallet';
@@ -1523,7 +1536,7 @@ async function checkExistingConnection() {
       // Silent fail
     }
   }
-  else if (window.solflare?.isConnected) {
+  else if (window.solflare?.isConnected && window.solflare?.publicKey) {
     try {
       walletAddress = window.solflare.publicKey.toString();
       connectedWallet = 'solflare';
