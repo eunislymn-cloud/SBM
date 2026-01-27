@@ -1672,7 +1672,7 @@ function generateBeatImage(beatData) {
   ctx.fillStyle = '#444';
   ctx.font = '14px Arial';
   ctx.textAlign = 'center';
-  ctx.fillText('Created with Seeker Beat Maker', canvas.width / 2, footerY);
+  ctx.fillText('Created with MPSeeker', canvas.width / 2, footerY);
   
   // Solana logo hint
   ctx.fillStyle = '#9945FF';
@@ -1989,7 +1989,7 @@ document.getElementById('mint').onclick = async () => {
     return;
   }
   
-  const beatName = document.getElementById('beatName').value.trim() || 'Seeker Beat';
+  const beatName = document.getElementById('beatName').value.trim() || 'My Beat';
   
   if (!confirm(`Mint "${beatName}" as an NFT on Solana ${SOLANA_NETWORK}?\n\nThis will:\n1. Generate artwork from your beat pattern\n2. Upload metadata to IPFS\n3. Create your NFT on Solana`)) {
     return;
@@ -2004,7 +2004,7 @@ document.getElementById('mint').onclick = async () => {
     const beatData = {
       name: beatName,
       symbol: 'BEAT',
-      description: `A unique beat created with Seeker Beat Maker. BPM: ${bpm}, Swing: ${swing}%`,
+      description: `A unique beat created with MPSeeker. BPM: ${bpm}, Swing: ${swing}%`,
       bpm: bpm,
       swing: swing,
       patterns: patterns,
@@ -2016,7 +2016,7 @@ document.getElementById('mint').onclick = async () => {
         name: samplePacks[activeSamplePack].name
       } : null,
       creator: walletAddress,
-      app: 'Seeker Beat Maker',
+      app: 'MPSeeker',
       version: '1.0',
       timestamp: new Date().toISOString()
     };
@@ -2044,13 +2044,13 @@ document.getElementById('mint').onclick = async () => {
       symbol: beatData.symbol,
       description: beatData.description,
       image: imageUri,
-      external_url: 'https://seeker-beat-maker.app',
+      external_url: 'https://mpseeker.app',
       attributes: [
         { trait_type: 'BPM', value: beatData.bpm },
         { trait_type: 'Swing', value: `${beatData.swing}%` },
         { trait_type: 'Patterns', value: Object.keys(beatData.patterns).length },
         { trait_type: 'Tracks', value: Object.keys(beatData.patterns.A).length },
-        { trait_type: 'App', value: 'Seeker Beat Maker' },
+        { trait_type: 'App', value: 'MPSeeker' },
         { trait_type: 'Version', value: '1.0' }
       ],
       properties: {
@@ -2829,7 +2829,7 @@ fetchNftBtn.onclick = async () => {
     }
     
     if (!beatDataToLoad) {
-      throw new Error('This NFT does not contain beat data. It may not be a Seeker Beat Maker NFT.');
+      throw new Error('This NFT does not contain beat data. It may not be a MPSeeker NFT.');
     }
     
     // Store fetched beat data

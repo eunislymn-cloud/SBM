@@ -1483,3 +1483,35 @@ label {
     font-size: 11px;
   }
 }
+
+/* Footer */
+.app-footer {
+  margin-top: 40px;
+  padding: 20px;
+  text-align: center;
+  border-top: 1px solid #333;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: #888;
+}
+
+.footer-divider {
+  color: #444;
+}
+
+.app-footer a {
+  color: #9945FF;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.app-footer a:hover {
+  color: #14F195;
+}
