@@ -750,18 +750,6 @@ document.getElementById('load').onclick = () => {
   alert(`"${name}" loaded!`);
 };
 
-document.getElementById('export').onclick = () => {
-  const name = document.getElementById('beatName').value.trim() || 'MyBeat';
-  const data = { name, bpm, swing, patterns, trackVolumes, patternSequence, trackSounds };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${name}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-};
-
 // Export audio as WAV
 document.getElementById('exportAudio').onclick = async () => {
   const name = document.getElementById('beatName').value.trim() || 'MyBeat';
@@ -1111,54 +1099,6 @@ function writeString(view, offset, string) {
     view.setUint8(offset + i, string.charCodeAt(i));
   }
 }
-
-document.getElementById('import').onclick = () => document.getElementById('importFile').click();
-
-document.getElementById('importFile').onchange = e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = evt => {
-    try {
-      const data = JSON.parse(evt.target.result);
-      bpm = data.bpm || 120;
-      swing = data.swing || 0;
-      Object.assign(patterns, data.patterns);
-      Object.assign(trackVolumes, data.trackVolumes || {});
-      
-      if (data.patternSequence) {
-        patternSequence = data.patternSequence;
-        document.querySelectorAll('.pattern-select').forEach((select, i) => {
-          select.value = patternSequence[i] || '';
-        });
-      }
-      
-      if (data.trackSounds) {
-        Object.assign(trackSounds, data.trackSounds);
-        trackConfig.forEach(track => {
-          const soundMenu = document.querySelector(`[data-track="${track.name}"] .sound-menu`);
-          if (soundMenu) {
-            soundMenu.querySelectorAll('.sound-option').forEach(opt => {
-              opt.classList.toggle('selected', opt.dataset.sound === trackSounds[track.name]);
-            });
-          }
-        });
-      }
-      
-      document.getElementById('beatName').value = data.name || '';
-      document.getElementById('bpm').value = bpm;
-      document.getElementById('bpmValue').textContent = bpm;
-      document.getElementById('swing').value = swing;
-      document.getElementById('swingValue').textContent = swing + '%';
-      updateUI();
-      alert(`"${data.name || 'Beat'}" imported!`);
-    } catch {
-      alert('Invalid file!');
-    }
-  };
-  reader.readAsText(file);
-  e.target.value = '';
-};
 
 updateBeatDropdown();
 
