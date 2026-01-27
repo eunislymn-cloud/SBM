@@ -1445,15 +1445,34 @@ async function connectWallet(walletType) {
     }
     
     console.log('Connecting to', walletType, '...');
-    const response = await provider.connect();
     
-    // Handle different wallet response formats
-    if (response && response.publicKey) {
-      walletAddress = response.publicKey.toString();
-    } else if (provider.publicKey) {
-      walletAddress = provider.publicKey.toString();
+    // Solflare needs special handling
+    if (walletType === 'solflare') {
+      try {
+        await provider.connect();
+      } catch (e) {
+        console.log('Solflare connect response:', e);
+      }
+      
+      // Wait a moment for Solflare to set publicKey
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      if (provider.publicKey) {
+        walletAddress = provider.publicKey.toString();
+      } else {
+        throw new Error('Could not get wallet address from Solflare');
+      }
     } else {
-      throw new Error('Could not get wallet address');
+      // Phantom and Seed Vault
+      const response = await provider.connect();
+      
+      if (response && response.publicKey) {
+        walletAddress = response.publicKey.toString();
+      } else if (provider.publicKey) {
+        walletAddress = provider.publicKey.toString();
+      } else {
+        throw new Error('Could not get wallet address');
+      }
     }
     
     connectedWallet = walletType;
