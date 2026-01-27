@@ -653,27 +653,61 @@ function playSound(trackName) {
       break;
     }
     case 'rim1': {
-      const osc = audioCtx.createOscillator();
-      osc.frequency.setValueAtTime(400, time);
-      osc.frequency.exponentialRampToValueAtTime(200, time + 0.02);
-      const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(volume * 0.5, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
-      osc.connect(gain).connect(masterGain);
-      osc.start(time);
-      osc.stop(time + 0.02);
+      // Rimshot - sharp attack with stick click
+      const clickOsc = audioCtx.createOscillator();
+      const clickGain = audioCtx.createGain();
+      clickOsc.type = 'square';
+      clickOsc.frequency.setValueAtTime(1800, time);
+      clickOsc.frequency.exponentialRampToValueAtTime(400, time + 0.008);
+      clickGain.gain.setValueAtTime(volume * 0.9, time);
+      clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
+      clickOsc.connect(clickGain).connect(masterGain);
+      clickOsc.start(time);
+      clickOsc.stop(time + 0.025);
+      
+      // Body resonance
+      const bodyOsc = audioCtx.createOscillator();
+      const bodyGain = audioCtx.createGain();
+      bodyOsc.type = 'triangle';
+      bodyOsc.frequency.setValueAtTime(350, time);
+      bodyOsc.frequency.exponentialRampToValueAtTime(250, time + 0.03);
+      bodyGain.gain.setValueAtTime(volume * 0.5, time);
+      bodyGain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+      bodyOsc.connect(bodyGain).connect(masterGain);
+      bodyOsc.start(time);
+      bodyOsc.stop(time + 0.04);
       break;
     }
     case 'rim2': {
-      const osc = audioCtx.createOscillator();
-      osc.frequency.setValueAtTime(800, time);
-      osc.frequency.exponentialRampToValueAtTime(400, time + 0.015);
-      const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(volume * 0.6, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.015);
-      osc.connect(gain).connect(masterGain);
-      osc.start(time);
-      osc.stop(time + 0.015);
+      // Cross-stick - woody click
+      const clickOsc = audioCtx.createOscillator();
+      const clickGain = audioCtx.createGain();
+      clickOsc.type = 'square';
+      clickOsc.frequency.setValueAtTime(2500, time);
+      clickOsc.frequency.exponentialRampToValueAtTime(800, time + 0.005);
+      clickGain.gain.setValueAtTime(volume * 0.8, time);
+      clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
+      clickOsc.connect(clickGain).connect(masterGain);
+      clickOsc.start(time);
+      clickOsc.stop(time + 0.02);
+      
+      // Sharp noise transient
+      const noise = audioCtx.createBufferSource();
+      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.02, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      noise.buffer = buffer;
+      
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 3000;
+      filter.Q.value = 2;
+      
+      const noiseGain = audioCtx.createGain();
+      noiseGain.gain.setValueAtTime(volume * 0.4, time);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.015);
+      noise.connect(filter).connect(noiseGain).connect(masterGain);
+      noise.start(time);
       break;
     }
     case 'tom1': {
@@ -1338,27 +1372,57 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
       break;
     }
     case 'rim1': {
-      const osc = ctx.createOscillator();
-      osc.type = 'triangle';
-      osc.frequency.value = 800;
-      const gain = ctx.createGain();
-      gain.gain.setValueAtTime(volume * 0.6, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
-      osc.connect(gain).connect(master);
-      osc.start(time);
-      osc.stop(time + 0.05);
+      // Rimshot - sharp attack
+      const clickOsc = ctx.createOscillator();
+      const clickGain = ctx.createGain();
+      clickOsc.type = 'square';
+      clickOsc.frequency.setValueAtTime(1800, time);
+      clickOsc.frequency.exponentialRampToValueAtTime(400, time + 0.008);
+      clickGain.gain.setValueAtTime(volume * 0.9, time);
+      clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
+      clickOsc.connect(clickGain).connect(master);
+      clickOsc.start(time);
+      clickOsc.stop(time + 0.025);
+      
+      const bodyOsc = ctx.createOscillator();
+      const bodyGain = ctx.createGain();
+      bodyOsc.type = 'triangle';
+      bodyOsc.frequency.setValueAtTime(350, time);
+      bodyOsc.frequency.exponentialRampToValueAtTime(250, time + 0.03);
+      bodyGain.gain.setValueAtTime(volume * 0.5, time);
+      bodyGain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+      bodyOsc.connect(bodyGain).connect(master);
+      bodyOsc.start(time);
+      bodyOsc.stop(time + 0.04);
       break;
     }
     case 'rim2': {
-      const osc = ctx.createOscillator();
-      osc.type = 'square';
-      osc.frequency.value = 600;
-      const gain = ctx.createGain();
-      gain.gain.setValueAtTime(volume * 0.4, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
-      osc.connect(gain).connect(master);
-      osc.start(time);
-      osc.stop(time + 0.08);
+      // Cross-stick - woody click
+      const clickOsc = ctx.createOscillator();
+      const clickGain = ctx.createGain();
+      clickOsc.type = 'square';
+      clickOsc.frequency.setValueAtTime(2500, time);
+      clickOsc.frequency.exponentialRampToValueAtTime(800, time + 0.005);
+      clickGain.gain.setValueAtTime(volume * 0.8, time);
+      clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
+      clickOsc.connect(clickGain).connect(master);
+      clickOsc.start(time);
+      clickOsc.stop(time + 0.02);
+      
+      const noise = ctx.createBufferSource();
+      const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.02, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      noise.buffer = buffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 3000;
+      filter.Q.value = 2;
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(volume * 0.4, time);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.015);
+      noise.connect(filter).connect(noiseGain).connect(master);
+      noise.start(time);
       break;
     }
     case 'tom1': {
