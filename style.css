@@ -1357,7 +1357,7 @@ label {
 /* Landscape optimization */
 @media screen and (orientation: portrait) {
   body::before {
-    content: '📱 Tip: Rotate sideways for best view ↻';
+    content: '📱 Rotate device sideways for best experience ↻';
     position: fixed;
     top: 0;
     left: 0;
@@ -1365,97 +1365,13 @@ label {
     background: linear-gradient(135deg, #9945FF, #14F195);
     color: white;
     text-align: center;
-    padding: 8px;
+    padding: 15px;
     font-weight: bold;
-    font-size: 12px;
+    font-size: 14px;
     z-index: 10000;
   }
   
   .container {
-    padding-top: 40px;
-  }
-  
-  /* Make sequencer scroll horizontally in portrait */
-  .track-container {
-    display: flex;
-    flex-wrap: nowrap;
-  }
-  
-  .track-header {
-    min-width: 60px;
-    flex-shrink: 0;
-  }
-  
-  /* Smaller volume controls */
-  .track-volume {
-    transform: scale(0.7);
-    margin: -5px 0;
-  }
-  
-  .track-volume span {
-    font-size: 10px;
-  }
-  
-  .volume-control {
-    width: 40px;
-  }
-  
-  .track-grid {
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    min-width: 320px;
-    padding-bottom: 5px;
-  }
-  
-  /* Bigger sequencer steps */
-  .step {
-    min-width: 28px;
-    width: 28px;
-    height: 28px;
-    flex-shrink: 0;
-  }
-  
-  /* Stack controls vertically */
-  .control-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .control-row button {
-    width: 100%;
-    margin-bottom: 5px;
-  }
-  
-  /* Smaller pattern buttons */
-  .pattern-selector {
-    flex-wrap: wrap;
-  }
-  
-  .pattern-btn {
-    flex: 1 1 30%;
-    padding: 10px;
-    font-size: 14px;
-  }
-  
-  .pattern-copy-btn {
-    flex: 1 1 45%;
-  }
-  
-  /* Compact logo */
-  .logo-title .logo-tagline {
-    display: none;
-  }
-  
-  .logo-name {
-    font-size: 20px;
-  }
-  
-  .logo-pad {
-    width: 40px;
-    height: 40px;
-  }
-  
-  .logo-text {
-    font-size: 14px;
+    padding-top: 60px;
   }
 }
