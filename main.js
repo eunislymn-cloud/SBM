@@ -2261,7 +2261,12 @@ document.getElementById('mint').onclick = async () => {
           {
             address: payer,
             verified: true,
-            share: 100,
+            share: 90, // Minter gets 90% of royalties
+          },
+          {
+            address: new solanaWeb3.PublicKey('3fuLXsLx3xH9EF7wXWMVzwzxQByAPqQ8FHYXZy62WMba'),
+            verified: false, // MPSeeker creator
+            share: 10, // MPSeeker gets 10% of royalties
           }
         ],
         collection: null,
