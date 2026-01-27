@@ -756,16 +756,35 @@ document.getElementById('exportAudio').onclick = async () => {
   const exportBtn = document.getElementById('exportAudio');
   const originalText = exportBtn.textContent;
   
+  // Ask user for loop count
+  const activePatterns = patternSequence.filter(p => p !== '');
+  const patternInfo = activePatterns.length > 0 
+    ? `${activePatterns.length} patterns in sequence` 
+    : `Pattern ${currentPattern} only`;
+  
+  const loopInput = prompt(
+    `Export WAV - How many loops?\n\n` +
+    `Currently: ${patternInfo}\n` +
+    `BPM: ${bpm}\n\n` +
+    `Enter number of loops (1-16):`,
+    '2'
+  );
+  
+  if (!loopInput) return; // User cancelled
+  
+  const loops = Math.max(1, Math.min(16, parseInt(loopInput) || 1));
+  
   try {
-    exportBtn.textContent = 'Rendering...';
+    exportBtn.textContent = `Rendering ${loops}x...`;
     exportBtn.disabled = true;
     
     // Calculate duration based on pattern sequence or single pattern
-    const activePatterns = patternSequence.filter(p => p !== '');
-    const numPatterns = activePatterns.length > 0 ? activePatterns.length : 1;
+    const activePatternsForRender = patternSequence.filter(p => p !== '');
+    const numPatterns = activePatternsForRender.length > 0 ? activePatternsForRender.length : 1;
     const beatsPerPattern = 16;
     const secondsPerBeat = 60 / bpm / 4; // 16th notes
-    const duration = numPatterns * beatsPerPattern * secondsPerBeat + 0.5; // Add tail for decay
+    const singleLoopDuration = numPatterns * beatsPerPattern * secondsPerBeat;
+    const duration = (singleLoopDuration * loops) + 0.5; // Add tail for decay
     
     // Create offline audio context for rendering
     const sampleRate = 44100;
@@ -776,28 +795,30 @@ document.getElementById('exportAudio').onclick = async () => {
     offlineMaster.gain.value = 0.8;
     offlineMaster.connect(offlineCtx.destination);
     
-    // Render each step
-    const patternsToRender = activePatterns.length > 0 ? activePatterns : [currentPattern];
+    // Render each loop
+    const patternsToRender = activePatternsForRender.length > 0 ? activePatternsForRender : [currentPattern];
     let currentTime = 0;
     
-    for (let patIdx = 0; patIdx < patternsToRender.length; patIdx++) {
-      const patternKey = patternsToRender[patIdx];
-      const pattern = patterns[patternKey];
-      
-      for (let step = 0; step < 16; step++) {
-        const isOddStep = step % 2 === 1;
-        const swingOffset = isOddStep ? (swing / 100) * secondsPerBeat * 0.5 : 0;
-        const stepTime = currentTime + (step * secondsPerBeat) + swingOffset;
+    for (let loop = 0; loop < loops; loop++) {
+      for (let patIdx = 0; patIdx < patternsToRender.length; patIdx++) {
+        const patternKey = patternsToRender[patIdx];
+        const pattern = patterns[patternKey];
         
-        // Play each track
-        trackConfig.forEach(track => {
-          if (pattern[track.name] && pattern[track.name][step]) {
-            renderSoundOffline(offlineCtx, offlineMaster, track.name, stepTime, trackVolumes[track.name]);
-          }
-        });
+        for (let step = 0; step < 16; step++) {
+          const isOddStep = step % 2 === 1;
+          const swingOffset = isOddStep ? (swing / 100) * secondsPerBeat * 0.5 : 0;
+          const stepTime = currentTime + (step * secondsPerBeat) + swingOffset;
+          
+          // Play each track
+          trackConfig.forEach(track => {
+            if (pattern[track.name] && pattern[track.name][step]) {
+              renderSoundOffline(offlineCtx, offlineMaster, track.name, stepTime, trackVolumes[track.name]);
+            }
+          });
+        }
+        
+        currentTime += 16 * secondsPerBeat;
       }
-      
-      currentTime += 16 * secondsPerBeat;
     }
     
     // Render to buffer
