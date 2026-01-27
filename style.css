@@ -1382,8 +1382,22 @@ label {
   }
   
   .track-header {
-    min-width: 70px;
+    min-width: 60px;
     flex-shrink: 0;
+  }
+  
+  /* Smaller volume controls */
+  .track-volume {
+    transform: scale(0.7);
+    margin: -5px 0;
+  }
+  
+  .track-volume span {
+    font-size: 10px;
+  }
+  
+  .volume-control {
+    width: 40px;
   }
   
   .track-grid {
@@ -1393,8 +1407,11 @@ label {
     padding-bottom: 5px;
   }
   
+  /* Bigger sequencer steps */
   .step {
-    min-width: 22px;
+    min-width: 28px;
+    width: 28px;
+    height: 28px;
     flex-shrink: 0;
   }
   
