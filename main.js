@@ -8,8 +8,8 @@ const delayNode = audioCtx.createDelay(2.0);
 const delayFeedback = audioCtx.createGain();
 const delayWet = audioCtx.createGain();
 const filterNode = audioCtx.createBiquadFilter();
-const distortionNode = audioCtx.createWaveShaper();
-const distortionGain = audioCtx.createGain();
+const gainBoost = audioCtx.createGain();
+const highShelf = audioCtx.createBiquadFilter();
 
 // Setup Effects
 filterNode.type = 'lowpass';
@@ -18,22 +18,13 @@ delayNode.delayTime.value = 0.25;
 delayFeedback.gain.value = 0.3;
 delayWet.gain.value = 0;
 
-// Distortion curve function
-function makeDistortionCurve(amount) {
-  const samples = 44100;
-  const curve = new Float32Array(samples);
-  const deg = Math.PI / 180;
-  for (let i = 0; i < samples; i++) {
-    const x = (i * 2) / samples - 1;
-    curve[i] = ((3 + amount) * x * 20 * deg) / (Math.PI + amount * Math.abs(x));
-  }
-  return curve;
-}
+// Initial gain boost (1 = unity)
+gainBoost.gain.value = 1;
 
-// Initial distortion (off)
-distortionNode.curve = makeDistortionCurve(0);
-distortionNode.oversample = '4x';
-distortionGain.gain.value = 1;
+// High shelf for boosting highs with gain
+highShelf.type = 'highshelf';
+highShelf.frequency.value = 3000;
+highShelf.gain.value = 0;
 
 // Create reverb impulse response - improved room sound
 function createReverb() {
@@ -72,16 +63,16 @@ function createReverb() {
 }
 createReverb();
 
-// Set initial reverb mix (20% wet)
-reverbDry.gain.value = 0.8;
-reverbWet.gain.value = 0.2;
+// Set initial reverb mix (0% wet)
+reverbDry.gain.value = 1.0;
+reverbWet.gain.value = 0;
 
-// Effects Routing with Reverb and Distortion
-masterGain.connect(distortionNode);
-distortionNode.connect(distortionGain);
+// Effects Routing with Gain and Reverb
+masterGain.connect(gainBoost);
+gainBoost.connect(highShelf);
 
-distortionGain.connect(reverbDry);
-distortionGain.connect(reverbNode);
+highShelf.connect(reverbDry);
+highShelf.connect(reverbNode);
 reverbNode.connect(reverbWet);
 
 reverbDry.connect(filterNode);
@@ -1061,16 +1052,16 @@ document.getElementById('reverb').oninput = e => {
   reverbDry.gain.value = 1 - wetAmount;
 };
 
-document.getElementById('distortion').oninput = e => {
+document.getElementById('gain').oninput = e => {
   const val = parseInt(e.target.value);
-  document.getElementById('distortionValue').textContent = val + '%';
+  document.getElementById('gainValue').textContent = val + '%';
   
-  // Update distortion curve based on value
-  const amount = val * 4; // Scale for more dramatic effect
-  distortionNode.curve = makeDistortionCurve(amount);
+  // Gain boost: 0% = 1x, 100% = 4x
+  const boost = 1 + (val / 100) * 3;
+  gainBoost.gain.value = boost;
   
-  // Compensate volume for distortion (it gets louder)
-  distortionGain.gain.value = val > 0 ? 1 / (1 + val * 0.02) : 1;
+  // High shelf boost: adds presence to highs (0 to +12dB)
+  highShelf.gain.value = (val / 100) * 12;
 };
 
 document.getElementById('clear').onclick = () => {
