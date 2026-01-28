@@ -8,6 +8,8 @@ const delayNode = audioCtx.createDelay(2.0);
 const delayFeedback = audioCtx.createGain();
 const delayWet = audioCtx.createGain();
 const filterNode = audioCtx.createBiquadFilter();
+const distortionNode = audioCtx.createWaveShaper();
+const distortionGain = audioCtx.createGain();
 
 // Setup Effects
 filterNode.type = 'lowpass';
@@ -15,6 +17,23 @@ filterNode.frequency.value = 20000;
 delayNode.delayTime.value = 0.25;
 delayFeedback.gain.value = 0.3;
 delayWet.gain.value = 0;
+
+// Distortion curve function
+function makeDistortionCurve(amount) {
+  const samples = 44100;
+  const curve = new Float32Array(samples);
+  const deg = Math.PI / 180;
+  for (let i = 0; i < samples; i++) {
+    const x = (i * 2) / samples - 1;
+    curve[i] = ((3 + amount) * x * 20 * deg) / (Math.PI + amount * Math.abs(x));
+  }
+  return curve;
+}
+
+// Initial distortion (off)
+distortionNode.curve = makeDistortionCurve(0);
+distortionNode.oversample = '4x';
+distortionGain.gain.value = 1;
 
 // Create reverb impulse response - improved room sound
 function createReverb() {
@@ -57,9 +76,12 @@ createReverb();
 reverbDry.gain.value = 0.8;
 reverbWet.gain.value = 0.2;
 
-// Effects Routing with Reverb
-masterGain.connect(reverbDry);
-masterGain.connect(reverbNode);
+// Effects Routing with Reverb and Distortion
+masterGain.connect(distortionNode);
+distortionNode.connect(distortionGain);
+
+distortionGain.connect(reverbDry);
+distortionGain.connect(reverbNode);
 reverbNode.connect(reverbWet);
 
 reverbDry.connect(filterNode);
@@ -1037,6 +1059,18 @@ document.getElementById('reverb').oninput = e => {
   const wetAmount = val / 100;
   reverbWet.gain.value = wetAmount;
   reverbDry.gain.value = 1 - wetAmount;
+};
+
+document.getElementById('distortion').oninput = e => {
+  const val = parseInt(e.target.value);
+  document.getElementById('distortionValue').textContent = val + '%';
+  
+  // Update distortion curve based on value
+  const amount = val * 4; // Scale for more dramatic effect
+  distortionNode.curve = makeDistortionCurve(amount);
+  
+  // Compensate volume for distortion (it gets louder)
+  distortionGain.gain.value = val > 0 ? 1 / (1 + val * 0.02) : 1;
 };
 
 document.getElementById('clear').onclick = () => {
