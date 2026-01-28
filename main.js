@@ -872,43 +872,57 @@ document.getElementById('copyPattern').onclick = () => {
 document.getElementById('pastePattern').onclick = () => {
   if (!copiedPattern) return;
   
-  // Get available patterns to paste to (excluding current if it's the source)
-  const otherPatterns = ['A', 'B', 'C'].filter(p => p !== currentPattern);
+  const pasteModal = document.getElementById('pasteModal');
   
-  const choice = prompt(
-    `Paste to which pattern?\n\n` +
-    `Current: Pattern ${currentPattern}\n\n` +
-    `Enter: ${otherPatterns.join(', ')}, or "ALL" to paste to both`
-  );
+  // Disable the current pattern button (can't paste to itself)
+  document.querySelectorAll('.paste-option').forEach(btn => {
+    const target = btn.dataset.target;
+    if (target === currentPattern) {
+      btn.disabled = true;
+      btn.style.opacity = '0.4';
+    } else {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+    }
+  });
   
-  if (!choice) return;
-  
-  const upperChoice = choice.toUpperCase().trim();
-  
-  if (upperChoice === 'ALL') {
-    // Paste to all other patterns
-    otherPatterns.forEach(targetPattern => {
-      trackConfig.forEach(track => {
-        patterns[targetPattern][track.name] = [...copiedPattern[track.name]];
-      });
-    });
-    alert(`Pattern pasted to ${otherPatterns.join(' and ')}!`);
-  } else if (['A', 'B', 'C'].includes(upperChoice)) {
-    // Paste to specific pattern
-    trackConfig.forEach(track => {
-      patterns[upperChoice][track.name] = [...copiedPattern[track.name]];
-    });
-    alert(`Pattern pasted to ${upperChoice}!`);
-    
-    // Switch to the pasted pattern
-    document.querySelectorAll('.pattern-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector(`[data-pattern="${upperChoice}"]`).classList.add('active');
-    currentPattern = upperChoice;
-    updateUI();
-  } else {
-    alert('Invalid choice. Enter A, B, C, or ALL');
-  }
+  pasteModal.style.display = 'flex';
 };
+
+// Close paste modal
+document.getElementById('closePasteModal').onclick = () => {
+  document.getElementById('pasteModal').style.display = 'none';
+};
+
+// Handle paste option clicks
+document.querySelectorAll('.paste-option').forEach(btn => {
+  btn.onclick = () => {
+    const target = btn.dataset.target;
+    const otherPatterns = ['A', 'B', 'C'].filter(p => p !== currentPattern);
+    
+    if (target === 'ALL') {
+      // Paste to all other patterns
+      otherPatterns.forEach(targetPattern => {
+        trackConfig.forEach(track => {
+          patterns[targetPattern][track.name] = [...copiedPattern[track.name]];
+        });
+      });
+    } else if (['A', 'B', 'C'].includes(target)) {
+      // Paste to specific pattern
+      trackConfig.forEach(track => {
+        patterns[target][track.name] = [...copiedPattern[track.name]];
+      });
+      
+      // Switch to the pasted pattern
+      document.querySelectorAll('.pattern-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector(`[data-pattern="${target}"]`).classList.add('active');
+      currentPattern = target;
+      updateUI();
+    }
+    
+    document.getElementById('pasteModal').style.display = 'none';
+  };
+});
 
 function updateUI() {
   trackConfig.forEach(track => {
