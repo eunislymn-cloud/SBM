@@ -9,8 +9,6 @@ const delayFeedback = audioCtx.createGain();
 const delayWet = audioCtx.createGain();
 const filterNode = audioCtx.createBiquadFilter();
 const gainBoost = audioCtx.createGain();
-const highShelf = audioCtx.createBiquadFilter();
-const lowShelf = audioCtx.createBiquadFilter();
 
 // Setup Effects
 filterNode.type = 'lowpass';
@@ -21,16 +19,6 @@ delayWet.gain.value = 0;
 
 // Initial gain boost (1 = unity)
 gainBoost.gain.value = 1;
-
-// High shelf for adding presence to highs with gain
-highShelf.type = 'highshelf';
-highShelf.frequency.value = 3000;
-highShelf.gain.value = 0;
-
-// Low shelf to tame kick/tom when gain is high
-lowShelf.type = 'lowshelf';
-lowShelf.frequency.value = 200;
-lowShelf.gain.value = 0;
 
 // Create reverb impulse response - improved room sound
 function createReverb() {
@@ -69,17 +57,15 @@ function createReverb() {
 }
 createReverb();
 
-// Set initial reverb mix (0% wet)
-reverbDry.gain.value = 1.0;
-reverbWet.gain.value = 0;
+// Set initial reverb mix (20% wet)
+reverbDry.gain.value = 0.8;
+reverbWet.gain.value = 0.2;
 
 // Effects Routing with Gain and Reverb
 masterGain.connect(gainBoost);
-gainBoost.connect(lowShelf);
-lowShelf.connect(highShelf);
 
-highShelf.connect(reverbDry);
-highShelf.connect(reverbNode);
+gainBoost.connect(reverbDry);
+gainBoost.connect(reverbNode);
 reverbNode.connect(reverbWet);
 
 reverbDry.connect(filterNode);
@@ -115,7 +101,6 @@ let patternSequence = ['A', '', '', '', '', '', '', ''];
 let currentSequenceIndex = 0;
 const patterns = { A: {}, B: {}, C: {} };
 const trackVolumes = {};
-let lowFreqGainReduction = 1; // Multiplier for kick/tom when gain is high
 
 const trackSounds = {
   kick: 'kick1',
@@ -399,14 +384,9 @@ function updateSequenceUI() {
 }
 
 function playSound(trackName) {
-  let volume = trackVolumes[trackName];
+  const volume = trackVolumes[trackName];
   const time = audioCtx.currentTime;
   const soundVariant = trackSounds[trackName];
-  
-  // Apply gain reduction to kick and tom
-  if (trackName === 'kick' || trackName === 'tom') {
-    volume *= lowFreqGainReduction;
-  }
   
   switch(soundVariant) {
     case 'kick1': {
@@ -1069,18 +1049,9 @@ document.getElementById('distortion').oninput = e => {
   const val = parseInt(e.target.value);
   document.getElementById('distortionValue').textContent = val + '%';
   
-  // Gain boost: 0% = 1x, 100% = 3x
-  const boost = 1 + (val / 100) * 2;
+  // Gain boost: 0% = 1x, 100% = 4x
+  const boost = 1 + (val / 100) * 3;
   gainBoost.gain.value = boost;
-  
-  // High shelf boost: adds presence to snares/hats (0 to +12dB)
-  highShelf.gain.value = (val / 100) * 12;
-  
-  // Low shelf cut: tames kick/tom at high gain (0 to -6dB)
-  lowShelf.gain.value = -(val / 100) * 6;
-  
-  // Reduce kick/tom volume as gain increases (1.0 to 0.5)
-  lowFreqGainReduction = 1 - (val / 100) * 0.5;
 };
 
 document.getElementById('clear').onclick = () => {
