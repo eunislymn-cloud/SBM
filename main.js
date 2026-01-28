@@ -1092,9 +1092,9 @@ document.getElementById('save').onclick = () => {
   updateBeatDropdown();
 };
 
-document.getElementById('load').onclick = () => {
+document.getElementById('savedBeats').onchange = () => {
   const name = document.getElementById('savedBeats').value;
-  if (!name) return alert('Select a beat.');
+  if (!name) return;
   const library = JSON.parse(localStorage.getItem('beatLibrary') || '{}');
   const data = library[name];
   if (!data) return alert('Beat not found!');
@@ -1127,8 +1127,11 @@ document.getElementById('load').onclick = () => {
   document.getElementById('bpmValue').textContent = bpm;
   document.getElementById('swing').value = swing;
   document.getElementById('swingValue').textContent = swing + '%';
+  document.getElementById('beatName').value = name;
   updateUI();
-  alert(`"${name}" loaded!`);
+  
+  // Reset dropdown to placeholder
+  document.getElementById('savedBeats').value = '';
 };
 
 // Export audio as WAV
