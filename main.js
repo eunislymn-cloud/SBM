@@ -78,7 +78,7 @@ const trackConfig = [
   { name: 'kick', label: 'Kick' },
   { name: 'snare', label: 'Snare' },
   { name: 'hat', label: 'Hi-Hat' },
-  { name: 'openhat', label: 'Open Hi-Hat' },
+  { name: 'openhat', label: 'Open Hat' },
   { name: 'clap', label: 'Clap' },
   { name: 'rim', label: 'Rim' },
   { name: 'tom', label: 'Tom' }
