@@ -191,7 +191,6 @@ trackConfig.forEach(track => {
       </div>
     </div>
     <div class="track-volume">
-      <span>Vol</span>
       <input type="range" min="0" max="100" value="80" class="volume-control">
       <span class="volume-value">80</span>
     </div>
