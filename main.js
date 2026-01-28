@@ -1095,6 +1095,8 @@ document.getElementById('load').onclick = () => {
 };
 
 // Export audio as WAV
+let selectedExportFormat = 'wav';
+
 document.getElementById('exportAudio').onclick = () => {
   const exportModal = document.getElementById('exportModal');
   
@@ -1117,10 +1119,20 @@ document.getElementById('closeExportModal').onclick = () => {
   document.getElementById('exportModal').style.display = 'none';
 };
 
+// Handle format selection
+document.querySelectorAll('.format-option').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.format-option').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedExportFormat = btn.dataset.format;
+  };
+});
+
 // Handle export option clicks
 document.querySelectorAll('.export-option').forEach(btn => {
   btn.onclick = async () => {
     const loops = parseInt(btn.dataset.loops);
+    const format = selectedExportFormat;
     document.getElementById('exportModal').style.display = 'none';
     
     const name = document.getElementById('beatName').value.trim() || 'MyBeat';
@@ -1177,14 +1189,23 @@ document.querySelectorAll('.export-option').forEach(btn => {
       // Render to buffer
       const renderedBuffer = await offlineCtx.startRendering();
       
-      // Convert to WAV
-      const wavBlob = bufferToWav(renderedBuffer);
+      let blob;
+      let extension;
+      
+      if (format === 'mp3') {
+        exportBtn.textContent = 'Encoding MP3...';
+        blob = await bufferToMp3(renderedBuffer);
+        extension = 'mp3';
+      } else {
+        blob = bufferToWav(renderedBuffer);
+        extension = 'wav';
+      }
       
       // Download
-      const url = URL.createObjectURL(wavBlob);
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${name}.wav`;
+      a.download = `${name}.${extension}`;
       a.click();
       URL.revokeObjectURL(url);
       
@@ -1566,6 +1587,64 @@ function writeString(view, offset, string) {
   for (let i = 0; i < string.length; i++) {
     view.setUint8(offset + i, string.charCodeAt(i));
   }
+}
+
+// MP3 encoding using lamejs
+async function bufferToMp3(buffer) {
+  // Load lamejs if not already loaded
+  if (typeof lamejs === 'undefined') {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js');
+  }
+  
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const kbps = 192; // MP3 bitrate
+  
+  const mp3encoder = new lamejs.Mp3Encoder(numChannels, sampleRate, kbps);
+  const mp3Data = [];
+  
+  // Get audio data
+  const left = buffer.getChannelData(0);
+  const right = numChannels > 1 ? buffer.getChannelData(1) : left;
+  
+  // Convert float32 to int16
+  const leftInt = new Int16Array(left.length);
+  const rightInt = new Int16Array(right.length);
+  
+  for (let i = 0; i < left.length; i++) {
+    leftInt[i] = Math.max(-32768, Math.min(32767, Math.floor(left[i] * 32767)));
+    rightInt[i] = Math.max(-32768, Math.min(32767, Math.floor(right[i] * 32767)));
+  }
+  
+  // Encode in chunks
+  const sampleBlockSize = 1152;
+  for (let i = 0; i < leftInt.length; i += sampleBlockSize) {
+    const leftChunk = leftInt.subarray(i, i + sampleBlockSize);
+    const rightChunk = rightInt.subarray(i, i + sampleBlockSize);
+    const mp3buf = mp3encoder.encodeBuffer(leftChunk, rightChunk);
+    if (mp3buf.length > 0) {
+      mp3Data.push(mp3buf);
+    }
+  }
+  
+  // Finish encoding
+  const mp3buf = mp3encoder.flush();
+  if (mp3buf.length > 0) {
+    mp3Data.push(mp3buf);
+  }
+  
+  return new Blob(mp3Data, { type: 'audio/mp3' });
+}
+
+// Helper to load external scripts
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
 }
 
 updateBeatDropdown();

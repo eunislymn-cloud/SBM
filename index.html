@@ -174,10 +174,15 @@
     <div id="exportModal" class="modal" style="display:none;">
       <div class="modal-content export-modal">
         <div class="modal-header">
-          <span class="modal-title">Export WAV</span>
+          <span class="modal-title">Export Audio</span>
           <button id="closeExportModal" class="close-btn">&times;</button>
         </div>
         <div class="export-info" id="exportInfo"></div>
+        <div class="export-label">Format</div>
+        <div class="format-options">
+          <button class="format-option active" data-format="wav">WAV</button>
+          <button class="format-option" data-format="mp3">MP3</button>
+        </div>
         <div class="export-label">How many loops?</div>
         <div class="export-options">
           <button class="export-option" data-loops="1">1</button>
@@ -308,7 +313,7 @@
       
       <div class="control-row">
         <button id="clear" class="secondary">🗑 Clear</button>
-        <button id="exportAudio" class="secondary">🎵 Export WAV</button>
+        <button id="exportAudio" class="secondary">🎵 Export WAV/MP3</button>
         <button id="mint">⛓ Mint NFT</button>
         <button id="loadNftBtn" class="secondary nft-load-btn">📥 Load from NFT</button>
       </div>
