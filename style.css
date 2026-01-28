@@ -29,49 +29,10 @@ h1 {
   gap: 15px;
 }
 
-.logo {
-  position: relative;
-}
-
-.logo-pad {
+.logo-img {
   width: 55px;
   height: 55px;
-  background: linear-gradient(135deg, #9945FF 0%, #7B3FE4 50%, #5C2FC2 100%);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 
-    0 4px 15px rgba(153, 69, 255, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.2);
-  position: relative;
-  overflow: hidden;
-}
-
-.logo-pad::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 50%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%);
-  border-radius: 10px 10px 0 0;
-}
-
-.logo-text {
-  font-family: 'Arial Black', 'Helvetica', sans-serif;
-  font-size: 18px;
-  font-weight: 900;
-  background: linear-gradient(180deg, #14F195 0%, #00D4AA 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  letter-spacing: 1px;
-  position: relative;
-  z-index: 1;
+  border-radius: 8px;
 }
 
 .logo-title {
