@@ -139,6 +139,15 @@ button.secondary:hover {
   box-shadow: 0 4px 12px rgba(68, 68, 68, 0.4);
 }
 
+.share-x-btn {
+  background: linear-gradient(135deg, #000, #222) !important;
+  border: 1px solid #333;
+}
+
+.share-x-btn:hover {
+  box-shadow: 0 4px 12px rgba(100, 100, 100, 0.4) !important;
+}
+
 .mint-coming-soon {
   position: relative;
   opacity: 0.6;

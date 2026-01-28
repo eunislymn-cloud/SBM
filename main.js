@@ -1105,6 +1105,19 @@ document.getElementById('clear').onclick = () => {
   }
 };
 
+// Share to X
+document.getElementById('shareX').onclick = () => {
+  const beatName = document.getElementById('beatName').value.trim() || 'my beat';
+  const text = `🎵 "${beatName}" - made on @MPSeeker
+
+Music production for your Seeker!
+
+#MPSeeker #Solana #SolanaMobile #BeatMaker`;
+  
+  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank');
+};
+
 function updateBeatDropdown() {
   const library = JSON.parse(localStorage.getItem('beatLibrary') || '{}');
   const select = document.getElementById('savedBeats');
