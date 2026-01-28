@@ -2729,17 +2729,17 @@ document.getElementById('mint').onclick = async () => {
         name: beatData.name.slice(0, 32), // Max 32 chars
         symbol: beatData.symbol.slice(0, 10), // Max 10 chars
         uri: metadataUri,
-        sellerFeeBasisPoints: 500, // 5% royalty
+        sellerFeeBasisPoints: 1000, // 10% total royalty
         creators: [
           {
             address: payer,
             verified: true,
-            share: 90, // Minter gets 90% of royalties
+            share: 80, // Original minter gets 80% of royalties (8% of sale)
           },
           {
             address: new solanaWeb3.PublicKey('3fuLXsLx3xH9EF7wXWMVzwzxQByAPqQ8FHYXZy62WMba'),
-            verified: false, // MPSeeker creator
-            share: 10, // MPSeeker gets 10% of royalties
+            verified: false, // MPSeeker
+            share: 20, // MPSeeker gets 20% of royalties (2% of sale)
           }
         ],
         collection: null,
