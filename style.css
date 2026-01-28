@@ -128,6 +128,16 @@ h1 {
   gap: 8px; 
 }
 
+.control-group select {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #222;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
 button {
   padding: 10px 20px;
   border: none;

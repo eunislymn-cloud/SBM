@@ -84,7 +84,7 @@ const trackConfig = [
   { name: 'tom', label: 'Tom' }
 ];
 
-const steps = 16;
+let steps = 16;
 let currentStep = 0;
 let isPlaying = false;
 let bpm = 120;
@@ -732,8 +732,8 @@ function playSound(trackName) {
 }
 
 function updateBeatCounter() {
-  const bar = Math.floor(currentStep / 16) + 1;
-  const beat = Math.floor((currentStep % 16) / 4) + 1;
+  const bar = Math.floor(currentStep / steps) + 1;
+  const beat = Math.floor((currentStep % steps) / 4) + 1;
   const tick = (currentStep % 4) + 1;
   
   let displayText = `${bar}.${beat}.${tick.toString().padStart(2, '0')}`;
@@ -936,6 +936,53 @@ document.getElementById('swing').oninput = e => {
   swing = parseInt(e.target.value);
   document.getElementById('swingValue').textContent = swing + '%';
 };
+
+document.getElementById('patternLength').onchange = e => {
+  const newLength = parseInt(e.target.value);
+  steps = newLength;
+  rebuildGrid();
+};
+
+function rebuildGrid() {
+  // Rebuild the grid for each track with new step count
+  trackConfig.forEach(track => {
+    const container = document.querySelector(`[data-track="${track.name}"]`);
+    const grid = container.querySelector('.track-grid');
+    grid.innerHTML = '';
+    
+    // Ensure pattern arrays exist for all patterns
+    ['A', 'B', 'C'].forEach(patternKey => {
+      if (!patterns[patternKey][track.name]) {
+        patterns[patternKey][track.name] = new Array(16).fill(false);
+      }
+      // Extend array if needed
+      while (patterns[patternKey][track.name].length < 16) {
+        patterns[patternKey][track.name].push(false);
+      }
+    });
+    
+    for (let i = 0; i < steps; i++) {
+      const step = document.createElement('div');
+      step.className = 'step';
+      step.dataset.index = i;
+      step.dataset.track = track.name;
+      if (patterns[currentPattern][track.name][i]) {
+        step.classList.add('active');
+      }
+      grid.appendChild(step);
+    }
+  });
+  
+  // Update grid CSS
+  document.querySelectorAll('.track-grid').forEach(grid => {
+    grid.style.gridTemplateColumns = `repeat(${steps}, 1fr)`;
+  });
+  
+  // Reset current step if beyond new length
+  if (currentStep >= steps) {
+    currentStep = 0;
+  }
+}
 
 document.getElementById('delayMix').oninput = e => {
   delayWet.gain.value = e.target.value / 100;
