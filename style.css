@@ -138,6 +138,17 @@ h1 {
   cursor: pointer;
 }
 
+.control-group input[type="number"] {
+  width: 50px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #222;
+  color: #fff;
+  font-size: 14px;
+  text-align: center;
+}
+
 button {
   padding: 10px 20px;
   border: none;

@@ -937,10 +937,12 @@ document.getElementById('swing').oninput = e => {
   document.getElementById('swingValue').textContent = swing + '%';
 };
 
-document.getElementById('patternLength').onchange = e => {
+document.getElementById('patternLength').oninput = e => {
   const newLength = parseInt(e.target.value);
-  steps = newLength;
-  rebuildGrid();
+  if (newLength >= 3 && newLength <= 16) {
+    steps = newLength;
+    rebuildGrid();
+  }
 };
 
 function rebuildGrid() {
