@@ -795,14 +795,14 @@ function start() {
   isPlaying = true;
   currentSequenceIndex = 0;
   
-  const baseInterval = (60 / bpm) * 1000 / 4;
   let lastTime = Date.now();
   let stepCounter = 0;
   
   function scheduleTick() {
     if (!isPlaying) return;
     const now = Date.now();
-    let interval = baseInterval;
+    // Calculate interval each tick so BPM changes in real-time
+    let interval = (60 / bpm) * 1000 / 4;
     if (swing > 0 && stepCounter % 2 === 1) interval *= 1 + (swing / 100);
     if (now - lastTime >= interval) {
       tick();
