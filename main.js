@@ -886,7 +886,7 @@ document.getElementById('copyPattern').onclick = () => {
   // Enable paste button and update UI
   const pasteBtn = document.getElementById('pastePattern');
   pasteBtn.disabled = false;
-  pasteBtn.textContent = `📥 Paste ${currentPattern} to...`;
+  pasteBtn.textContent = `📥 Paste ${currentPattern}`;
   
   // Visual feedback
   const copyBtn = document.getElementById('copyPattern');
