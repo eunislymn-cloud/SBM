@@ -139,6 +139,30 @@ button.secondary:hover {
   box-shadow: 0 4px 12px rgba(68, 68, 68, 0.4);
 }
 
+.mint-coming-soon {
+  position: relative;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.mint-coming-soon::after {
+  content: 'Coming Soon';
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #14F195;
+  color: #000;
+  font-size: 8px;
+  font-weight: bold;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+.mint-coming-soon:hover {
+  transform: none;
+  box-shadow: none;
+}
+
 input[type="range"] { 
   width: 120px; 
   accent-color: #9945FF; 
