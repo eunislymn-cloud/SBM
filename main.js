@@ -10,6 +10,7 @@ const delayWet = audioCtx.createGain();
 const filterNode = audioCtx.createBiquadFilter();
 const gainBoost = audioCtx.createGain();
 const highShelf = audioCtx.createBiquadFilter();
+const lowShelf = audioCtx.createBiquadFilter();
 
 // Setup Effects
 filterNode.type = 'lowpass';
@@ -25,6 +26,11 @@ gainBoost.gain.value = 1;
 highShelf.type = 'highshelf';
 highShelf.frequency.value = 3000;
 highShelf.gain.value = 0;
+
+// Low shelf to tame kick/tom when gain is high
+lowShelf.type = 'lowshelf';
+lowShelf.frequency.value = 200;
+lowShelf.gain.value = 0;
 
 // Create reverb impulse response - improved room sound
 function createReverb() {
@@ -69,7 +75,8 @@ reverbWet.gain.value = 0.2;
 
 // Effects Routing with Gain and Reverb
 masterGain.connect(gainBoost);
-gainBoost.connect(highShelf);
+gainBoost.connect(lowShelf);
+lowShelf.connect(highShelf);
 
 highShelf.connect(reverbDry);
 highShelf.connect(reverbNode);
@@ -1056,12 +1063,15 @@ document.getElementById('distortion').oninput = e => {
   const val = parseInt(e.target.value);
   document.getElementById('distortionValue').textContent = val + '%';
   
-  // Gain boost: 0% = 1x, 100% = 4x
-  const boost = 1 + (val / 100) * 3;
+  // Gain boost: 0% = 1x, 100% = 3x (reduced from 4x)
+  const boost = 1 + (val / 100) * 2;
   gainBoost.gain.value = boost;
   
   // High shelf boost: adds presence to snares/hats (0 to +12dB)
   highShelf.gain.value = (val / 100) * 12;
+  
+  // Low shelf cut: tames kick/tom at high gain (0 to -6dB)
+  lowShelf.gain.value = -(val / 100) * 6;
 };
 
 document.getElementById('clear').onclick = () => {
