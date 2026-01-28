@@ -1095,103 +1095,113 @@ document.getElementById('load').onclick = () => {
 };
 
 // Export audio as WAV
-document.getElementById('exportAudio').onclick = async () => {
-  const name = document.getElementById('beatName').value.trim() || 'MyBeat';
-  const exportBtn = document.getElementById('exportAudio');
-  const originalText = exportBtn.textContent;
+document.getElementById('exportAudio').onclick = () => {
+  const exportModal = document.getElementById('exportModal');
   
-  // Ask user for loop count
+  // Update info
   const activePatterns = patternSequence.filter(p => p !== '');
   const patternInfo = activePatterns.length > 0 
     ? `${activePatterns.length} patterns in sequence` 
     : `Pattern ${currentPattern} only`;
   
-  const loopInput = prompt(
-    `Export WAV - How many loops?\n\n` +
-    `Currently: ${patternInfo}\n` +
-    `BPM: ${bpm}\n\n` +
-    `Enter number of loops (1-16):`,
-    '2'
-  );
+  document.getElementById('exportInfo').innerHTML = `
+    <div>${patternInfo}</div>
+    <div>BPM: ${bpm} • Steps: ${steps}</div>
+  `;
   
-  if (!loopInput) return; // User cancelled
-  
-  const loops = Math.max(1, Math.min(16, parseInt(loopInput) || 1));
-  
-  try {
-    exportBtn.textContent = `Rendering ${loops}x...`;
-    exportBtn.disabled = true;
+  exportModal.style.display = 'flex';
+};
+
+// Close export modal
+document.getElementById('closeExportModal').onclick = () => {
+  document.getElementById('exportModal').style.display = 'none';
+};
+
+// Handle export option clicks
+document.querySelectorAll('.export-option').forEach(btn => {
+  btn.onclick = async () => {
+    const loops = parseInt(btn.dataset.loops);
+    document.getElementById('exportModal').style.display = 'none';
     
-    // Calculate duration based on pattern sequence or single pattern
-    const activePatternsForRender = patternSequence.filter(p => p !== '');
-    const numPatterns = activePatternsForRender.length > 0 ? activePatternsForRender.length : 1;
-    const beatsPerPattern = 16;
-    const secondsPerBeat = 60 / bpm / 4; // 16th notes
-    const singleLoopDuration = numPatterns * beatsPerPattern * secondsPerBeat;
-    const duration = (singleLoopDuration * loops) + 0.5; // Add tail for decay
+    const name = document.getElementById('beatName').value.trim() || 'MyBeat';
+    const exportBtn = document.getElementById('exportAudio');
+    const originalText = exportBtn.textContent;
     
-    // Create offline audio context for rendering
-    const sampleRate = 44100;
-    const offlineCtx = new OfflineAudioContext(2, sampleRate * duration, sampleRate);
-    
-    // Create master gain for offline context
-    const offlineMaster = offlineCtx.createGain();
-    offlineMaster.gain.value = 0.8;
-    offlineMaster.connect(offlineCtx.destination);
-    
-    // Render each loop
-    const patternsToRender = activePatternsForRender.length > 0 ? activePatternsForRender : [currentPattern];
-    let currentTime = 0;
-    
-    for (let loop = 0; loop < loops; loop++) {
-      for (let patIdx = 0; patIdx < patternsToRender.length; patIdx++) {
-        const patternKey = patternsToRender[patIdx];
-        const pattern = patterns[patternKey];
-        
-        for (let step = 0; step < 16; step++) {
-          const isOddStep = step % 2 === 1;
-          const swingOffset = isOddStep ? (swing / 100) * secondsPerBeat * 0.5 : 0;
-          const stepTime = currentTime + (step * secondsPerBeat) + swingOffset;
+    try {
+      exportBtn.textContent = `Rendering ${loops}x...`;
+      exportBtn.disabled = true;
+      
+      // Calculate duration based on pattern sequence or single pattern
+      const activePatternsForRender = patternSequence.filter(p => p !== '');
+      const numPatterns = activePatternsForRender.length > 0 ? activePatternsForRender.length : 1;
+      const beatsPerPattern = steps;
+      const secondsPerBeat = 60 / bpm / 4; // 16th notes
+      const singleLoopDuration = numPatterns * beatsPerPattern * secondsPerBeat;
+      const duration = (singleLoopDuration * loops) + 0.5; // Add tail for decay
+      
+      // Create offline audio context for rendering
+      const sampleRate = 44100;
+      const offlineCtx = new OfflineAudioContext(2, sampleRate * duration, sampleRate);
+      
+      // Create master gain for offline context
+      const offlineMaster = offlineCtx.createGain();
+      offlineMaster.gain.value = 0.8;
+      offlineMaster.connect(offlineCtx.destination);
+      
+      // Render each loop
+      const patternsToRender = activePatternsForRender.length > 0 ? activePatternsForRender : [currentPattern];
+      let currentTime = 0;
+      
+      for (let loop = 0; loop < loops; loop++) {
+        for (let patIdx = 0; patIdx < patternsToRender.length; patIdx++) {
+          const patternKey = patternsToRender[patIdx];
+          const pattern = patterns[patternKey];
           
-          // Play each track
-          trackConfig.forEach(track => {
-            if (pattern[track.name] && pattern[track.name][step]) {
-              renderSoundOffline(offlineCtx, offlineMaster, track.name, stepTime, trackVolumes[track.name]);
-            }
-          });
+          for (let step = 0; step < steps; step++) {
+            const isOddStep = step % 2 === 1;
+            const swingOffset = isOddStep ? (swing / 100) * secondsPerBeat * 0.5 : 0;
+            const stepTime = currentTime + (step * secondsPerBeat) + swingOffset;
+            
+            // Play each track
+            trackConfig.forEach(track => {
+              if (pattern[track.name] && pattern[track.name][step]) {
+                renderSoundOffline(offlineCtx, offlineMaster, track.name, stepTime, trackVolumes[track.name]);
+              }
+            });
+          }
+          
+          currentTime += steps * secondsPerBeat;
         }
-        
-        currentTime += 16 * secondsPerBeat;
       }
-    }
-    
-    // Render to buffer
-    const renderedBuffer = await offlineCtx.startRendering();
-    
-    // Convert to WAV
-    const wavBlob = bufferToWav(renderedBuffer);
-    
-    // Download
-    const url = URL.createObjectURL(wavBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${name}.wav`;
-    a.click();
-    URL.revokeObjectURL(url);
-    
-    exportBtn.textContent = 'Exported!';
-    setTimeout(() => {
+      
+      // Render to buffer
+      const renderedBuffer = await offlineCtx.startRendering();
+      
+      // Convert to WAV
+      const wavBlob = bufferToWav(renderedBuffer);
+      
+      // Download
+      const url = URL.createObjectURL(wavBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${name}.wav`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      exportBtn.textContent = 'Exported!';
+      setTimeout(() => {
+        exportBtn.textContent = originalText;
+        exportBtn.disabled = false;
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed: ' + error.message);
       exportBtn.textContent = originalText;
       exportBtn.disabled = false;
-    }, 2000);
-    
-  } catch (error) {
-    console.error('Export failed:', error);
-    alert('Export failed: ' + error.message);
-    exportBtn.textContent = originalText;
-    exportBtn.disabled = false;
-  }
-};
+    }
+  };
+});
 
 // Render sound to offline context
 function renderSoundOffline(ctx, master, trackName, time, volume) {
