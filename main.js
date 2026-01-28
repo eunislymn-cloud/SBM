@@ -245,6 +245,42 @@ trackConfig.forEach(track => {
     volumeValue.textContent = e.target.value;
   });
   
+  // Click volume number to manually enter value
+  volumeValue.addEventListener('click', e => {
+    e.stopPropagation();
+    const currentVal = Math.round(trackVolumes[track.name] * 100);
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = '0';
+    input.max = '100';
+    input.value = currentVal;
+    input.className = 'volume-input';
+    
+    volumeValue.style.display = 'none';
+    volumeValue.parentNode.insertBefore(input, volumeValue.nextSibling);
+    input.focus();
+    input.select();
+    
+    const applyValue = () => {
+      let val = parseInt(input.value) || 0;
+      val = Math.max(0, Math.min(100, val));
+      trackVolumes[track.name] = val / 100;
+      volumeControl.value = val;
+      volumeValue.textContent = val;
+      volumeValue.style.display = '';
+      input.remove();
+    };
+    
+    input.addEventListener('blur', applyValue);
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') applyValue();
+      if (e.key === 'Escape') {
+        volumeValue.style.display = '';
+        input.remove();
+      }
+    });
+  });
+  
   const labelWrapper = header.querySelector('.track-label-wrapper');
   const trackLabel = header.querySelector('.track-label');
   const soundMenu = header.querySelector('.sound-menu');

@@ -497,6 +497,24 @@ label {
 .volume-value {
   min-width: 18px;
   text-align: right;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.volume-value:hover {
+  background: rgba(153, 69, 255, 0.3);
+}
+
+.volume-input {
+  width: 36px;
+  padding: 2px 4px;
+  font-size: 10px;
+  text-align: center;
+  border: 1px solid #9945FF;
+  border-radius: 4px;
+  background: #222;
+  color: #fff;
 }
 
 .track-grid {
