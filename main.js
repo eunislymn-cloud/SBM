@@ -69,9 +69,9 @@ function createReverb() {
 }
 createReverb();
 
-// Set initial reverb mix (20% wet)
-reverbDry.gain.value = 0.8;
-reverbWet.gain.value = 0.2;
+// Set initial reverb mix (0% wet)
+reverbDry.gain.value = 1.0;
+reverbWet.gain.value = 0;
 
 // Effects Routing with Gain and Reverb
 masterGain.connect(gainBoost);
@@ -115,6 +115,7 @@ let patternSequence = ['A', '', '', '', '', '', '', ''];
 let currentSequenceIndex = 0;
 const patterns = { A: {}, B: {}, C: {} };
 const trackVolumes = {};
+let lowFreqGainReduction = 1; // Multiplier for kick/tom when gain is high
 
 const trackSounds = {
   kick: 'kick1',
@@ -398,9 +399,14 @@ function updateSequenceUI() {
 }
 
 function playSound(trackName) {
-  const volume = trackVolumes[trackName];
+  let volume = trackVolumes[trackName];
   const time = audioCtx.currentTime;
   const soundVariant = trackSounds[trackName];
+  
+  // Apply gain reduction to kick and tom
+  if (trackName === 'kick' || trackName === 'tom') {
+    volume *= lowFreqGainReduction;
+  }
   
   switch(soundVariant) {
     case 'kick1': {
@@ -1063,7 +1069,7 @@ document.getElementById('distortion').oninput = e => {
   const val = parseInt(e.target.value);
   document.getElementById('distortionValue').textContent = val + '%';
   
-  // Gain boost: 0% = 1x, 100% = 3x (reduced from 4x)
+  // Gain boost: 0% = 1x, 100% = 3x
   const boost = 1 + (val / 100) * 2;
   gainBoost.gain.value = boost;
   
@@ -1072,6 +1078,9 @@ document.getElementById('distortion').oninput = e => {
   
   // Low shelf cut: tames kick/tom at high gain (0 to -6dB)
   lowShelf.gain.value = -(val / 100) * 6;
+  
+  // Reduce kick/tom volume as gain increases (1.0 to 0.5)
+  lowFreqGainReduction = 1 - (val / 100) * 0.5;
 };
 
 document.getElementById('clear').onclick = () => {
