@@ -520,21 +520,22 @@ label {
 .track-grid {
   display: grid;
   grid-template-columns: repeat(16, 1fr);
-  gap: 4px;
+  gap: 3px;
   flex: 1;
+  height: 36px;
 }
 
 .step {
-  aspect-ratio: 1;
+  height: 100%;
   background: #1a1a1a;
   border: 2px solid #2a2a2a;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .step:hover { 
-  transform: scale(1.1); 
+  transform: scaleY(1.05); 
   border-color: #555; 
 }
 
