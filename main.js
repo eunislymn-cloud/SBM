@@ -1863,13 +1863,13 @@ async function connectWallet(walletType) {
       } else if (window.solana && window.solana.isPhantom) {
         provider = window.solana;
       } else {
-        throw new Error('Phantom not found. Please install Phantom wallet.');
+        throw new Error('Phantom not detected.\n\n📱 On mobile? Save your beat, then open mpseeker.app in Phantom\'s browser to connect & mint.');
       }
     } else if (walletType === 'solflare') {
       if (window.solflare) {
         provider = window.solflare;
       } else {
-        throw new Error('Solflare not found. Please install Solflare wallet.');
+        throw new Error('Solflare not detected.\n\n📱 On mobile? Save your beat, then open mpseeker.app in Solflare\'s browser to connect & mint.');
       }
     }
     
