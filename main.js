@@ -175,10 +175,24 @@ trackConfig.forEach(t => {
 });
 
 const sequencer = document.querySelector('.sequencer');
+
+// Sound labels for each track
+const soundLabels = {
+  kick: ['Kick 1', 'Kick 2'],
+  snare: ['Snare 1', 'Snare 2'],
+  hat: ['HH1', 'HH2'],
+  openhat: ['OH1', 'OH2'],
+  clap: ['Clap 1', 'Clap 2'],
+  rim: ['Rim 1', 'Rim 2'],
+  tom: ['Tom 1', 'Tom 2']
+};
+
 trackConfig.forEach(track => {
   const container = document.createElement('div');
   container.className = 'track-container';
   container.dataset.track = track.name;
+  
+  const labels = soundLabels[track.name] || ['Sound 1', 'Sound 2'];
   
   const header = document.createElement('div');
   header.className = 'track-header';
@@ -186,8 +200,8 @@ trackConfig.forEach(track => {
     <div class="track-label-wrapper">
       <div class="track-label">${track.label}</div>
       <div class="sound-menu" style="display:none;">
-        <div class="sound-option" data-sound="${track.name}1">Sound 1</div>
-        <div class="sound-option" data-sound="${track.name}2">Sound 2</div>
+        <div class="sound-option" data-sound="${track.name}1">${labels[0]}</div>
+        <div class="sound-option" data-sound="${track.name}2">${labels[1]}</div>
       </div>
     </div>
     <div class="track-volume">
