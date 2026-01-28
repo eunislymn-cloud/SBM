@@ -115,6 +115,7 @@ let patternSequence = ['A', '', '', '', '', '', '', ''];
 let currentSequenceIndex = 0;
 const patterns = { A: {}, B: {}, C: {} };
 const trackVolumes = {};
+let lowFreqGainReduction = 1; // Multiplier for kick/tom when gain is high
 
 const trackSounds = {
   kick: 'kick1',
@@ -398,9 +399,14 @@ function updateSequenceUI() {
 }
 
 function playSound(trackName) {
-  const volume = trackVolumes[trackName];
+  let volume = trackVolumes[trackName];
   const time = audioCtx.currentTime;
   const soundVariant = trackSounds[trackName];
+  
+  // Apply gain reduction to kick and tom
+  if (trackName === 'kick' || trackName === 'tom') {
+    volume *= lowFreqGainReduction;
+  }
   
   switch(soundVariant) {
     case 'kick1': {
@@ -1069,6 +1075,12 @@ document.getElementById('distortion').oninput = e => {
   
   // High shelf boost: adds presence to snares/hats (0 to +12dB)
   highShelf.gain.value = (val / 100) * 12;
+  
+  // Low shelf cut: tames kick/tom at high gain (0 to -6dB)
+  lowShelf.gain.value = -(val / 100) * 6;
+  
+  // Reduce kick/tom volume as gain increases (1.0 to 0.5)
+  lowFreqGainReduction = 1 - (val / 100) * 0.5;
 };
 
 document.getElementById('clear').onclick = () => {
