@@ -1107,6 +1107,16 @@ document.getElementById('clear').onclick = () => {
 
 // Share to X
 document.getElementById('shareX').onclick = () => {
+  document.getElementById('shareXModal').style.display = 'flex';
+};
+
+document.getElementById('closeShareXModal').onclick = () => {
+  document.getElementById('shareXModal').style.display = 'none';
+};
+
+document.getElementById('shareXConfirm').onclick = () => {
+  document.getElementById('shareXModal').style.display = 'none';
+  
   const beatName = document.getElementById('beatName').value.trim() || 'my beat';
   const text = `🎵 "${beatName}" - made on @MPSeeker
 
