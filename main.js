@@ -1776,10 +1776,10 @@ function initSolanaConnection() {
     const urlParams = new URLSearchParams(window.location.search);
     const useDevnet = urlParams.get('devnet') === 'true';
     
-    // Use better RPC endpoints
+    // Use reliable RPC endpoints
     const endpoint = useDevnet 
-      ? solanaWeb3.clusterApiUrl('devnet')
-      : 'https://api.mainnet-beta.solana.com';
+      ? 'https://api.devnet.solana.com'
+      : 'https://solana-mainnet.g.alchemy.com/v2/demo';
     
     console.log('Connecting to:', endpoint);
     
