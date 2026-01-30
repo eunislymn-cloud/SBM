@@ -1776,10 +1776,10 @@ function initSolanaConnection() {
     const urlParams = new URLSearchParams(window.location.search);
     const useDevnet = urlParams.get('devnet') === 'true';
     
-    // Use reliable RPC endpoints
+    // Use CORS-enabled RPC endpoints
     const endpoint = useDevnet 
       ? 'https://api.devnet.solana.com'
-      : 'https://solana-mainnet.g.alchemy.com/v2/demo';
+      : 'https://rpc.ankr.com/solana';
     
     console.log('Connecting to:', endpoint);
     
