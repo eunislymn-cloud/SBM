@@ -1627,6 +1627,18 @@ label {
   opacity: 0.9;
 }
 
+.solsynth-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.solsynth-link:hover {
+  opacity: 0.8;
+}
+
 .solsynth-text {
   font-family: 'Orbitron', sans-serif;
   font-size: 14px;
