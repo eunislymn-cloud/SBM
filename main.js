@@ -999,10 +999,14 @@ function updateUI() {
 
 document.getElementById('play').onclick = () => { 
   audioCtx.resume(); 
-  start(); 
+  start();
+  if (window.firebaseLogEvent) window.firebaseLogEvent('play_beat', { bpm: bpm });
 };
 
-document.getElementById('stop').onclick = stop;
+document.getElementById('stop').onclick = () => {
+  stop();
+  if (window.firebaseLogEvent) window.firebaseLogEvent('stop_beat');
+};
 
 document.getElementById('bpm').oninput = e => {
   bpm = parseInt(e.target.value);
@@ -1126,6 +1130,7 @@ Beat Maker for your Seeker!
   
   const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank');
+  if (window.firebaseLogEvent) window.firebaseLogEvent('share_x', { beat_name: beatName });
 };
 
 function updateBeatDropdown() {
@@ -1149,6 +1154,7 @@ document.getElementById('save').onclick = () => {
   localStorage.setItem('beatLibrary', JSON.stringify(library));
   alert(`"${name}" saved!`);
   updateBeatDropdown();
+  if (window.firebaseLogEvent) window.firebaseLogEvent('save_beat', { beat_name: name });
 };
 
 document.getElementById('savedBeats').onchange = () => {
@@ -1307,6 +1313,8 @@ document.querySelectorAll('.export-option').forEach(btn => {
       a.download = `${name}.${extension}`;
       a.click();
       URL.revokeObjectURL(url);
+      
+      if (window.firebaseLogEvent) window.firebaseLogEvent('export_beat', { format: extension, beat_name: name });
       
       exportBtn.textContent = 'Exported!';
       setTimeout(() => {
@@ -1991,6 +1999,7 @@ async function connectWallet(walletType) {
     }, 1500);
     
     console.log('Connected to', walletType, 'Address:', walletAddress);
+    if (window.firebaseLogEvent) window.firebaseLogEvent('wallet_connect', { wallet_type: walletType });
     
   } catch (error) {
     console.error('Wallet connection error:', error);
