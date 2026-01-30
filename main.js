@@ -1772,8 +1772,13 @@ const airdropBtn = document.getElementById('airdropBtn');
 // Initialize Solana connection
 function initSolanaConnection() {
   if (!solanaConnection) {
+    // Check for devnet override
+    const urlParams = new URLSearchParams(window.location.search);
+    const useDevnet = urlParams.get('devnet') === 'true';
+    const network = useDevnet ? 'devnet' : 'mainnet-beta';
+    
     solanaConnection = new solanaWeb3.Connection(
-      solanaWeb3.clusterApiUrl('devnet'),
+      solanaWeb3.clusterApiUrl(network),
       'confirmed'
     );
   }
@@ -2073,7 +2078,18 @@ async function checkExistingConnection() {
 setTimeout(checkExistingConnection, 500);
 
 // ============ NFT MINTING ============
-const SOLANA_NETWORK = 'devnet';
+// Check URL for devnet override (?devnet=true)
+const urlParams = new URLSearchParams(window.location.search);
+const useDevnet = urlParams.get('devnet') === 'true';
+const SOLANA_NETWORK = useDevnet ? 'devnet' : 'mainnet-beta';
+
+// Show airdrop button if on devnet
+if (useDevnet) {
+  const airdropBtn = document.getElementById('airdropBtn');
+  if (airdropBtn) airdropBtn.style.display = 'inline-flex';
+  console.log('🔧 DEVNET MODE ENABLED');
+}
+
 const mintStatus = document.getElementById('mintStatus');
 const mintOutput = document.getElementById('mintOutput');
 
