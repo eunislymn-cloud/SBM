@@ -1800,8 +1800,14 @@ async function updateSolBalance() {
     const balance = await connection.getBalance(publicKey);
     console.log('Raw balance (lamports):', balance);
     const solBalance = balance / solanaWeb3.LAMPORTS_PER_SOL;
+    console.log('SOL balance:', solBalance);
     
-    solBalanceEl.textContent = solBalance.toFixed(4);
+    // Show at least 4 decimal places, or more if needed
+    if (solBalance > 0 && solBalance < 0.0001) {
+      solBalanceEl.textContent = solBalance.toFixed(6);
+    } else {
+      solBalanceEl.textContent = solBalance.toFixed(4);
+    }
     walletInfo.style.display = 'flex';
     
     console.log('Balance updated:', solBalance, 'SOL');
