@@ -1775,12 +1775,12 @@ function initSolanaConnection() {
   const urlParams = new URLSearchParams(window.location.search);
   const useDevnet = urlParams.get('devnet') === 'true';
   
-  // Use CORS-enabled RPC endpoints
+  // Use public RPC endpoints (no API key needed)
   const endpoint = useDevnet 
     ? 'https://api.devnet.solana.com'
-    : 'https://mainnet.helius-rpc.com/?api-key=1d8740dc-e5f4-421c-b823-e1bad1889eff';
+    : 'https://solana-rpc.publicnode.com';
   
-  console.log('Connecting to:', useDevnet ? 'devnet' : 'mainnet');
+  console.log('Connecting to:', useDevnet ? 'devnet' : 'mainnet', endpoint);
   
   solanaConnection = new solanaWeb3.Connection(endpoint, 'confirmed');
   return solanaConnection;
