@@ -1771,20 +1771,18 @@ const airdropBtn = document.getElementById('airdropBtn');
 
 // Initialize Solana connection
 function initSolanaConnection() {
-  if (!solanaConnection) {
-    // Check for devnet override
-    const urlParams = new URLSearchParams(window.location.search);
-    const useDevnet = urlParams.get('devnet') === 'true';
-    
-    // Use CORS-enabled RPC endpoints
-    const endpoint = useDevnet 
-      ? 'https://api.devnet.solana.com'
-      : 'https://rpc.ankr.com/solana';
-    
-    console.log('Connecting to:', endpoint);
-    
-    solanaConnection = new solanaWeb3.Connection(endpoint, 'confirmed');
-  }
+  // Always create fresh connection to avoid caching issues
+  const urlParams = new URLSearchParams(window.location.search);
+  const useDevnet = urlParams.get('devnet') === 'true';
+  
+  // Use CORS-enabled RPC endpoints
+  const endpoint = useDevnet 
+    ? 'https://api.devnet.solana.com'
+    : 'https://mainnet.helius-rpc.com/?api-key=1d8740dc-e5f4-421c-b823-e1bad1889eff';
+  
+  console.log('Connecting to:', useDevnet ? 'devnet' : 'mainnet');
+  
+  solanaConnection = new solanaWeb3.Connection(endpoint, 'confirmed');
   return solanaConnection;
 }
 
