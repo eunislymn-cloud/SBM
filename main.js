@@ -1775,12 +1775,15 @@ function initSolanaConnection() {
     // Check for devnet override
     const urlParams = new URLSearchParams(window.location.search);
     const useDevnet = urlParams.get('devnet') === 'true';
-    const network = useDevnet ? 'devnet' : 'mainnet-beta';
     
-    solanaConnection = new solanaWeb3.Connection(
-      solanaWeb3.clusterApiUrl(network),
-      'confirmed'
-    );
+    // Use better RPC endpoints
+    const endpoint = useDevnet 
+      ? solanaWeb3.clusterApiUrl('devnet')
+      : 'https://api.mainnet-beta.solana.com';
+    
+    console.log('Connecting to:', endpoint);
+    
+    solanaConnection = new solanaWeb3.Connection(endpoint, 'confirmed');
   }
   return solanaConnection;
 }
@@ -1795,7 +1798,9 @@ async function updateSolBalance() {
   try {
     const connection = initSolanaConnection();
     const publicKey = new solanaWeb3.PublicKey(walletAddress);
+    console.log('Fetching balance for:', walletAddress);
     const balance = await connection.getBalance(publicKey);
+    console.log('Raw balance (lamports):', balance);
     const solBalance = balance / solanaWeb3.LAMPORTS_PER_SOL;
     
     solBalanceEl.textContent = solBalance.toFixed(4);
