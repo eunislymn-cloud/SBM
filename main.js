@@ -211,7 +211,7 @@ trackConfig.forEach(track => {
   header.className = 'track-header';
   header.innerHTML = `
     <div class="track-label-wrapper">
-      <div class="track-label">${track.label}</div>
+      <div class="track-label">${track.label} <span class="dropdown-arrow">▼</span></div>
       <div class="sound-menu" style="display:none;">
         <div class="sound-option" data-sound="${track.name}1">${labels[0]}</div>
         <div class="sound-option" data-sound="${track.name}2">${labels[1]}</div>

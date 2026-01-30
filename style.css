@@ -480,6 +480,12 @@ label {
   user-select: none;
 }
 
+.track-label .dropdown-arrow {
+  font-size: 10px;
+  opacity: 0.6;
+  margin-left: 2px;
+}
+
 .track-label:hover {
   color: #14F195;
 }
