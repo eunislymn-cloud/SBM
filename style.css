@@ -1592,6 +1592,7 @@ label {
   flex-wrap: wrap;
   font-size: 13px;
   color: #888;
+  margin-bottom: 15px;
 }
 
 .footer-divider {
@@ -1606,4 +1607,34 @@ label {
 
 .app-footer a:hover {
   color: #14F195;
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.conjured-text {
+  font-size: 11px;
+  color: #555;
+  font-style: italic;
+}
+
+.solsynth-logo {
+  opacity: 0.9;
+}
+
+.solsynth-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.labs-text {
+  color: #9945FF;
+  letter-spacing: 2px;
 }
