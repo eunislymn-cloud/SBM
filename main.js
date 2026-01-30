@@ -1117,12 +1117,12 @@ document.getElementById('closeShareXModal').onclick = () => {
 document.getElementById('shareXConfirm').onclick = () => {
   document.getElementById('shareXModal').style.display = 'none';
   
-  const beatName = document.getElementById('beatName').value.trim() || 'my beat';
-  const text = `🎵 "${beatName}" - made on @MPSeeker
+  const beatName = document.getElementById('beatName').value.trim() || 'Untitled';
+  const text = `🎵 "${beatName}" - made on MPSeeker by @SolSynthLabs
 
-Music production for your Seeker!
+Beat Maker for your Seeker!
 
-#MPSeeker #Solana #SolanaMobile #BeatMaker`;
+#SolSynthLabs #MPSeeker #SolanaMobile #BeatMaker`;
   
   const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank');
