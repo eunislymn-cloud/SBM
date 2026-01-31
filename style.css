@@ -635,6 +635,41 @@ label {
   border-color: #555; 
 }
 
+/* Stylus/hover preview - shows track color hint before tapping */
+.track-container[data-track="kick"] .step:hover:not(.active) { 
+  border-color: rgba(153, 69, 255, 0.6);
+  background: rgba(153, 69, 255, 0.15);
+}
+.track-container[data-track="snare"] .step:hover:not(.active) { 
+  border-color: rgba(0, 255, 195, 0.6);
+  background: rgba(0, 255, 195, 0.15);
+}
+.track-container[data-track="hat"] .step:hover:not(.active) { 
+  border-color: rgba(20, 241, 149, 0.6);
+  background: rgba(20, 241, 149, 0.15);
+}
+.track-container[data-track="clap"] .step:hover:not(.active) { 
+  border-color: rgba(255, 107, 157, 0.6);
+  background: rgba(255, 107, 157, 0.15);
+}
+.track-container[data-track="openhat"] .step:hover:not(.active) { 
+  border-color: rgba(255, 165, 0, 0.6);
+  background: rgba(255, 165, 0, 0.15);
+}
+.track-container[data-track="rim"] .step:hover:not(.active) { 
+  border-color: rgba(135, 206, 235, 0.6);
+  background: rgba(135, 206, 235, 0.15);
+}
+.track-container[data-track="tom"] .step:hover:not(.active) { 
+  border-color: rgba(218, 112, 214, 0.6);
+  background: rgba(218, 112, 214, 0.15);
+}
+
+/* Active step hover - brighter glow to show it can be toggled off */
+.step.active:hover {
+  filter: brightness(1.3);
+}
+
 .step.active { 
   box-shadow: 0 0 10px currentColor; 
 }
