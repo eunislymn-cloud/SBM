@@ -640,7 +640,6 @@ function playSound(trackName) {
         const gain = audioCtx.createGain();
         const layerDelay = layer * 0.008; // slight spread for "multiple hands" effect
         gain.gain.setValueAtTime(volume * 0.5, time + layerDelay);
-        gain.gain.exponentialDecayTo = volume * 0.001;
         gain.gain.exponentialRampToValueAtTime(0.001, time + layerDelay + 0.12);
         
         noise.connect(bandpass).connect(gain).connect(masterGain);
@@ -679,26 +678,6 @@ function playSound(trackName) {
         
         noise.connect(bandpass).connect(highshelf).connect(gain).connect(masterGain);
         noise.start(time + hitDelay);
-      }
-      break;
-    }
-      noise.connect(gain).connect(masterGain);
-      noise.start(time);
-      break;
-    }
-    case 'clap2': {
-      for (let delay = 0; delay < 3; delay++) {
-        const noise = audioCtx.createBufferSource();
-        const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.05, audioCtx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < data.length; i++) {
-          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.01));
-        }
-        noise.buffer = buffer;
-        const gain = audioCtx.createGain();
-        gain.gain.setValueAtTime(volume * 0.5, time + delay * 0.02);
-        noise.connect(gain).connect(masterGain);
-        noise.start(time + delay * 0.02);
       }
       break;
     }
