@@ -100,6 +100,7 @@ const trackConfig = [
 let steps = 16;
 let currentStep = 0;
 let isPlaying = false;
+let schedulerTimer = null;
 let bpm = 120;
 let swing = 0;
 let currentPattern = 'A';
@@ -817,31 +818,47 @@ function tick() {
     const activeSeq = getActiveSequence();
     if (activeSeq.length > 0) {
       activePattern = activeSeq[currentSequenceIndex];
-      
-      document.querySelectorAll('.pattern-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.pattern === activePattern);
-      });
-      
-      trackConfig.forEach(track => {
-        const container = document.querySelector(`[data-track="${track.name}"]`);
-        const stepEls = container.querySelectorAll('.step');
-        stepEls.forEach((el, i) => {
-          el.classList.toggle('active', patterns[activePattern][track.name][i]);
-        });
-      });
     }
   }
   
+  // Schedule audio first (time-critical)
   trackConfig.forEach(track => {
-    const container = document.querySelector(`[data-track="${track.name}"]`);
-    const stepEls = container.querySelectorAll('.step');
-    stepEls.forEach((el, i) => el.classList.toggle('playing', i === currentStep));
-    
     if (patterns[activePattern][track.name][currentStep]) playSound(track.name);
   });
   
-  updateBeatCounter();
-  updateSequenceUI();
+  // Defer UI updates to next animation frame (non-blocking)
+  const stepSnapshot = currentStep;
+  const patternSnapshot = activePattern;
+  const seqIndexSnapshot = currentSequenceIndex;
+  
+  requestAnimationFrame(() => {
+    // Update pattern buttons and grid only on pattern change
+    if (sequencerEnabled) {
+      document.querySelectorAll('.pattern-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.pattern === patternSnapshot);
+      });
+      
+      if (stepSnapshot === 0) {
+        trackConfig.forEach(track => {
+          const container = document.querySelector(`[data-track="${track.name}"]`);
+          const stepEls = container.querySelectorAll('.step');
+          stepEls.forEach((el, i) => {
+            el.classList.toggle('active', patterns[patternSnapshot][track.name][i]);
+          });
+        });
+      }
+    }
+    
+    // Update step highlights
+    trackConfig.forEach(track => {
+      const container = document.querySelector(`[data-track="${track.name}"]`);
+      const stepEls = container.querySelectorAll('.step');
+      stepEls.forEach((el, i) => el.classList.toggle('playing', i === stepSnapshot));
+    });
+    
+    updateBeatCounter();
+    updateSequenceUI();
+  });
   
   currentStep = (currentStep + 1) % steps;
   
@@ -858,27 +875,39 @@ function start() {
   isPlaying = true;
   currentSequenceIndex = 0;
   
-  let lastTime = Date.now();
-  let stepCounter = 0;
+  // Web Audio lookahead scheduler for tight timing
+  const scheduleAheadTime = 0.1; // seconds to look ahead
+  const timerInterval = 25; // ms between scheduler checks
+  let nextStepTime = audioCtx.currentTime;
   
-  function scheduleTick() {
+  function scheduler() {
     if (!isPlaying) return;
-    const now = Date.now();
-    // Calculate interval each tick so BPM changes in real-time
-    let interval = (60 / bpm) * 1000 / 4;
-    if (swing > 0 && stepCounter % 2 === 1) interval *= 1 + (swing / 100);
-    if (now - lastTime >= interval) {
+    
+    // Schedule all steps that fall within the lookahead window
+    while (nextStepTime < audioCtx.currentTime + scheduleAheadTime) {
       tick();
-      lastTime = now;
-      stepCounter++;
+      
+      // Calculate next step time
+      let interval = 60 / bpm / 4;
+      if (swing > 0 && (currentStep - 1 + steps) % steps % 2 === 0) {
+        interval *= 1 + (swing / 100);
+      }
+      nextStepTime += interval;
     }
-    requestAnimationFrame(scheduleTick);
+    
+    schedulerTimer = setTimeout(scheduler, timerInterval);
   }
-  scheduleTick();
+  
+  nextStepTime = audioCtx.currentTime;
+  scheduler();
 }
 
 function stop() {
   isPlaying = false;
+  if (schedulerTimer) {
+    clearTimeout(schedulerTimer);
+    schedulerTimer = null;
+  }
   currentStep = 0;
   currentSequenceIndex = 0;
   updateBeatCounter();
