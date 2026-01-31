@@ -546,34 +546,44 @@ function playSound(trackName) {
       break;
     }
     case 'snare2': {
-      // Tight, cracking snare
+      // Bright rimshot-style snare - higher pitch, more crack, less body
       const osc = audioCtx.createOscillator();
       const oscGain = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(180, time);
-      osc.frequency.exponentialRampToValueAtTime(100, time + 0.02);
-      oscGain.gain.setValueAtTime(volume * 0.6, time);
-      oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(350, time);
+      osc.frequency.exponentialRampToValueAtTime(120, time + 0.015);
+      oscGain.gain.setValueAtTime(volume * 0.4, time);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
       osc.connect(oscGain).connect(masterGain);
       osc.start(time);
-      osc.stop(time + 0.05);
+      osc.stop(time + 0.03);
       
-      // Short noise crack
+      // Bright, sharp noise with resonant peak
       const noise = audioCtx.createBufferSource();
-      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.08, audioCtx.sampleRate);
+      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.06, audioCtx.sampleRate);
       const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      for (let i = 0; i < data.length; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.008));
+      }
       noise.buffer = buffer;
       
-      const highpass = audioCtx.createBiquadFilter();
-      highpass.type = 'highpass';
-      highpass.frequency.value = 3000;
+      // Higher bandpass for that "crack" 
+      const bandpass = audioCtx.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.frequency.value = 4500;
+      bandpass.Q.value = 2;
+      
+      // Extra high shelf for brightness
+      const highshelf = audioCtx.createBiquadFilter();
+      highshelf.type = 'highshelf';
+      highshelf.frequency.value = 5000;
+      highshelf.gain.value = 6;
       
       const noiseGain = audioCtx.createGain();
-      noiseGain.gain.setValueAtTime(volume * 0.6, time);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.07);
+      noiseGain.gain.setValueAtTime(volume * 0.8, time);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
       
-      noise.connect(highpass).connect(noiseGain).connect(masterGain);
+      noise.connect(bandpass).connect(highshelf).connect(noiseGain).connect(masterGain);
       noise.start(time);
       break;
     }
@@ -1566,30 +1576,41 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
       break;
     }
     case 'snare2': {
-      // Tight, cracking snare
+      // Bright rimshot-style snare
       const osc = ctx.createOscillator();
       const oscGain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(180, time);
-      osc.frequency.exponentialRampToValueAtTime(100, time + 0.02);
-      oscGain.gain.setValueAtTime(volume * 0.6, time);
-      oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(350, time);
+      osc.frequency.exponentialRampToValueAtTime(120, time + 0.015);
+      oscGain.gain.setValueAtTime(volume * 0.4, time);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
       osc.connect(oscGain).connect(master);
       osc.start(time);
-      osc.stop(time + 0.05);
+      osc.stop(time + 0.03);
       
       const noise = ctx.createBufferSource();
-      const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.08, ctx.sampleRate);
+      const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.06, ctx.sampleRate);
       const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      for (let i = 0; i < data.length; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.008));
+      }
       noise.buffer = buffer;
-      const highpass = ctx.createBiquadFilter();
-      highpass.type = 'highpass';
-      highpass.frequency.value = 3000;
+      
+      const bandpass = ctx.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.frequency.value = 4500;
+      bandpass.Q.value = 2;
+      
+      const highshelf = ctx.createBiquadFilter();
+      highshelf.type = 'highshelf';
+      highshelf.frequency.value = 5000;
+      highshelf.gain.value = 6;
+      
       const noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(volume * 0.6, time);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.07);
-      noise.connect(highpass).connect(noiseGain).connect(master);
+      noiseGain.gain.setValueAtTime(volume * 0.8, time);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+      
+      noise.connect(bandpass).connect(highshelf).connect(noiseGain).connect(master);
       noise.start(time);
       break;
     }
