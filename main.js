@@ -109,6 +109,8 @@ let patternSequence = ['A', '', '', '', '', '', '', ''];
 let currentSequenceIndex = 0;
 const patterns = { A: {}, B: {}, C: {} };
 const trackVolumes = {};
+const trackPitch = {};
+const trackDecay = {};
 
 const trackSounds = {
   kick: 'kick1',
@@ -206,6 +208,10 @@ trackConfig.forEach(track => {
   container.className = 'track-container';
   container.dataset.track = track.name;
   
+  // Initialize pitch and decay for this track
+  trackPitch[track.name] = 0; // -12 to +12 semitones
+  trackDecay[track.name] = 100; // 10% to 200%
+  
   const labels = soundLabels[track.name] || ['Sound 1', 'Sound 2'];
   
   const header = document.createElement('div');
@@ -216,6 +222,18 @@ trackConfig.forEach(track => {
       <div class="sound-menu" style="display:none;">
         <div class="sound-option" data-sound="${track.name}1">${labels[0]}</div>
         <div class="sound-option" data-sound="${track.name}2">${labels[1]}</div>
+      </div>
+    </div>
+    <div class="track-params">
+      <div class="param-knob" title="Pitch (-12 to +12)">
+        <label>P</label>
+        <input type="range" min="-12" max="12" value="0" class="pitch-control">
+        <span class="pitch-value">0</span>
+      </div>
+      <div class="param-knob" title="Decay (10% to 200%)">
+        <label>D</label>
+        <input type="range" min="10" max="200" value="100" class="decay-control">
+        <span class="decay-value">100</span>
       </div>
     </div>
     <div class="track-volume">
@@ -280,6 +298,22 @@ trackConfig.forEach(track => {
         input.remove();
       }
     });
+  });
+  
+  // Pitch control
+  const pitchControl = header.querySelector('.pitch-control');
+  const pitchValue = header.querySelector('.pitch-value');
+  pitchControl.addEventListener('input', e => {
+    trackPitch[track.name] = parseInt(e.target.value);
+    pitchValue.textContent = e.target.value > 0 ? '+' + e.target.value : e.target.value;
+  });
+  
+  // Decay control
+  const decayControl = header.querySelector('.decay-control');
+  const decayValue = header.querySelector('.decay-value');
+  decayControl.addEventListener('input', e => {
+    trackDecay[track.name] = parseInt(e.target.value);
+    decayValue.textContent = e.target.value;
   });
   
   const labelWrapper = header.querySelector('.track-label-wrapper');
@@ -432,6 +466,11 @@ function playSound(trackName) {
   const time = audioCtx.currentTime;
   const soundVariant = trackSounds[trackName];
   
+  // Get pitch and decay modifiers
+  const pitchSemitones = trackPitch[trackName] || 0;
+  const pitchRatio = Math.pow(2, pitchSemitones / 12); // Convert semitones to frequency ratio
+  const decayMod = (trackDecay[trackName] || 100) / 100; // Convert to multiplier
+  
   switch(soundVariant) {
     case 'kick1': {
       // 909 style kick - punchy with click
@@ -449,21 +488,21 @@ function playSound(trackName) {
       }
       distortion.curve = curve;
       
-      // Main body - tighter than 808
+      // Main body - tighter than 808 (apply pitch)
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(180, time);
-      osc.frequency.exponentialRampToValueAtTime(50, time + 0.05);
-      osc.frequency.exponentialRampToValueAtTime(40, time + 0.15);
+      osc.frequency.setValueAtTime(180 * pitchRatio, time);
+      osc.frequency.exponentialRampToValueAtTime(50 * pitchRatio, time + 0.05 * decayMod);
+      osc.frequency.exponentialRampToValueAtTime(40 * pitchRatio, time + 0.15 * decayMod);
       
-      // Click transient
+      // Click transient (apply pitch)
       clickOsc.type = 'square';
-      clickOsc.frequency.setValueAtTime(800, time);
-      clickOsc.frequency.exponentialRampToValueAtTime(100, time + 0.01);
+      clickOsc.frequency.setValueAtTime(800 * pitchRatio, time);
+      clickOsc.frequency.exponentialRampToValueAtTime(100 * pitchRatio, time + 0.01);
       
-      // Main envelope - punchy
+      // Main envelope - punchy (apply decay)
       gain.gain.setValueAtTime(volume * 1.4, time);
-      gain.gain.exponentialRampToValueAtTime(volume * 0.8, time + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
+      gain.gain.exponentialRampToValueAtTime(volume * 0.8, time + 0.02 * decayMod);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25 * decayMod);
       
       // Click envelope
       clickGain.gain.setValueAtTime(volume * 0.5, time);
@@ -472,7 +511,7 @@ function playSound(trackName) {
       osc.connect(distortion).connect(gain).connect(masterGain);
       clickOsc.connect(clickGain).connect(masterGain);
       osc.start(time);
-      osc.stop(time + 0.25);
+      osc.stop(time + 0.25 * decayMod);
       clickOsc.start(time);
       clickOsc.stop(time + 0.015);
       break;
@@ -484,22 +523,22 @@ function playSound(trackName) {
       const gain = audioCtx.createGain();
       const gain2 = audioCtx.createGain();
       
-      // Main sub oscillator
+      // Main sub oscillator (apply pitch)
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(150, time);
-      osc.frequency.exponentialRampToValueAtTime(35, time + 0.08);
-      osc.frequency.setValueAtTime(35, time + 0.08);
-      osc.frequency.exponentialRampToValueAtTime(25, time + 0.5);
+      osc.frequency.setValueAtTime(150 * pitchRatio, time);
+      osc.frequency.exponentialRampToValueAtTime(35 * pitchRatio, time + 0.08 * decayMod);
+      osc.frequency.setValueAtTime(35 * pitchRatio, time + 0.08 * decayMod);
+      osc.frequency.exponentialRampToValueAtTime(25 * pitchRatio, time + 0.5 * decayMod);
       
-      // Click/attack oscillator
+      // Click/attack oscillator (apply pitch)
       osc2.type = 'triangle';
-      osc2.frequency.setValueAtTime(400, time);
-      osc2.frequency.exponentialRampToValueAtTime(60, time + 0.02);
+      osc2.frequency.setValueAtTime(400 * pitchRatio, time);
+      osc2.frequency.exponentialRampToValueAtTime(60 * pitchRatio, time + 0.02);
       
-      // Main envelope - long sustain for that 808 boom
+      // Main envelope (apply decay)
       gain.gain.setValueAtTime(volume * 1.5, time);
-      gain.gain.setValueAtTime(volume * 1.2, time + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.6);
+      gain.gain.setValueAtTime(volume * 1.2, time + 0.05 * decayMod);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.6 * decayMod);
       
       // Click envelope - short
       gain2.gain.setValueAtTime(volume * 0.8, time);
@@ -508,7 +547,7 @@ function playSound(trackName) {
       osc.connect(gain).connect(masterGain);
       osc2.connect(gain2).connect(masterGain);
       osc.start(time);
-      osc.stop(time + 0.6);
+      osc.stop(time + 0.6 * decayMod);
       osc2.start(time);
       osc2.stop(time + 0.03);
       break;
@@ -518,20 +557,22 @@ function playSound(trackName) {
       const osc = audioCtx.createOscillator();
       const oscGain = audioCtx.createGain();
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(200, time);
-      osc.frequency.exponentialRampToValueAtTime(80, time + 0.03);
+      osc.frequency.setValueAtTime(200 * pitchRatio, time);
+      osc.frequency.exponentialRampToValueAtTime(80 * pitchRatio, time + 0.03 * decayMod);
       oscGain.gain.setValueAtTime(volume * 0.8, time);
-      oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.08 * decayMod);
       osc.connect(oscGain).connect(masterGain);
       osc.start(time);
-      osc.stop(time + 0.08);
+      osc.stop(time + 0.08 * decayMod);
       
       // Noise snap
       const noise = audioCtx.createBufferSource();
-      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.1, audioCtx.sampleRate);
+      const bufferLen = audioCtx.sampleRate * 0.1 * decayMod;
+      const buffer = audioCtx.createBuffer(1, bufferLen, audioCtx.sampleRate);
       const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      for (let i = 0; i < bufferLen; i++) data[i] = Math.random() * 2 - 1;
       noise.buffer = buffer;
+      noise.playbackRate.value = pitchRatio; // Apply pitch to noise
       
       const highpass = audioCtx.createBiquadFilter();
       highpass.type = 'highpass';

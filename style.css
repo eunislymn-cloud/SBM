@@ -543,6 +543,39 @@ label {
   font-size: 10px;
 }
 
+.track-params {
+  display: flex;
+  gap: 6px;
+  margin-right: 8px;
+}
+
+.param-knob {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 9px;
+  color: #888;
+}
+
+.param-knob label {
+  color: #14F195;
+  font-weight: bold;
+  font-size: 8px;
+}
+
+.param-knob input[type="range"] {
+  width: 35px;
+  height: 10px;
+  cursor: pointer;
+}
+
+.param-knob span {
+  min-width: 20px;
+  text-align: center;
+  font-size: 9px;
+  color: #aaa;
+}
+
 .track-volume input[type="range"] { 
   width: 50px;
   height: 12px;
