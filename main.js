@@ -637,42 +637,46 @@ function playSound(trackName) {
       break;
     }
     case 'hat1': {
+      const bufferLen = Math.floor(audioCtx.sampleRate * 0.05 * decayMod);
       const noise = audioCtx.createBufferSource();
-      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.05, audioCtx.sampleRate);
+      const buffer = audioCtx.createBuffer(1, bufferLen, audioCtx.sampleRate);
       const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.005));
+      for (let i = 0; i < bufferLen; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.005 * decayMod));
       }
       noise.buffer = buffer;
+      noise.playbackRate.value = pitchRatio;
       
       const filter = audioCtx.createBiquadFilter();
       filter.type = 'highpass';
-      filter.frequency.value = 7000;
+      filter.frequency.value = 7000 * pitchRatio;
       
       const gain = audioCtx.createGain();
       gain.gain.setValueAtTime(volume * 0.4, time);
-      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05 * decayMod);
       
       noise.connect(filter).connect(gain).connect(masterGain);
       noise.start(time);
       break;
     }
     case 'hat2': {
+      const bufferLen = Math.floor(audioCtx.sampleRate * 0.15 * decayMod);
       const noise = audioCtx.createBufferSource();
-      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.15, audioCtx.sampleRate);
+      const buffer = audioCtx.createBuffer(1, bufferLen, audioCtx.sampleRate);
       const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.02));
+      for (let i = 0; i < bufferLen; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.02 * decayMod));
       }
       noise.buffer = buffer;
+      noise.playbackRate.value = pitchRatio;
       
       const filter = audioCtx.createBiquadFilter();
       filter.type = 'highpass';
-      filter.frequency.value = 6000;
+      filter.frequency.value = 6000 * pitchRatio;
       
       const gain = audioCtx.createGain();
       gain.gain.setValueAtTime(volume * 0.35, time);
-      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.15 * decayMod);
       
       noise.connect(filter).connect(gain).connect(masterGain);
       noise.start(time);
@@ -684,7 +688,7 @@ function playSound(trackName) {
       const click = audioCtx.createOscillator();
       const clickGain = audioCtx.createGain();
       click.type = 'square';
-      click.frequency.value = 1500;
+      click.frequency.value = 1500 * pitchRatio;
       clickGain.gain.setValueAtTime(volume * 0.3, time);
       clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.008);
       click.connect(clickGain).connect(masterGain);
@@ -693,24 +697,26 @@ function playSound(trackName) {
       
       const numLayers = 4;
       for (let layer = 0; layer < numLayers; layer++) {
+        const bufferLen = Math.floor(audioCtx.sampleRate * 0.15 * decayMod);
         const noise = audioCtx.createBufferSource();
-        const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.15, audioCtx.sampleRate);
+        const buffer = audioCtx.createBuffer(1, bufferLen, audioCtx.sampleRate);
         const data = buffer.getChannelData(0);
-        for (let i = 0; i < data.length; i++) {
-          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.02));
+        for (let i = 0; i < bufferLen; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.02 * decayMod));
         }
         noise.buffer = buffer;
+        noise.playbackRate.value = pitchRatio;
         
         // Bandpass filter for that clap character
         const bandpass = audioCtx.createBiquadFilter();
         bandpass.type = 'bandpass';
-        bandpass.frequency.value = 1200 + layer * 400;
+        bandpass.frequency.value = (1200 + layer * 400) * pitchRatio;
         bandpass.Q.value = 1.2;
         
         const gain = audioCtx.createGain();
         const layerDelay = layer * 0.006;
         gain.gain.setValueAtTime(volume * 0.7, time + layerDelay);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + layerDelay + 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + layerDelay + 0.1 * decayMod);
         
         noise.connect(bandpass).connect(gain).connect(masterGain);
         noise.start(time + layerDelay);
@@ -723,7 +729,7 @@ function playSound(trackName) {
       const click = audioCtx.createOscillator();
       const clickGain = audioCtx.createGain();
       click.type = 'square';
-      click.frequency.value = 2000;
+      click.frequency.value = 2000 * pitchRatio;
       clickGain.gain.setValueAtTime(volume * 0.35, time);
       clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.006);
       click.connect(clickGain).connect(masterGain);
@@ -732,28 +738,30 @@ function playSound(trackName) {
       
       const numHits = 3;
       for (let hit = 0; hit < numHits; hit++) {
+        const bufferLen = Math.floor(audioCtx.sampleRate * 0.07 * decayMod);
         const noise = audioCtx.createBufferSource();
-        const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.07, audioCtx.sampleRate);
+        const buffer = audioCtx.createBuffer(1, bufferLen, audioCtx.sampleRate);
         const data = buffer.getChannelData(0);
-        for (let i = 0; i < data.length; i++) {
-          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.01));
+        for (let i = 0; i < bufferLen; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.01 * decayMod));
         }
         noise.buffer = buffer;
+        noise.playbackRate.value = pitchRatio;
         
         const bandpass = audioCtx.createBiquadFilter();
         bandpass.type = 'bandpass';
-        bandpass.frequency.value = 1600;
+        bandpass.frequency.value = 1600 * pitchRatio;
         bandpass.Q.value = 1.5;
         
         const highshelf = audioCtx.createBiquadFilter();
         highshelf.type = 'highshelf';
-        highshelf.frequency.value = 3000;
+        highshelf.frequency.value = 3000 * pitchRatio;
         highshelf.gain.value = 5;
         
         const gain = audioCtx.createGain();
         const hitDelay = hit * 0.012;
         gain.gain.setValueAtTime(volume * 0.75, time + hitDelay);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + hitDelay + 0.06);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + hitDelay + 0.06 * decayMod);
         
         noise.connect(bandpass).connect(highshelf).connect(gain).connect(masterGain);
         noise.start(time + hitDelay);
@@ -762,7 +770,7 @@ function playSound(trackName) {
     }
     case 'openhat1': {
       // Open hi-hat 1 - classic open hat
-      const bufferSize = audioCtx.sampleRate * 0.25;
+      const bufferSize = Math.floor(audioCtx.sampleRate * 0.25 * decayMod);
       const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
       const output = noiseBuffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) {
@@ -770,33 +778,34 @@ function playSound(trackName) {
       }
       const noise = audioCtx.createBufferSource();
       noise.buffer = noiseBuffer;
+      noise.playbackRate.value = pitchRatio;
       
       // Highpass for that metallic hi-hat sound
       const highpass = audioCtx.createBiquadFilter();
       highpass.type = 'highpass';
-      highpass.frequency.value = 7000;
+      highpass.frequency.value = 7000 * pitchRatio;
       
       // Bandpass for character
       const bandpass = audioCtx.createBiquadFilter();
       bandpass.type = 'bandpass';
-      bandpass.frequency.value = 10000;
+      bandpass.frequency.value = 10000 * pitchRatio;
       bandpass.Q.value = 1;
       
       const gain = audioCtx.createGain();
       gain.gain.setValueAtTime(volume * 0.5, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2 * decayMod);
       
       noise.connect(highpass);
       highpass.connect(bandpass);
       bandpass.connect(gain);
       gain.connect(masterGain);
       noise.start(time);
-      noise.stop(time + 0.25);
+      noise.stop(time + 0.25 * decayMod);
       break;
     }
     case 'openhat2': {
       // Open hi-hat 2 - slightly longer
-      const bufferSize = audioCtx.sampleRate * 0.35;
+      const bufferSize = Math.floor(audioCtx.sampleRate * 0.35 * decayMod);
       const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
       const output = noiseBuffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) {
@@ -804,45 +813,48 @@ function playSound(trackName) {
       }
       const noise = audioCtx.createBufferSource();
       noise.buffer = noiseBuffer;
+      noise.playbackRate.value = pitchRatio;
       
       const highpass = audioCtx.createBiquadFilter();
       highpass.type = 'highpass';
-      highpass.frequency.value = 6000;
+      highpass.frequency.value = 6000 * pitchRatio;
       
       const bandpass = audioCtx.createBiquadFilter();
       bandpass.type = 'bandpass';
-      bandpass.frequency.value = 9000;
+      bandpass.frequency.value = 9000 * pitchRatio;
       bandpass.Q.value = 0.8;
       
       const gain = audioCtx.createGain();
       gain.gain.setValueAtTime(volume * 0.45, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3 * decayMod);
       
       noise.connect(highpass);
       highpass.connect(bandpass);
       bandpass.connect(gain);
       gain.connect(masterGain);
       noise.start(time);
-      noise.stop(time + 0.35);
+      noise.stop(time + 0.35 * decayMod);
       break;
     }
     case 'rim1': {
       // Rimshot - stick hitting rim + head
       // High frequency crack
+      const bufferLen = Math.floor(audioCtx.sampleRate * 0.03 * decayMod);
       const noise = audioCtx.createBufferSource();
-      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.03, audioCtx.sampleRate);
+      const buffer = audioCtx.createBuffer(1, bufferLen, audioCtx.sampleRate);
       const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      for (let i = 0; i < bufferLen; i++) data[i] = Math.random() * 2 - 1;
       noise.buffer = buffer;
+      noise.playbackRate.value = pitchRatio;
       
       const bandpass = audioCtx.createBiquadFilter();
       bandpass.type = 'bandpass';
-      bandpass.frequency.value = 1500;
+      bandpass.frequency.value = 1500 * pitchRatio;
       bandpass.Q.value = 3;
       
       const noiseGain = audioCtx.createGain();
       noiseGain.gain.setValueAtTime(volume * 1.2, time);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.03);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.03 * decayMod);
       noise.connect(bandpass).connect(noiseGain).connect(masterGain);
       noise.start(time);
       
@@ -850,57 +862,59 @@ function playSound(trackName) {
       const osc = audioCtx.createOscillator();
       const oscGain = audioCtx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(280, time);
-      osc.frequency.exponentialRampToValueAtTime(150, time + 0.015);
+      osc.frequency.setValueAtTime(280 * pitchRatio, time);
+      osc.frequency.exponentialRampToValueAtTime(150 * pitchRatio, time + 0.015 * decayMod);
       oscGain.gain.setValueAtTime(volume * 0.4, time);
-      oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.025 * decayMod);
       osc.connect(oscGain).connect(masterGain);
       osc.start(time);
-      osc.stop(time + 0.025);
+      osc.stop(time + 0.025 * decayMod);
       break;
     }
     case 'rim2': {
       // Sidestick / cross-stick - drier, clickier
+      const bufferLen = Math.floor(audioCtx.sampleRate * 0.025 * decayMod);
       const noise = audioCtx.createBufferSource();
-      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.025, audioCtx.sampleRate);
+      const buffer = audioCtx.createBuffer(1, bufferLen, audioCtx.sampleRate);
       const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      for (let i = 0; i < bufferLen; i++) data[i] = Math.random() * 2 - 1;
       noise.buffer = buffer;
+      noise.playbackRate.value = pitchRatio;
       
       const bandpass = audioCtx.createBiquadFilter();
       bandpass.type = 'bandpass';
-      bandpass.frequency.value = 2200;
+      bandpass.frequency.value = 2200 * pitchRatio;
       bandpass.Q.value = 4;
       
       const noiseGain = audioCtx.createGain();
       noiseGain.gain.setValueAtTime(volume * 1.0, time);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.02 * decayMod);
       noise.connect(bandpass).connect(noiseGain).connect(masterGain);
       noise.start(time);
       break;
     }
     case 'tom1': {
       const osc = audioCtx.createOscillator();
-      osc.frequency.setValueAtTime(200, time);
-      osc.frequency.exponentialRampToValueAtTime(80, time + 0.2);
+      osc.frequency.setValueAtTime(200 * pitchRatio, time);
+      osc.frequency.exponentialRampToValueAtTime(80 * pitchRatio, time + 0.2 * decayMod);
       const gain = audioCtx.createGain();
       gain.gain.setValueAtTime(volume, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2 * decayMod);
       osc.connect(gain).connect(masterGain);
       osc.start(time);
-      osc.stop(time + 0.2);
+      osc.stop(time + 0.2 * decayMod);
       break;
     }
     case 'tom2': {
       const osc = audioCtx.createOscillator();
-      osc.frequency.setValueAtTime(150, time);
-      osc.frequency.exponentialRampToValueAtTime(60, time + 0.3);
+      osc.frequency.setValueAtTime(150 * pitchRatio, time);
+      osc.frequency.exponentialRampToValueAtTime(60 * pitchRatio, time + 0.3 * decayMod);
       const gain = audioCtx.createGain();
       gain.gain.setValueAtTime(volume * 1.1, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3 * decayMod);
       osc.connect(gain).connect(masterGain);
       osc.start(time);
-      osc.stop(time + 0.3);
+      osc.stop(time + 0.3 * decayMod);
       break;
     }
   }
