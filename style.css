@@ -514,7 +514,7 @@ label {
   border-radius: 6px;
   padding: 5px 0;
   z-index: 1000;
-  min-width: 100px;
+  min-width: 160px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   margin-top: 5px;
 }
@@ -536,44 +536,52 @@ label {
   font-weight: bold;
 }
 
+.sound-menu-divider {
+  height: 1px;
+  background: #444;
+  margin: 8px 0;
+}
+
+.param-section {
+  padding: 8px 12px;
+}
+
+.param-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.param-row:last-child {
+  margin-bottom: 0;
+}
+
+.param-row label {
+  font-size: 11px;
+  color: #14F195;
+  min-width: 45px;
+  font-weight: bold;
+}
+
+.param-row input[type="range"] {
+  flex: 1;
+  height: 16px;
+  cursor: pointer;
+}
+
+.param-row span {
+  font-size: 11px;
+  color: #fff;
+  min-width: 35px;
+  text-align: right;
+}
+
 .track-volume {
   display: flex;
   align-items: center;
   gap: 3px;
   font-size: 10px;
-}
-
-.track-params {
-  display: flex;
-  gap: 6px;
-  margin-right: 8px;
-}
-
-.param-knob {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 9px;
-  color: #888;
-}
-
-.param-knob label {
-  color: #14F195;
-  font-weight: bold;
-  font-size: 8px;
-}
-
-.param-knob input[type="range"] {
-  width: 35px;
-  height: 10px;
-  cursor: pointer;
-}
-
-.param-knob span {
-  min-width: 20px;
-  text-align: center;
-  font-size: 9px;
-  color: #aaa;
 }
 
 .track-volume input[type="range"] { 

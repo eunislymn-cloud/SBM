@@ -222,18 +222,19 @@ trackConfig.forEach(track => {
       <div class="sound-menu" style="display:none;">
         <div class="sound-option" data-sound="${track.name}1">${labels[0]}</div>
         <div class="sound-option" data-sound="${track.name}2">${labels[1]}</div>
-      </div>
-    </div>
-    <div class="track-params">
-      <div class="param-knob" title="Pitch (-12 to +12)">
-        <label>P</label>
-        <input type="range" min="-12" max="12" value="0" class="pitch-control">
-        <span class="pitch-value">0</span>
-      </div>
-      <div class="param-knob" title="Decay (10% to 200%)">
-        <label>D</label>
-        <input type="range" min="10" max="200" value="100" class="decay-control">
-        <span class="decay-value">100</span>
+        <div class="sound-menu-divider"></div>
+        <div class="param-section">
+          <div class="param-row">
+            <label>Pitch</label>
+            <input type="range" min="-12" max="12" value="0" class="pitch-control">
+            <span class="pitch-value">0</span>
+          </div>
+          <div class="param-row">
+            <label>Decay</label>
+            <input type="range" min="10" max="200" value="100" class="decay-control">
+            <span class="decay-value">100%</span>
+          </div>
+        </div>
       </div>
     </div>
     <div class="track-volume">
@@ -313,7 +314,12 @@ trackConfig.forEach(track => {
   const decayValue = header.querySelector('.decay-value');
   decayControl.addEventListener('input', e => {
     trackDecay[track.name] = parseInt(e.target.value);
-    decayValue.textContent = e.target.value;
+    decayValue.textContent = e.target.value + '%';
+  });
+  
+  // Stop propagation on param controls so menu doesn't close
+  header.querySelectorAll('.param-row input').forEach(input => {
+    input.addEventListener('click', e => e.stopPropagation());
   });
   
   const labelWrapper = header.querySelector('.track-label-wrapper');
