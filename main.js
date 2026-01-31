@@ -620,15 +620,68 @@ function playSound(trackName) {
       break;
     }
     case 'clap1': {
-      const noise = audioCtx.createBufferSource();
-      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.1, audioCtx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.02));
+      // Classic clap - multiple layered noise bursts with bandpass
+      const numLayers = 4;
+      for (let layer = 0; layer < numLayers; layer++) {
+        const noise = audioCtx.createBufferSource();
+        const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.15, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.025));
+        }
+        noise.buffer = buffer;
+        
+        // Bandpass filter for that clap character (1000-2500 Hz range)
+        const bandpass = audioCtx.createBiquadFilter();
+        bandpass.type = 'bandpass';
+        bandpass.frequency.value = 1500 + layer * 300;
+        bandpass.Q.value = 1.5;
+        
+        const gain = audioCtx.createGain();
+        const layerDelay = layer * 0.008; // slight spread for "multiple hands" effect
+        gain.gain.setValueAtTime(volume * 0.5, time + layerDelay);
+        gain.gain.exponentialDecayTo = volume * 0.001;
+        gain.gain.exponentialRampToValueAtTime(0.001, time + layerDelay + 0.12);
+        
+        noise.connect(bandpass).connect(gain).connect(masterGain);
+        noise.start(time + layerDelay);
       }
-      noise.buffer = buffer;
-      const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(volume * 0.7, time);
+      break;
+    }
+    case 'clap2': {
+      // Tight clap - sharper, more staccato
+      const numHits = 3;
+      for (let hit = 0; hit < numHits; hit++) {
+        const noise = audioCtx.createBufferSource();
+        const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.08, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.012));
+        }
+        noise.buffer = buffer;
+        
+        // Higher bandpass for snappier clap
+        const bandpass = audioCtx.createBiquadFilter();
+        bandpass.type = 'bandpass';
+        bandpass.frequency.value = 1800;
+        bandpass.Q.value = 2;
+        
+        // Add some high freq sizzle
+        const highshelf = audioCtx.createBiquadFilter();
+        highshelf.type = 'highshelf';
+        highshelf.frequency.value = 3000;
+        highshelf.gain.value = 4;
+        
+        const gain = audioCtx.createGain();
+        const hitDelay = hit * 0.015;
+        gain.gain.setValueAtTime(volume * 0.55, time + hitDelay);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + hitDelay + 0.08);
+        
+        noise.connect(bandpass).connect(highshelf).connect(gain).connect(masterGain);
+        noise.start(time + hitDelay);
+      }
+      break;
+    }
       noise.connect(gain).connect(masterGain);
       noise.start(time);
       break;
