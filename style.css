@@ -490,6 +490,63 @@ label {
   color: #14F195;
 }
 
+.track-controls {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.mute-btn, .solo-btn {
+  width: 24px;
+  height: 20px;
+  border: 1px solid #555;
+  border-radius: 3px;
+  background: #2a2a2a;
+  color: #888;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.mute-btn:hover {
+  border-color: #ff4444;
+  color: #ff4444;
+}
+
+.solo-btn:hover {
+  border-color: #ffaa00;
+  color: #ffaa00;
+}
+
+.mute-btn.active {
+  background: #ff4444;
+  color: #fff;
+  border-color: #ff4444;
+}
+
+.solo-btn.active {
+  background: #ffaa00;
+  color: #000;
+  border-color: #ffaa00;
+}
+
+.track-muted .track-grid .step {
+  opacity: 0.4;
+}
+
+.track-dimmed .track-grid .step {
+  opacity: 0.3;
+}
+
+.track-dimmed .track-label,
+.track-dimmed .track-controls,
+.track-dimmed .track-volume {
+  opacity: 0.4;
+}
+
 .sound-menu {
   position: absolute;
   top: 100%;
@@ -885,6 +942,17 @@ label {
     width: 80px;
     margin-right: 10px;
     margin-bottom: 0;
+  }
+  
+  .track-controls {
+    gap: 3px;
+    margin-bottom: 2px;
+  }
+  
+  .mute-btn, .solo-btn {
+    width: 22px;
+    height: 18px;
+    font-size: 10px;
   }
   
   .packs-grid {
