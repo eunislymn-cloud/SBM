@@ -1365,13 +1365,132 @@ function updateBeatDropdown() {
 document.getElementById('save').onclick = () => {
   const name = document.getElementById('beatName').value.trim();
   if (!name) return alert('Enter a beat name.');
-  const data = { bpm, swing, patterns, trackVolumes, patternSequence, trackSounds };
+  const data = { bpm, swing, patterns, trackVolumes, patternSequence, trackSounds, trackPitch, trackDecay };
   const library = JSON.parse(localStorage.getItem('beatLibrary') || '{}');
   library[name] = data;
   localStorage.setItem('beatLibrary', JSON.stringify(library));
   alert(`"${name}" saved!`);
   updateBeatDropdown();
   if (window.firebaseLogEvent) window.firebaseLogEvent('save_beat', { beat_name: name });
+};
+
+// Export beat to file
+document.getElementById('exportBeat').onclick = () => {
+  const name = document.getElementById('beatName').value.trim() || 'Untitled';
+  const data = { 
+    name,
+    version: '1.0',
+    bpm, 
+    swing, 
+    patterns, 
+    trackVolumes, 
+    patternSequence, 
+    trackSounds,
+    trackPitch,
+    trackDecay,
+    exportedAt: new Date().toISOString()
+  };
+  
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${name.replace(/[^a-z0-9]/gi, '_')}.mpseeker`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  if (window.firebaseLogEvent) window.firebaseLogEvent('export_beat', { beat_name: name });
+};
+
+// Import beat from file
+document.getElementById('importBeat').onclick = () => {
+  document.getElementById('importFile').click();
+};
+
+document.getElementById('importFile').onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    try {
+      const data = JSON.parse(event.target.result);
+      
+      // Load the beat data
+      bpm = data.bpm || 120;
+      swing = data.swing || 0;
+      Object.assign(patterns, data.patterns);
+      Object.assign(trackVolumes, data.trackVolumes || {});
+      
+      if (data.patternSequence) {
+        patternSequence = data.patternSequence;
+        document.querySelectorAll('.pattern-select').forEach((select, i) => {
+          select.value = patternSequence[i] || '';
+        });
+      }
+      
+      if (data.trackSounds) {
+        Object.assign(trackSounds, data.trackSounds);
+        trackConfig.forEach(track => {
+          const soundMenu = document.querySelector(`[data-track="${track.name}"] .sound-menu`);
+          if (soundMenu) {
+            soundMenu.querySelectorAll('.sound-option').forEach(opt => {
+              opt.classList.toggle('selected', opt.dataset.sound === trackSounds[track.name]);
+            });
+          }
+        });
+      }
+      
+      // Load pitch and decay
+      if (data.trackPitch) {
+        Object.assign(trackPitch, data.trackPitch);
+        trackConfig.forEach(track => {
+          const container = document.querySelector(`[data-track="${track.name}"]`);
+          const pitchControl = container.querySelector('.pitch-control');
+          const pitchValue = container.querySelector('.pitch-value');
+          if (pitchControl && pitchValue) {
+            pitchControl.value = trackPitch[track.name] || 0;
+            const val = trackPitch[track.name] || 0;
+            pitchValue.textContent = val > 0 ? '+' + val : val;
+          }
+        });
+      }
+      
+      if (data.trackDecay) {
+        Object.assign(trackDecay, data.trackDecay);
+        trackConfig.forEach(track => {
+          const container = document.querySelector(`[data-track="${track.name}"]`);
+          const decayControl = container.querySelector('.decay-control');
+          const decayValue = container.querySelector('.decay-value');
+          if (decayControl && decayValue) {
+            decayControl.value = trackDecay[track.name] || 100;
+            decayValue.textContent = (trackDecay[track.name] || 100) + '%';
+          }
+        });
+      }
+      
+      document.getElementById('bpm').value = bpm;
+      document.getElementById('bpmValue').textContent = bpm;
+      document.getElementById('swing').value = swing;
+      document.getElementById('swingValue').textContent = swing + '%';
+      document.getElementById('beatName').value = data.name || 'Imported Beat';
+      updateUI();
+      
+      alert(`"${data.name || 'Beat'}" imported successfully!`);
+      if (window.firebaseLogEvent) window.firebaseLogEvent('import_beat', { beat_name: data.name });
+      
+    } catch (err) {
+      alert('Error importing beat: Invalid file format');
+      console.error('Import error:', err);
+    }
+  };
+  
+  reader.readAsText(file);
+  e.target.value = ''; // Reset file input
 };
 
 document.getElementById('savedBeats').onchange = () => {
@@ -1401,6 +1520,34 @@ document.getElementById('savedBeats').onchange = () => {
         soundMenu.querySelectorAll('.sound-option').forEach(opt => {
           opt.classList.toggle('selected', opt.dataset.sound === trackSounds[track.name]);
         });
+      }
+    });
+  }
+  
+  // Load pitch and decay
+  if (data.trackPitch) {
+    Object.assign(trackPitch, data.trackPitch);
+    trackConfig.forEach(track => {
+      const container = document.querySelector(`[data-track="${track.name}"]`);
+      const pitchControl = container.querySelector('.pitch-control');
+      const pitchValue = container.querySelector('.pitch-value');
+      if (pitchControl && pitchValue) {
+        pitchControl.value = trackPitch[track.name] || 0;
+        const val = trackPitch[track.name] || 0;
+        pitchValue.textContent = val > 0 ? '+' + val : val;
+      }
+    });
+  }
+  
+  if (data.trackDecay) {
+    Object.assign(trackDecay, data.trackDecay);
+    trackConfig.forEach(track => {
+      const container = document.querySelector(`[data-track="${track.name}"]`);
+      const decayControl = container.querySelector('.decay-control');
+      const decayValue = container.querySelector('.decay-value');
+      if (decayControl && decayValue) {
+        decayControl.value = trackDecay[track.name] || 100;
+        decayValue.textContent = (trackDecay[track.name] || 100) + '%';
       }
     });
   }
