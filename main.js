@@ -109,8 +109,6 @@ let patternSequence = ['A', '', '', '', '', '', '', ''];
 let currentSequenceIndex = 0;
 const patterns = { A: {}, B: {}, C: {} };
 const trackVolumes = {};
-const trackMuted = {};
-const trackSoloed = {};
 
 const trackSounds = {
   kick: 'kick1',
@@ -220,10 +218,6 @@ trackConfig.forEach(track => {
         <div class="sound-option" data-sound="${track.name}2">${labels[1]}</div>
       </div>
     </div>
-    <div class="track-controls">
-      <button class="mute-btn" data-track="${track.name}" title="Mute">M</button>
-      <button class="solo-btn" data-track="${track.name}" title="Solo">S</button>
-    </div>
     <div class="track-volume">
       <input type="range" min="0" max="100" value="80" class="volume-control">
       <span class="volume-value">80</span>
@@ -311,29 +305,6 @@ trackConfig.forEach(track => {
   });
   
   soundMenu.querySelector(`[data-sound="${track.name}1"]`).classList.add('selected');
-  
-  // Mute button
-  trackMuted[track.name] = false;
-  const muteBtn = header.querySelector('.mute-btn');
-  muteBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    trackMuted[track.name] = !trackMuted[track.name];
-    muteBtn.classList.toggle('active', trackMuted[track.name]);
-    container.classList.toggle('track-muted', trackMuted[track.name]);
-  });
-  
-  // Solo button
-  trackSoloed[track.name] = false;
-  const soloBtn = header.querySelector('.solo-btn');
-  soloBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    trackSoloed[track.name] = !trackSoloed[track.name];
-    soloBtn.classList.toggle('active', trackSoloed[track.name]);
-    container.classList.toggle('track-soloed', trackSoloed[track.name]);
-    
-    // Update all track visual states based on solo
-    updateMuteSoloVisuals();
-  });
 });
 
 document.addEventListener('click', () => {
@@ -341,33 +312,6 @@ document.addEventListener('click', () => {
     menu.style.display = 'none';
   });
 });
-
-// Update track visuals based on mute/solo state
-function updateMuteSoloVisuals() {
-  const anySoloed = trackConfig.some(t => trackSoloed[t.name]);
-  
-  trackConfig.forEach(track => {
-    const container = document.querySelector(`[data-track="${track.name}"]`);
-    if (anySoloed) {
-      // If any track is soloed, dim non-soloed tracks
-      container.classList.toggle('track-dimmed', !trackSoloed[track.name]);
-    } else {
-      container.classList.remove('track-dimmed');
-    }
-  });
-}
-
-// Check if a track should play (respects mute/solo)
-function shouldTrackPlay(trackName) {
-  const anySoloed = trackConfig.some(t => trackSoloed[t.name]);
-  
-  if (anySoloed) {
-    // If any track is soloed, only play soloed tracks (unless also muted)
-    return trackSoloed[trackName] && !trackMuted[trackName];
-  }
-  // Otherwise, play all non-muted tracks
-  return !trackMuted[trackName];
-}
 
 // Drag-to-fill functionality for step sequencer
 let isDragging = false;
@@ -879,13 +823,12 @@ function tick() {
   
   // Schedule audio first (time-critical)
   trackConfig.forEach(track => {
-    if (patterns[activePattern][track.name][currentStep] && shouldTrackPlay(track.name)) playSound(track.name);
+    if (patterns[activePattern][track.name][currentStep]) playSound(track.name);
   });
   
   // Defer UI updates to next animation frame (non-blocking)
   const stepSnapshot = currentStep;
   const patternSnapshot = activePattern;
-  const seqIndexSnapshot = currentSequenceIndex;
   
   requestAnimationFrame(() => {
     // Update pattern buttons and grid only on pattern change
@@ -1233,7 +1176,7 @@ function updateBeatDropdown() {
 document.getElementById('save').onclick = () => {
   const name = document.getElementById('beatName').value.trim();
   if (!name) return alert('Enter a beat name.');
-  const data = { bpm, swing, patterns, trackVolumes, patternSequence, trackSounds, trackMuted, trackSoloed };
+  const data = { bpm, swing, patterns, trackVolumes, patternSequence, trackSounds };
   const library = JSON.parse(localStorage.getItem('beatLibrary') || '{}');
   library[name] = data;
   localStorage.setItem('beatLibrary', JSON.stringify(library));
@@ -1272,23 +1215,6 @@ document.getElementById('savedBeats').onchange = () => {
       }
     });
   }
-  
-  // Restore mute/solo state
-  if (data.trackMuted) {
-    Object.assign(trackMuted, data.trackMuted);
-  }
-  if (data.trackSoloed) {
-    Object.assign(trackSoloed, data.trackSoloed);
-  }
-  trackConfig.forEach(track => {
-    const container = document.querySelector(`[data-track="${track.name}"]`);
-    const muteBtn = container.querySelector('.mute-btn');
-    const soloBtn = container.querySelector('.solo-btn');
-    muteBtn.classList.toggle('active', trackMuted[track.name]);
-    soloBtn.classList.toggle('active', trackSoloed[track.name]);
-    container.classList.toggle('track-muted', trackMuted[track.name]);
-  });
-  updateMuteSoloVisuals();
   
   document.getElementById('bpm').value = bpm;
   document.getElementById('bpmValue').textContent = bpm;
@@ -1381,9 +1307,9 @@ document.querySelectorAll('.export-option').forEach(btn => {
             const swingOffset = isOddStep ? (swing / 100) * secondsPerBeat * 0.5 : 0;
             const stepTime = currentTime + (step * secondsPerBeat) + swingOffset;
             
-            // Play each track (respecting mute/solo)
+            // Play each track
             trackConfig.forEach(track => {
-              if (pattern[track.name] && pattern[track.name][step] && shouldTrackPlay(track.name)) {
+              if (pattern[track.name] && pattern[track.name][step]) {
                 renderSoundOffline(offlineCtx, offlineMaster, track.name, stepTime, trackVolumes[track.name]);
               }
             });
