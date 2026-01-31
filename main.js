@@ -1073,10 +1073,88 @@ document.getElementById('bpm').oninput = e => {
   document.getElementById('bpmValue').textContent = bpm;
 };
 
+// Click BPM value to manually enter
+document.getElementById('bpmValue').addEventListener('click', e => {
+  const currentVal = bpm;
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.min = '40';
+  input.max = '200';
+  input.value = currentVal;
+  input.className = 'bpm-input';
+  input.style.cssText = 'width: 50px; text-align: center; background: #1a1a1a; border: 1px solid #14F195; color: #fff; border-radius: 4px; font-size: inherit;';
+  
+  const bpmValue = e.target;
+  bpmValue.style.display = 'none';
+  bpmValue.parentNode.insertBefore(input, bpmValue.nextSibling);
+  input.focus();
+  input.select();
+  
+  const finishEdit = () => {
+    let newVal = parseInt(input.value) || 120;
+    newVal = Math.max(40, Math.min(200, newVal));
+    bpm = newVal;
+    document.getElementById('bpm').value = bpm;
+    bpmValue.textContent = bpm;
+    bpmValue.style.display = '';
+    input.remove();
+  };
+  
+  input.addEventListener('blur', finishEdit);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      finishEdit();
+    } else if (e.key === 'Escape') {
+      bpmValue.style.display = '';
+      input.remove();
+    }
+  });
+});
+
 document.getElementById('swing').oninput = e => {
   swing = parseInt(e.target.value);
   document.getElementById('swingValue').textContent = swing + '%';
 };
+
+// Click Swing value to manually enter
+document.getElementById('swingValue').addEventListener('click', e => {
+  const currentVal = swing;
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.min = '0';
+  input.max = '100';
+  input.value = currentVal;
+  input.className = 'swing-input';
+  input.style.cssText = 'width: 50px; text-align: center; background: #1a1a1a; border: 1px solid #14F195; color: #fff; border-radius: 4px; font-size: inherit;';
+  
+  const swingValue = e.target;
+  swingValue.style.display = 'none';
+  swingValue.parentNode.insertBefore(input, swingValue.nextSibling);
+  input.focus();
+  input.select();
+  
+  const finishEdit = () => {
+    let newVal = parseInt(input.value) || 0;
+    newVal = Math.max(0, Math.min(100, newVal));
+    swing = newVal;
+    document.getElementById('swing').value = swing;
+    swingValue.textContent = swing + '%';
+    swingValue.style.display = '';
+    input.remove();
+  };
+  
+  input.addEventListener('blur', finishEdit);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      finishEdit();
+    } else if (e.key === 'Escape') {
+      swingValue.style.display = '';
+      input.remove();
+    }
+  });
+});
 
 document.getElementById('patternLength').onchange = e => {
   const newLength = parseInt(e.target.value);

@@ -89,6 +89,20 @@ h1 {
   gap: 8px; 
 }
 
+/* Make BPM and Swing values clickable */
+#bpmValue, #swingValue {
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.2s;
+  min-width: 40px;
+  text-align: center;
+}
+
+#bpmValue:hover, #swingValue:hover {
+  background: rgba(20, 241, 149, 0.2);
+}
+
 .control-group select {
   padding: 5px 10px;
   border-radius: 6px;
