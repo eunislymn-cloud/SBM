@@ -597,38 +597,40 @@ function playSound(trackName) {
       const osc = audioCtx.createOscillator();
       const oscGain = audioCtx.createGain();
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(280, time);
-      osc.frequency.exponentialRampToValueAtTime(160, time + 0.025);
+      osc.frequency.setValueAtTime(280 * pitchRatio, time);
+      osc.frequency.exponentialRampToValueAtTime(160 * pitchRatio, time + 0.025 * decayMod);
       oscGain.gain.setValueAtTime(volume * 0.5, time);
-      oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.04 * decayMod);
       osc.connect(oscGain).connect(masterGain);
       osc.start(time);
-      osc.stop(time + 0.05);
+      osc.stop(time + 0.05 * decayMod);
       
       // Crispy noise layer - the "snare wire" sound
       const noise = audioCtx.createBufferSource();
-      const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.12, audioCtx.sampleRate);
+      const bufferLen = Math.floor(audioCtx.sampleRate * 0.12 * decayMod);
+      const buffer = audioCtx.createBuffer(1, bufferLen, audioCtx.sampleRate);
       const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.02));
+      for (let i = 0; i < bufferLen; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.02 * decayMod));
       }
       noise.buffer = buffer;
+      noise.playbackRate.value = pitchRatio;
       
       // Highpass to remove low end, keep it snappy
       const highpass = audioCtx.createBiquadFilter();
       highpass.type = 'highpass';
-      highpass.frequency.value = 1500;
+      highpass.frequency.value = 1500 * pitchRatio;
       
       // Presence boost for snap
       const peak = audioCtx.createBiquadFilter();
       peak.type = 'peaking';
-      peak.frequency.value = 3500;
+      peak.frequency.value = 3500 * pitchRatio;
       peak.Q.value = 2;
       peak.gain.value = 8;
       
       const noiseGain = audioCtx.createGain();
       noiseGain.gain.setValueAtTime(volume * 0.9, time);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.1 * decayMod);
       
       noise.connect(highpass).connect(peak).connect(noiseGain).connect(masterGain);
       noise.start(time);
