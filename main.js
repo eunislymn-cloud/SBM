@@ -698,57 +698,66 @@ function playSound(trackName, patternOverride = null) {
       break;
     }
     case 'hat1': {
-      // Crisp tight closed hi-hat
-      const bufferLen = Math.floor(audioCtx.sampleRate * 0.03 * decayMod);
-      const noise = audioCtx.createBufferSource();
-      const buffer = audioCtx.createBuffer(1, bufferLen, audioCtx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferLen; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.002 * decayMod));
-      }
-      noise.buffer = buffer;
-      noise.playbackRate.value = pitchRatio;
+      // TR-808 style closed hi-hat - 6 square wave oscillators
+      const fundamental = 40 * pitchRatio;
+      const ratios = [2, 3, 4.16, 5.43, 6.79, 8.21];
       
-      // Steep highpass for metallic sizzle
-      const filter = audioCtx.createBiquadFilter();
-      filter.type = 'highpass';
-      filter.frequency.value = 8500 * pitchRatio;
+      // Bandpass for metallic tone
+      const bandpass = audioCtx.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.frequency.value = 10000 * pitchRatio;
+      bandpass.Q.value = 1.2;
       
-      // Bandpass for presence
-      const bp = audioCtx.createBiquadFilter();
-      bp.type = 'bandpass';
-      bp.frequency.value = 10000 * pitchRatio;
-      bp.Q.value = 1.5;
+      // Highpass to remove low end
+      const highpass = audioCtx.createBiquadFilter();
+      highpass.type = 'highpass';
+      highpass.frequency.value = 7000 * pitchRatio;
       
       const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(volume * 0.5, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.02 * decayMod);
+      // Sharp attack, very fast decay
+      gain.gain.setValueAtTime(volume * 0.45, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.025 * decayMod);
       
-      noise.connect(filter).connect(bp).connect(gain).connect(masterGain);
-      noise.start(time);
+      bandpass.connect(highpass).connect(gain).connect(masterGain);
+      
+      ratios.forEach(ratio => {
+        const osc = audioCtx.createOscillator();
+        osc.type = 'square';
+        osc.frequency.value = fundamental * ratio;
+        osc.connect(bandpass);
+        osc.start(time);
+        osc.stop(time + 0.03 * decayMod);
+      });
       break;
     }
     case 'hat2': {
-      const bufferLen = Math.floor(audioCtx.sampleRate * 0.15 * decayMod);
-      const noise = audioCtx.createBufferSource();
-      const buffer = audioCtx.createBuffer(1, bufferLen, audioCtx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferLen; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.02 * decayMod));
-      }
-      noise.buffer = buffer;
-      noise.playbackRate.value = pitchRatio;
+      // Darker closed hi-hat - detuned square waves + noise layer
+      const fundamental = 38 * pitchRatio;
+      const ratios = [2.1, 3.05, 4.2, 5.55, 6.9, 8.35];
       
-      const filter = audioCtx.createBiquadFilter();
-      filter.type = 'highpass';
-      filter.frequency.value = 6000 * pitchRatio;
+      const bandpass = audioCtx.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.frequency.value = 8500 * pitchRatio;
+      bandpass.Q.value = 1.0;
+      
+      const highpass = audioCtx.createBiquadFilter();
+      highpass.type = 'highpass';
+      highpass.frequency.value = 6000 * pitchRatio;
       
       const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(volume * 0.35, time);
-      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.15 * decayMod);
+      gain.gain.setValueAtTime(volume * 0.4, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04 * decayMod);
       
-      noise.connect(filter).connect(gain).connect(masterGain);
-      noise.start(time);
+      bandpass.connect(highpass).connect(gain).connect(masterGain);
+      
+      ratios.forEach(ratio => {
+        const osc = audioCtx.createOscillator();
+        osc.type = 'square';
+        osc.frequency.value = fundamental * ratio;
+        osc.connect(bandpass);
+        osc.start(time);
+        osc.stop(time + 0.05 * decayMod);
+      });
       break;
     }
     case 'clap1': {
@@ -1961,43 +1970,53 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
       break;
     }
     case 'hat1': {
-      // Crisp tight closed hi-hat (offline)
-      const bufferLen = Math.floor(ctx.sampleRate * 0.03);
-      const noise = ctx.createBufferSource();
-      const buffer = ctx.createBuffer(1, bufferLen, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferLen; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.002));
-      }
-      noise.buffer = buffer;
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'highpass';
-      filter.frequency.value = 8500;
-      const bp = ctx.createBiquadFilter();
-      bp.type = 'bandpass';
-      bp.frequency.value = 10000;
-      bp.Q.value = 1.5;
+      // TR-808 style closed hi-hat (offline)
+      const fundamental = 40;
+      const ratios = [2, 3, 4.16, 5.43, 6.79, 8.21];
+      const bandpass = ctx.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.frequency.value = 10000;
+      bandpass.Q.value = 1.2;
+      const highpass = ctx.createBiquadFilter();
+      highpass.type = 'highpass';
+      highpass.frequency.value = 7000;
       const gain = ctx.createGain();
-      gain.gain.setValueAtTime(volume * 0.5, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
-      noise.connect(filter).connect(bp).connect(gain).connect(master);
-      noise.start(time);
+      gain.gain.setValueAtTime(volume * 0.45, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
+      bandpass.connect(highpass).connect(gain).connect(master);
+      ratios.forEach(ratio => {
+        const osc = ctx.createOscillator();
+        osc.type = 'square';
+        osc.frequency.value = fundamental * ratio;
+        osc.connect(bandpass);
+        osc.start(time);
+        osc.stop(time + 0.03);
+      });
       break;
     }
     case 'hat2': {
-      const noise = ctx.createBufferSource();
-      const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.3, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-      noise.buffer = buffer;
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'highpass';
-      filter.frequency.value = 6000;
+      // Darker closed hi-hat (offline)
+      const fundamental = 38;
+      const ratios = [2.1, 3.05, 4.2, 5.55, 6.9, 8.35];
+      const bandpass = ctx.createBiquadFilter();
+      bandpass.type = 'bandpass';
+      bandpass.frequency.value = 8500;
+      bandpass.Q.value = 1.0;
+      const highpass = ctx.createBiquadFilter();
+      highpass.type = 'highpass';
+      highpass.frequency.value = 6000;
       const gain = ctx.createGain();
-      gain.gain.setValueAtTime(volume * 0.5, time);
-      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
-      noise.connect(filter).connect(gain).connect(master);
-      noise.start(time);
+      gain.gain.setValueAtTime(volume * 0.4, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+      bandpass.connect(highpass).connect(gain).connect(master);
+      ratios.forEach(ratio => {
+        const osc = ctx.createOscillator();
+        osc.type = 'square';
+        osc.frequency.value = fundamental * ratio;
+        osc.connect(bandpass);
+        osc.start(time);
+        osc.stop(time + 0.05);
+      });
       break;
     }
     case 'clap1': {
