@@ -2595,7 +2595,8 @@ const mintOutput = document.getElementById('mintOutput');
 // NFT.Storage API key (free tier - get yours at nft.storage)
 // For production, you should use your own API key
 // Upload to IPFS via Pinata
-const PINATA_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiJlMjdkOTkxZS1mZjIxLTQ4YTYtOThmMy04MDJkMGE5MjEwOGEiLCJlbWFpbCI6ImV1bmlzbHltbkBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJGUkExIn0seyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJOWUMxIn1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiNmYxM2ZiZTZmNDI4ODZiNmJkYTEiLCJzY29wZWRLZXlTZWNyZXQiOiI5MDNkZDgyNzUwYzcyZjE2Njk4M2FhZThiNWNkZTZkMDdlMWY2YWFkNGJiNzQyNDNlNGMzOTRmOTZkZDFkMTMwIiwiZXhwIjoxODAxMDA1OTAzfQ.cPnCe_7yo6GpsKIQTzQR04aChyIluN5jMabs-e77iMA';
+// PINATA_JWT removed for security - will be moved to backend proxy when minting is enabled
+const PINATA_JWT = '';
 
 // Generate beat visualization as canvas image
 function generateBeatImage(beatData) {
