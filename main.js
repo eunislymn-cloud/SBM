@@ -528,11 +528,30 @@ function updateSequenceUI() {
   });
 }
 
+// Per-track output gain nodes for voice stealing (cut previous note when new one fires)
+const trackOutputGains = {};
+
 function playSound(trackName, patternOverride = null, scheduledTime = null) {
   const pattern = patternOverride || currentPattern;
   const volume = trackVolumes[trackName];
   const time = scheduledTime || audioCtx.currentTime;
   const soundVariant = patternSounds[pattern][trackName];
+  
+  // Voice stealing - disconnect old gain, create fresh one
+  if (trackOutputGains[trackName]) {
+    try {
+      const old = trackOutputGains[trackName];
+      old.gain.cancelScheduledValues(time);
+      old.gain.setValueAtTime(0, time);
+      old.disconnect();
+    } catch(e) {}
+  }
+  
+  // Create a fresh per-track output gain for this voice
+  const trackGain = audioCtx.createGain();
+  trackGain.gain.setValueAtTime(1, time);
+  trackGain.connect(masterGain);
+  trackOutputGains[trackName] = trackGain;
   
   // Use pre-calculated values for performance
   const pitchRatio = patternPitchRatio[pattern][trackName] || 1;
@@ -575,8 +594,8 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       clickGain.gain.setValueAtTime(volume * 0.5, time);
       clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.015);
       
-      osc.connect(distortion).connect(gain).connect(masterGain);
-      clickOsc.connect(clickGain).connect(masterGain);
+      osc.connect(distortion).connect(gain).connect(trackGain);
+      clickOsc.connect(clickGain).connect(trackGain);
       osc.start(time);
       osc.stop(time + 0.25 * decayMod);
       clickOsc.start(time);
@@ -611,8 +630,8 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       gain2.gain.setValueAtTime(volume * 0.8, time);
       gain2.gain.exponentialRampToValueAtTime(0.001, time + 0.03);
       
-      osc.connect(gain).connect(masterGain);
-      osc2.connect(gain2).connect(masterGain);
+      osc.connect(gain).connect(trackGain);
+      osc2.connect(gain2).connect(trackGain);
       osc.start(time);
       osc.stop(time + 0.6 * decayMod);
       osc2.start(time);
@@ -628,7 +647,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       osc.frequency.exponentialRampToValueAtTime(80 * pitchRatio, time + 0.03 * decayMod);
       oscGain.gain.setValueAtTime(volume * 0.8, time);
       oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.08 * decayMod);
-      osc.connect(oscGain).connect(masterGain);
+      osc.connect(oscGain).connect(trackGain);
       osc.start(time);
       osc.stop(time + 0.08 * decayMod);
       
@@ -649,7 +668,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       noiseGain.gain.setValueAtTime(volume * 0.7, time);
       noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
       
-      noise.connect(highpass).connect(noiseGain).connect(masterGain);
+      noise.connect(highpass).connect(noiseGain).connect(trackGain);
       noise.start(time);
       break;
     }
@@ -662,7 +681,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       osc.frequency.exponentialRampToValueAtTime(160 * pitchRatio, time + 0.025 * decayMod);
       oscGain.gain.setValueAtTime(volume * 0.5, time);
       oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.04 * decayMod);
-      osc.connect(oscGain).connect(masterGain);
+      osc.connect(oscGain).connect(trackGain);
       osc.start(time);
       osc.stop(time + 0.05 * decayMod);
       
@@ -693,7 +712,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       noiseGain.gain.setValueAtTime(volume * 0.9, time);
       noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.1 * decayMod);
       
-      noise.connect(highpass).connect(peak).connect(noiseGain).connect(masterGain);
+      noise.connect(highpass).connect(peak).connect(noiseGain).connect(trackGain);
       noise.start(time);
       break;
     }
@@ -718,7 +737,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       gain.gain.setValueAtTime(volume * 0.45, time);
       gain.gain.exponentialRampToValueAtTime(0.001, time + 0.025 * decayMod);
       
-      bandpass.connect(highpass).connect(gain).connect(masterGain);
+      bandpass.connect(highpass).connect(gain).connect(trackGain);
       
       ratios.forEach(ratio => {
         const osc = audioCtx.createOscillator();
@@ -748,7 +767,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       gain.gain.setValueAtTime(volume * 0.4, time);
       gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04 * decayMod);
       
-      bandpass.connect(highpass).connect(gain).connect(masterGain);
+      bandpass.connect(highpass).connect(gain).connect(trackGain);
       
       ratios.forEach(ratio => {
         const osc = audioCtx.createOscillator();
@@ -769,7 +788,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       click.frequency.value = 1500 * pitchRatio;
       clickGain.gain.setValueAtTime(volume * 0.3, time);
       clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.008);
-      click.connect(clickGain).connect(masterGain);
+      click.connect(clickGain).connect(trackGain);
       click.start(time);
       click.stop(time + 0.01);
       
@@ -796,7 +815,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
         gain.gain.setValueAtTime(volume * 0.7, time + layerDelay);
         gain.gain.exponentialRampToValueAtTime(0.001, time + layerDelay + 0.1 * decayMod);
         
-        noise.connect(bandpass).connect(gain).connect(masterGain);
+        noise.connect(bandpass).connect(gain).connect(trackGain);
         noise.start(time + layerDelay);
       }
       break;
@@ -810,7 +829,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       click.frequency.value = 2000 * pitchRatio;
       clickGain.gain.setValueAtTime(volume * 0.35, time);
       clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.006);
-      click.connect(clickGain).connect(masterGain);
+      click.connect(clickGain).connect(trackGain);
       click.start(time);
       click.stop(time + 0.008);
       
@@ -841,7 +860,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
         gain.gain.setValueAtTime(volume * 0.75, time + hitDelay);
         gain.gain.exponentialRampToValueAtTime(0.001, time + hitDelay + 0.06 * decayMod);
         
-        noise.connect(bandpass).connect(highshelf).connect(gain).connect(masterGain);
+        noise.connect(bandpass).connect(highshelf).connect(gain).connect(trackGain);
         noise.start(time + hitDelay);
       }
       break;
@@ -876,7 +895,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       noise.connect(highpass);
       highpass.connect(bandpass);
       bandpass.connect(gain);
-      gain.connect(masterGain);
+      gain.connect(trackGain);
       noise.start(time);
       noise.stop(time + 0.25 * decayMod);
       break;
@@ -909,7 +928,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       noise.connect(highpass);
       highpass.connect(bandpass);
       bandpass.connect(gain);
-      gain.connect(masterGain);
+      gain.connect(trackGain);
       noise.start(time);
       noise.stop(time + 0.35 * decayMod);
       break;
@@ -933,7 +952,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       const noiseGain = audioCtx.createGain();
       noiseGain.gain.setValueAtTime(volume * 1.2, time);
       noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.03 * decayMod);
-      noise.connect(bandpass).connect(noiseGain).connect(masterGain);
+      noise.connect(bandpass).connect(noiseGain).connect(trackGain);
       noise.start(time);
       
       // Low thud from head
@@ -944,7 +963,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       osc.frequency.exponentialRampToValueAtTime(150 * pitchRatio, time + 0.015 * decayMod);
       oscGain.gain.setValueAtTime(volume * 0.4, time);
       oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.025 * decayMod);
-      osc.connect(oscGain).connect(masterGain);
+      osc.connect(oscGain).connect(trackGain);
       osc.start(time);
       osc.stop(time + 0.025 * decayMod);
       break;
@@ -967,7 +986,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       const noiseGain = audioCtx.createGain();
       noiseGain.gain.setValueAtTime(volume * 1.0, time);
       noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.02 * decayMod);
-      noise.connect(bandpass).connect(noiseGain).connect(masterGain);
+      noise.connect(bandpass).connect(noiseGain).connect(trackGain);
       noise.start(time);
       break;
     }
@@ -978,7 +997,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       const gain = audioCtx.createGain();
       gain.gain.setValueAtTime(volume, time);
       gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2 * decayMod);
-      osc.connect(gain).connect(masterGain);
+      osc.connect(gain).connect(trackGain);
       osc.start(time);
       osc.stop(time + 0.2 * decayMod);
       break;
@@ -990,7 +1009,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       const gain = audioCtx.createGain();
       gain.gain.setValueAtTime(volume * 1.1, time);
       gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3 * decayMod);
-      osc.connect(gain).connect(masterGain);
+      osc.connect(gain).connect(trackGain);
       osc.start(time);
       osc.stop(time + 0.3 * decayMod);
       break;
