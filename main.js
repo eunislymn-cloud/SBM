@@ -571,7 +571,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       // Main envelope - punchy (apply decay)
       gain.gain.setValueAtTime(volume * 1.4, time);
       gain.gain.exponentialRampToValueAtTime(volume * 0.8, time + 0.02 * decayMod);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25 * decayMod);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15 * decayMod);
       
       // Click envelope
       clickGain.gain.setValueAtTime(volume * 0.5, time);
@@ -580,7 +580,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       osc.connect(distortion).connect(gain).connect(masterGain);
       clickOsc.connect(clickGain).connect(masterGain);
       osc.start(time);
-      osc.stop(time + 0.25 * decayMod);
+      osc.stop(time + 0.15 * decayMod);
       clickOsc.start(time);
       clickOsc.stop(time + 0.015);
       break;
@@ -596,8 +596,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(150 * pitchRatio, time);
       osc.frequency.exponentialRampToValueAtTime(35 * pitchRatio, time + 0.08 * decayMod);
-      osc.frequency.setValueAtTime(35 * pitchRatio, time + 0.08 * decayMod);
-      osc.frequency.exponentialRampToValueAtTime(25 * pitchRatio, time + 0.5 * decayMod);
+      osc.frequency.exponentialRampToValueAtTime(25 * pitchRatio, time + 0.2 * decayMod);
       
       // Click/attack oscillator (apply pitch)
       osc2.type = 'triangle';
@@ -606,8 +605,8 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       
       // Main envelope (apply decay)
       gain.gain.setValueAtTime(volume * 1.5, time);
-      gain.gain.setValueAtTime(volume * 1.2, time + 0.05 * decayMod);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.6 * decayMod);
+      gain.gain.exponentialRampToValueAtTime(volume * 0.8, time + 0.05 * decayMod);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25 * decayMod);
       
       // Click envelope - short
       gain2.gain.setValueAtTime(volume * 0.8, time);
@@ -616,7 +615,7 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       osc.connect(gain).connect(masterGain);
       osc2.connect(gain2).connect(masterGain);
       osc.start(time);
-      osc.stop(time + 0.6 * decayMod);
+      osc.stop(time + 0.25 * decayMod);
       osc2.start(time);
       osc2.stop(time + 0.03);
       break;
@@ -1859,7 +1858,7 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
       
       gain.gain.setValueAtTime(volume * 1.4, time);
       gain.gain.exponentialRampToValueAtTime(volume * 0.8, time + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
       
       clickGain.gain.setValueAtTime(volume * 0.5, time);
       clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.015);
@@ -1867,7 +1866,7 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
       osc.connect(gain).connect(master);
       clickOsc.connect(clickGain).connect(master);
       osc.start(time);
-      osc.stop(time + 0.25);
+      osc.stop(time + 0.15);
       clickOsc.start(time);
       clickOsc.stop(time + 0.015);
       break;
@@ -1882,16 +1881,15 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(150, time);
       osc.frequency.exponentialRampToValueAtTime(35, time + 0.08);
-      osc.frequency.setValueAtTime(35, time + 0.08);
-      osc.frequency.exponentialRampToValueAtTime(25, time + 0.5);
+      osc.frequency.exponentialRampToValueAtTime(25, time + 0.2);
       
       osc2.type = 'triangle';
       osc2.frequency.setValueAtTime(400, time);
       osc2.frequency.exponentialRampToValueAtTime(60, time + 0.02);
       
       gain.gain.setValueAtTime(volume * 1.5, time);
-      gain.gain.setValueAtTime(volume * 1.2, time + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.6);
+      gain.gain.exponentialRampToValueAtTime(volume * 0.8, time + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
       
       gain2.gain.setValueAtTime(volume * 0.8, time);
       gain2.gain.exponentialRampToValueAtTime(0.001, time + 0.03);
@@ -1899,7 +1897,7 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
       osc.connect(gain).connect(master);
       osc2.connect(gain2).connect(master);
       osc.start(time);
-      osc.stop(time + 0.6);
+      osc.stop(time + 0.25);
       osc2.start(time);
       osc2.stop(time + 0.03);
       break;
