@@ -731,22 +731,22 @@ function playSound(trackName, patternOverride = null) {
       break;
     }
     case 'hat2': {
-      // Darker closed hi-hat - detuned square waves + noise layer
-      const fundamental = 38 * pitchRatio;
+      // Bright closed hi-hat variant - slightly detuned for shimmer
+      const fundamental = 42 * pitchRatio;
       const ratios = [2.1, 3.05, 4.2, 5.55, 6.9, 8.35];
       
       const bandpass = audioCtx.createBiquadFilter();
       bandpass.type = 'bandpass';
-      bandpass.frequency.value = 8500 * pitchRatio;
-      bandpass.Q.value = 1.0;
+      bandpass.frequency.value = 11000 * pitchRatio;
+      bandpass.Q.value = 0.8;
       
       const highpass = audioCtx.createBiquadFilter();
       highpass.type = 'highpass';
-      highpass.frequency.value = 6000 * pitchRatio;
+      highpass.frequency.value = 7500 * pitchRatio;
       
       const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(volume * 0.4, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04 * decayMod);
+      gain.gain.setValueAtTime(volume * 0.42, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.035 * decayMod);
       
       bandpass.connect(highpass).connect(gain).connect(masterGain);
       
@@ -756,7 +756,7 @@ function playSound(trackName, patternOverride = null) {
         osc.frequency.value = fundamental * ratio;
         osc.connect(bandpass);
         osc.start(time);
-        osc.stop(time + 0.05 * decayMod);
+        osc.stop(time + 0.04 * decayMod);
       });
       break;
     }
@@ -1995,19 +1995,19 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
       break;
     }
     case 'hat2': {
-      // Darker closed hi-hat (offline)
-      const fundamental = 38;
+      // Bright closed hi-hat variant (offline)
+      const fundamental = 42;
       const ratios = [2.1, 3.05, 4.2, 5.55, 6.9, 8.35];
       const bandpass = ctx.createBiquadFilter();
       bandpass.type = 'bandpass';
-      bandpass.frequency.value = 8500;
-      bandpass.Q.value = 1.0;
+      bandpass.frequency.value = 11000;
+      bandpass.Q.value = 0.8;
       const highpass = ctx.createBiquadFilter();
       highpass.type = 'highpass';
-      highpass.frequency.value = 6000;
+      highpass.frequency.value = 7500;
       const gain = ctx.createGain();
-      gain.gain.setValueAtTime(volume * 0.4, time);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+      gain.gain.setValueAtTime(volume * 0.42, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.035);
       bandpass.connect(highpass).connect(gain).connect(master);
       ratios.forEach(ratio => {
         const osc = ctx.createOscillator();
@@ -2015,7 +2015,7 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
         osc.frequency.value = fundamental * ratio;
         osc.connect(bandpass);
         osc.start(time);
-        osc.stop(time + 0.05);
+        osc.stop(time + 0.04);
       });
       break;
     }
