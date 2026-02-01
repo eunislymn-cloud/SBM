@@ -528,10 +528,10 @@ function updateSequenceUI() {
   });
 }
 
-function playSound(trackName, patternOverride = null) {
+function playSound(trackName, patternOverride = null, scheduledTime = null) {
   const pattern = patternOverride || currentPattern;
   const volume = trackVolumes[trackName];
-  const time = audioCtx.currentTime;
+  const time = scheduledTime || audioCtx.currentTime;
   const soundVariant = patternSounds[pattern][trackName];
   
   // Use pre-calculated values for performance
@@ -1015,7 +1015,7 @@ function updateBeatCounter() {
   document.getElementById('beatCounter').textContent = displayText;
 }
 
-function tick() {
+function tick(scheduledTime) {
   let activePattern = currentPattern;
   if (sequencerEnabled) {
     const activeSeq = getActiveSequence();
@@ -1024,13 +1024,13 @@ function tick() {
     }
   }
   
-  // Schedule audio first (time-critical)
+  // Schedule audio first (time-critical) - use precise scheduled time
   const anySoloed = Object.values(trackSoloed).some(s => s);
   trackConfig.forEach(track => {
     // Skip muted tracks, or non-soloed tracks when any solo is active
     if (trackMuted[track.name]) return;
     if (anySoloed && !trackSoloed[track.name]) return;
-    if (patterns[activePattern][track.name][currentStep]) playSound(track.name, activePattern);
+    if (patterns[activePattern][track.name][currentStep]) playSound(track.name, activePattern, scheduledTime);
   });
   
   // Defer UI updates to next animation frame (non-blocking)
@@ -1099,7 +1099,7 @@ function start() {
     
     // Schedule all steps that fall within the lookahead window
     while (nextStepTime < audioCtx.currentTime + scheduleAheadTime) {
-      tick();
+      tick(nextStepTime);
       
       // Calculate next step time
       let interval = 60 / bpm / 4;
