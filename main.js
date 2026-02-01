@@ -109,19 +109,37 @@ let patternSequence = ['A', '', '', '', '', '', '', ''];
 let currentSequenceIndex = 0;
 const patterns = { A: {}, B: {}, C: {} };
 const trackVolumes = {};
-const trackPitch = {};
-const trackDecay = {};
-const trackPitchRatio = {}; // Pre-calculated pitch ratios for performance
 
-const trackSounds = {
-  kick: 'kick1',
-  snare: 'snare1',
-  hat: 'hat1',
-  clap: 'clap1',
-  openhat: 'openhat1',
-  rim: 'rim1',
-  tom: 'tom1'
+// Per-pattern sound settings
+const patternSounds = {
+  A: { kick: 'kick1', snare: 'snare1', hat: 'hat1', clap: 'clap1', openhat: 'openhat1', rim: 'rim1', tom: 'tom1' },
+  B: { kick: 'kick1', snare: 'snare1', hat: 'hat1', clap: 'clap1', openhat: 'openhat1', rim: 'rim1', tom: 'tom1' },
+  C: { kick: 'kick1', snare: 'snare1', hat: 'hat1', clap: 'clap1', openhat: 'openhat1', rim: 'rim1', tom: 'tom1' }
 };
+
+const patternPitch = {
+  A: { kick: 0, snare: 0, hat: 0, clap: 0, openhat: 0, rim: 0, tom: 0 },
+  B: { kick: 0, snare: 0, hat: 0, clap: 0, openhat: 0, rim: 0, tom: 0 },
+  C: { kick: 0, snare: 0, hat: 0, clap: 0, openhat: 0, rim: 0, tom: 0 }
+};
+
+const patternPitchRatio = {
+  A: { kick: 1, snare: 1, hat: 1, clap: 1, openhat: 1, rim: 1, tom: 1 },
+  B: { kick: 1, snare: 1, hat: 1, clap: 1, openhat: 1, rim: 1, tom: 1 },
+  C: { kick: 1, snare: 1, hat: 1, clap: 1, openhat: 1, rim: 1, tom: 1 }
+};
+
+const patternDecay = {
+  A: { kick: 100, snare: 100, hat: 100, clap: 100, openhat: 100, rim: 100, tom: 100 },
+  B: { kick: 100, snare: 100, hat: 100, clap: 100, openhat: 100, rim: 100, tom: 100 },
+  C: { kick: 100, snare: 100, hat: 100, clap: 100, openhat: 100, rim: 100, tom: 100 }
+};
+
+// Legacy references for backwards compatibility
+const trackSounds = patternSounds.A;
+const trackPitch = patternPitch.A;
+const trackDecay = patternDecay.A;
+const trackPitchRatio = patternPitchRatio.A;
 
 // Sample Packs System
 let activeSamplePack = null;
@@ -308,8 +326,8 @@ trackConfig.forEach(track => {
   const pitchValue = header.querySelector('.pitch-value');
   pitchControl.addEventListener('input', e => {
     const semitones = parseInt(e.target.value);
-    trackPitch[track.name] = semitones;
-    trackPitchRatio[track.name] = Math.pow(2, semitones / 12); // Pre-calculate
+    patternPitch[currentPattern][track.name] = semitones;
+    patternPitchRatio[currentPattern][track.name] = Math.pow(2, semitones / 12); // Pre-calculate
     pitchValue.textContent = semitones > 0 ? '+' + semitones : semitones;
   });
   
@@ -317,7 +335,7 @@ trackConfig.forEach(track => {
   const decayControl = header.querySelector('.decay-control');
   const decayValue = header.querySelector('.decay-value');
   decayControl.addEventListener('input', e => {
-    trackDecay[track.name] = parseInt(e.target.value);
+    patternDecay[currentPattern][track.name] = parseInt(e.target.value);
     decayValue.textContent = e.target.value + '%';
   });
   
@@ -341,7 +359,7 @@ trackConfig.forEach(track => {
   soundMenu.querySelectorAll('.sound-option').forEach(option => {
     option.addEventListener('click', (e) => {
       e.stopPropagation();
-      trackSounds[track.name] = option.dataset.sound;
+      patternSounds[currentPattern][track.name] = option.dataset.sound;
       soundMenu.style.display = 'none';
       soundMenu.querySelectorAll('.sound-option').forEach(opt => opt.classList.remove('selected'));
       option.classList.add('selected');
@@ -471,14 +489,15 @@ function updateSequenceUI() {
   });
 }
 
-function playSound(trackName) {
+function playSound(trackName, patternOverride = null) {
+  const pattern = patternOverride || currentPattern;
   const volume = trackVolumes[trackName];
   const time = audioCtx.currentTime;
-  const soundVariant = trackSounds[trackName];
+  const soundVariant = patternSounds[pattern][trackName];
   
   // Use pre-calculated values for performance
-  const pitchRatio = trackPitchRatio[trackName] || 1;
-  const decayMod = (trackDecay[trackName] || 100) / 100;
+  const pitchRatio = patternPitchRatio[pattern][trackName] || 1;
+  const decayMod = (patternDecay[pattern][trackName] || 100) / 100;
   
   switch(soundVariant) {
     case 'kick1': {
@@ -951,7 +970,7 @@ function tick() {
   
   // Schedule audio first (time-critical)
   trackConfig.forEach(track => {
-    if (patterns[activePattern][track.name][currentStep]) playSound(track.name);
+    if (patterns[activePattern][track.name][currentStep]) playSound(track.name, activePattern);
   });
   
   // Defer UI updates to next animation frame (non-blocking)
@@ -1157,6 +1176,33 @@ function updateUI() {
     stepEls.forEach((el, i) => {
       el.classList.toggle('active', patterns[currentPattern][track.name][i]);
     });
+    
+    // Update sound selection display
+    const soundMenu = container.querySelector('.sound-menu');
+    if (soundMenu) {
+      const currentSound = patternSounds[currentPattern][track.name];
+      soundMenu.querySelectorAll('.sound-option').forEach(opt => {
+        opt.classList.toggle('selected', opt.dataset.sound === currentSound);
+      });
+    }
+    
+    // Update pitch display
+    const pitchControl = container.querySelector('.pitch-control');
+    const pitchValue = container.querySelector('.pitch-value');
+    if (pitchControl && pitchValue) {
+      const pitch = patternPitch[currentPattern][track.name] || 0;
+      pitchControl.value = pitch;
+      pitchValue.textContent = pitch > 0 ? '+' + pitch : pitch;
+    }
+    
+    // Update decay display
+    const decayControl = container.querySelector('.decay-control');
+    const decayValue = container.querySelector('.decay-value');
+    if (decayControl && decayValue) {
+      const decay = patternDecay[currentPattern][track.name] || 100;
+      decayControl.value = decay;
+      decayValue.textContent = decay + '%';
+    }
   });
 }
 
@@ -1389,7 +1435,7 @@ function updateBeatDropdown() {
 document.getElementById('save').onclick = () => {
   const name = document.getElementById('beatName').value.trim();
   if (!name) return alert('Enter a beat name.');
-  const data = { bpm, swing, patterns, trackVolumes, patternSequence, trackSounds, trackPitch, trackDecay };
+  const data = { bpm, swing, patterns, trackVolumes, patternSequence, patternSounds, patternPitch, patternDecay };
   const library = JSON.parse(localStorage.getItem('beatLibrary') || '{}');
   library[name] = data;
   localStorage.setItem('beatLibrary', JSON.stringify(library));
@@ -1403,15 +1449,15 @@ document.getElementById('exportBeat').onclick = () => {
   const name = document.getElementById('beatName').value.trim() || 'Untitled';
   const data = { 
     name,
-    version: '1.0',
+    version: '1.1',
     bpm, 
     swing, 
     patterns, 
     trackVolumes, 
     patternSequence, 
-    trackSounds,
-    trackPitch,
-    trackDecay,
+    patternSounds,
+    patternPitch,
+    patternDecay,
     exportedAt: new Date().toISOString()
   };
   
@@ -1457,43 +1503,48 @@ document.getElementById('importFile').onchange = (e) => {
         });
       }
       
-      if (data.trackSounds) {
-        Object.assign(trackSounds, data.trackSounds);
-        trackConfig.forEach(track => {
-          const soundMenu = document.querySelector(`[data-track="${track.name}"] .sound-menu`);
-          if (soundMenu) {
-            soundMenu.querySelectorAll('.sound-option').forEach(opt => {
-              opt.classList.toggle('selected', opt.dataset.sound === trackSounds[track.name]);
-            });
-          }
+      // Load per-pattern sounds (v1.1 format)
+      if (data.patternSounds) {
+        Object.keys(data.patternSounds).forEach(pattern => {
+          Object.assign(patternSounds[pattern], data.patternSounds[pattern]);
+        });
+      } else if (data.trackSounds) {
+        // Legacy v1.0 format - apply to all patterns
+        ['A', 'B', 'C'].forEach(pattern => {
+          Object.assign(patternSounds[pattern], data.trackSounds);
         });
       }
       
-      // Load pitch and decay
-      if (data.trackPitch) {
-        Object.assign(trackPitch, data.trackPitch);
-        trackConfig.forEach(track => {
-          const container = document.querySelector(`[data-track="${track.name}"]`);
-          const pitchControl = container.querySelector('.pitch-control');
-          const pitchValue = container.querySelector('.pitch-value');
-          if (pitchControl && pitchValue) {
-            pitchControl.value = trackPitch[track.name] || 0;
-            const val = trackPitch[track.name] || 0;
-            pitchValue.textContent = val > 0 ? '+' + val : val;
-          }
+      // Load per-pattern pitch (v1.1 format)
+      if (data.patternPitch) {
+        Object.keys(data.patternPitch).forEach(pattern => {
+          Object.assign(patternPitch[pattern], data.patternPitch[pattern]);
+          // Pre-calculate pitch ratios
+          trackConfig.forEach(track => {
+            const semitones = patternPitch[pattern][track.name] || 0;
+            patternPitchRatio[pattern][track.name] = Math.pow(2, semitones / 12);
+          });
+        });
+      } else if (data.trackPitch) {
+        // Legacy v1.0 format - apply to all patterns
+        ['A', 'B', 'C'].forEach(pattern => {
+          Object.assign(patternPitch[pattern], data.trackPitch);
+          trackConfig.forEach(track => {
+            const semitones = patternPitch[pattern][track.name] || 0;
+            patternPitchRatio[pattern][track.name] = Math.pow(2, semitones / 12);
+          });
         });
       }
       
-      if (data.trackDecay) {
-        Object.assign(trackDecay, data.trackDecay);
-        trackConfig.forEach(track => {
-          const container = document.querySelector(`[data-track="${track.name}"]`);
-          const decayControl = container.querySelector('.decay-control');
-          const decayValue = container.querySelector('.decay-value');
-          if (decayControl && decayValue) {
-            decayControl.value = trackDecay[track.name] || 100;
-            decayValue.textContent = (trackDecay[track.name] || 100) + '%';
-          }
+      // Load per-pattern decay (v1.1 format)
+      if (data.patternDecay) {
+        Object.keys(data.patternDecay).forEach(pattern => {
+          Object.assign(patternDecay[pattern], data.patternDecay[pattern]);
+        });
+      } else if (data.trackDecay) {
+        // Legacy v1.0 format - apply to all patterns
+        ['A', 'B', 'C'].forEach(pattern => {
+          Object.assign(patternDecay[pattern], data.trackDecay);
         });
       }
       
@@ -1536,43 +1587,47 @@ document.getElementById('savedBeats').onchange = () => {
     });
   }
   
-  if (data.trackSounds) {
-    Object.assign(trackSounds, data.trackSounds);
-    trackConfig.forEach(track => {
-      const soundMenu = document.querySelector(`[data-track="${track.name}"] .sound-menu`);
-      if (soundMenu) {
-        soundMenu.querySelectorAll('.sound-option').forEach(opt => {
-          opt.classList.toggle('selected', opt.dataset.sound === trackSounds[track.name]);
-        });
-      }
+  // Load per-pattern sounds (new format)
+  if (data.patternSounds) {
+    Object.keys(data.patternSounds).forEach(pattern => {
+      Object.assign(patternSounds[pattern], data.patternSounds[pattern]);
+    });
+  } else if (data.trackSounds) {
+    // Legacy format - apply to all patterns
+    ['A', 'B', 'C'].forEach(pattern => {
+      Object.assign(patternSounds[pattern], data.trackSounds);
     });
   }
   
-  // Load pitch and decay
-  if (data.trackPitch) {
-    Object.assign(trackPitch, data.trackPitch);
-    trackConfig.forEach(track => {
-      const container = document.querySelector(`[data-track="${track.name}"]`);
-      const pitchControl = container.querySelector('.pitch-control');
-      const pitchValue = container.querySelector('.pitch-value');
-      if (pitchControl && pitchValue) {
-        pitchControl.value = trackPitch[track.name] || 0;
-        const val = trackPitch[track.name] || 0;
-        pitchValue.textContent = val > 0 ? '+' + val : val;
-      }
+  // Load per-pattern pitch (new format)
+  if (data.patternPitch) {
+    Object.keys(data.patternPitch).forEach(pattern => {
+      Object.assign(patternPitch[pattern], data.patternPitch[pattern]);
+      trackConfig.forEach(track => {
+        const semitones = patternPitch[pattern][track.name] || 0;
+        patternPitchRatio[pattern][track.name] = Math.pow(2, semitones / 12);
+      });
+    });
+  } else if (data.trackPitch) {
+    // Legacy format - apply to all patterns
+    ['A', 'B', 'C'].forEach(pattern => {
+      Object.assign(patternPitch[pattern], data.trackPitch);
+      trackConfig.forEach(track => {
+        const semitones = patternPitch[pattern][track.name] || 0;
+        patternPitchRatio[pattern][track.name] = Math.pow(2, semitones / 12);
+      });
     });
   }
   
-  if (data.trackDecay) {
-    Object.assign(trackDecay, data.trackDecay);
-    trackConfig.forEach(track => {
-      const container = document.querySelector(`[data-track="${track.name}"]`);
-      const decayControl = container.querySelector('.decay-control');
-      const decayValue = container.querySelector('.decay-value');
-      if (decayControl && decayValue) {
-        decayControl.value = trackDecay[track.name] || 100;
-        decayValue.textContent = (trackDecay[track.name] || 100) + '%';
-      }
+  // Load per-pattern decay (new format)
+  if (data.patternDecay) {
+    Object.keys(data.patternDecay).forEach(pattern => {
+      Object.assign(patternDecay[pattern], data.patternDecay[pattern]);
+    });
+  } else if (data.trackDecay) {
+    // Legacy format - apply to all patterns
+    ['A', 'B', 'C'].forEach(pattern => {
+      Object.assign(patternDecay[pattern], data.trackDecay);
     });
   }
   
