@@ -340,6 +340,24 @@
     
     <div id="controls">
       <div class="control-row">
+        <div class="control-group">
+          <label>Beat Name: <input type="text" id="beatName" placeholder="My Beat" value="Untitled"></label>
+        </div>
+        <button id="save" class="secondary">💾 Save</button>
+        <select id="savedBeats"><option value="">-- Load Beat --</option></select>
+        <button id="exportBeat" class="secondary" title="Download beat as file">📤 Export</button>
+        <button id="importBeat" class="secondary" title="Load beat from file">📥 Import</button>
+        <input type="file" id="importFile" accept=".json,.mpseeker" style="display:none">
+      </div>
+      
+      <div class="control-row">
+        <button id="clear" class="secondary">🗑 Clear</button>
+        <button id="exportAudio" class="secondary">🎵 Export WAV/MP3</button>
+        <button id="shareX" class="secondary share-x-btn">𝕏 Share</button>
+        <button id="mint" class="mint-coming-soon" disabled>⛓ Mint NFT</button>
+      </div>
+
+      <div class="control-row">
         <button id="play">▶ Play</button>
         <button id="stop" class="secondary">⏹ Stop</button>
         <div class="control-group">
@@ -366,24 +384,6 @@
             <option value="16" selected>16</option>
           </select></label>
         </div>
-      </div>
-      
-      <div class="control-row">
-        <div class="control-group">
-          <label>Beat Name: <input type="text" id="beatName" placeholder="My Beat" value="Untitled"></label>
-        </div>
-        <button id="save" class="secondary">💾 Save</button>
-        <select id="savedBeats"><option value="">-- Load Beat --</option></select>
-        <button id="exportBeat" class="secondary" title="Download beat as file">📤 Export</button>
-        <button id="importBeat" class="secondary" title="Load beat from file">📥 Import</button>
-        <input type="file" id="importFile" accept=".json,.mpseeker" style="display:none">
-      </div>
-      
-      <div class="control-row">
-        <button id="clear" class="secondary">🗑 Clear</button>
-        <button id="exportAudio" class="secondary">🎵 Export WAV/MP3</button>
-        <button id="shareX" class="secondary share-x-btn">𝕏 Share</button>
-        <button id="mint" class="mint-coming-soon" disabled>⛓ Mint NFT</button>
       </div>
       </div>
       
