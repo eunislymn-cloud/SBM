@@ -1013,7 +1013,7 @@ function start() {
   const timerInterval = 25; // ms between scheduler checks
   
   // Small delay to let audio context stabilize before first beat
-  let nextStepTime = audioCtx.currentTime + 0.04;
+  let nextStepTime = audioCtx.currentTime + 0.06;
   
   function scheduler() {
     if (!isPlaying) return;
