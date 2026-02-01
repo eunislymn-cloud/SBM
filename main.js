@@ -731,56 +731,33 @@ function playSound(trackName, patternOverride = null) {
       break;
     }
     case 'hat2': {
-      // Electronic hat - higher pitched with noise texture for sizzle
-      const fundamental = 55 * pitchRatio;
-      const ratios = [3.5, 5.3, 7.1, 9.8];
+      // Darker closed hi-hat - detuned square waves
+      const fundamental = 38 * pitchRatio;
+      const ratios = [2.1, 3.05, 4.2, 5.55, 6.9, 8.35];
       
-      // Higher bandpass for electronic character
       const bandpass = audioCtx.createBiquadFilter();
       bandpass.type = 'bandpass';
-      bandpass.frequency.value = 12000 * pitchRatio;
-      bandpass.Q.value = 2.0;
+      bandpass.frequency.value = 8500 * pitchRatio;
+      bandpass.Q.value = 1.0;
       
       const highpass = audioCtx.createBiquadFilter();
       highpass.type = 'highpass';
-      highpass.frequency.value = 9000 * pitchRatio;
+      highpass.frequency.value = 6000 * pitchRatio;
       
-      const oscGain = audioCtx.createGain();
-      oscGain.gain.setValueAtTime(volume * 0.3, time);
-      oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.03 * decayMod);
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(volume * 0.4, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04 * decayMod);
       
-      bandpass.connect(highpass).connect(oscGain).connect(masterGain);
+      bandpass.connect(highpass).connect(gain).connect(masterGain);
       
-      // Fewer oscillators, triangle wave for thinner tone
       ratios.forEach(ratio => {
         const osc = audioCtx.createOscillator();
-        osc.type = 'triangle';
+        osc.type = 'square';
         osc.frequency.value = fundamental * ratio;
         osc.connect(bandpass);
         osc.start(time);
-        osc.stop(time + 0.035 * decayMod);
+        osc.stop(time + 0.05 * decayMod);
       });
-      
-      // Add short noise burst for crispy texture
-      const noiseLen = Math.floor(audioCtx.sampleRate * 0.015);
-      const noise = audioCtx.createBufferSource();
-      const noiseBuf = audioCtx.createBuffer(1, noiseLen, audioCtx.sampleRate);
-      const noiseData = noiseBuf.getChannelData(0);
-      for (let i = 0; i < noiseLen; i++) {
-        noiseData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.001));
-      }
-      noise.buffer = noiseBuf;
-      
-      const noiseHP = audioCtx.createBiquadFilter();
-      noiseHP.type = 'highpass';
-      noiseHP.frequency.value = 11000 * pitchRatio;
-      
-      const noiseGain = audioCtx.createGain();
-      noiseGain.gain.setValueAtTime(volume * 0.2, time);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.015 * decayMod);
-      
-      noise.connect(noiseHP).connect(noiseGain).connect(masterGain);
-      noise.start(time);
       break;
     }
     case 'clap1': {
@@ -2018,44 +1995,28 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
       break;
     }
     case 'hat2': {
-      // Electronic hat (offline)
-      const fundamental = 55;
-      const ratios = [3.5, 5.3, 7.1, 9.8];
+      // Darker closed hi-hat (offline)
+      const fundamental = 38;
+      const ratios = [2.1, 3.05, 4.2, 5.55, 6.9, 8.35];
       const bandpass = ctx.createBiquadFilter();
       bandpass.type = 'bandpass';
-      bandpass.frequency.value = 12000;
-      bandpass.Q.value = 2.0;
+      bandpass.frequency.value = 8500;
+      bandpass.Q.value = 1.0;
       const highpass = ctx.createBiquadFilter();
       highpass.type = 'highpass';
-      highpass.frequency.value = 9000;
-      const oscGain = ctx.createGain();
-      oscGain.gain.setValueAtTime(volume * 0.3, time);
-      oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.03);
-      bandpass.connect(highpass).connect(oscGain).connect(master);
+      highpass.frequency.value = 6000;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(volume * 0.4, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+      bandpass.connect(highpass).connect(gain).connect(master);
       ratios.forEach(ratio => {
         const osc = ctx.createOscillator();
-        osc.type = 'triangle';
+        osc.type = 'square';
         osc.frequency.value = fundamental * ratio;
         osc.connect(bandpass);
         osc.start(time);
-        osc.stop(time + 0.035);
+        osc.stop(time + 0.05);
       });
-      const noiseLen = Math.floor(ctx.sampleRate * 0.015);
-      const noise = ctx.createBufferSource();
-      const noiseBuf = ctx.createBuffer(1, noiseLen, ctx.sampleRate);
-      const noiseData = noiseBuf.getChannelData(0);
-      for (let i = 0; i < noiseLen; i++) {
-        noiseData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.001));
-      }
-      noise.buffer = noiseBuf;
-      const noiseHP = ctx.createBiquadFilter();
-      noiseHP.type = 'highpass';
-      noiseHP.frequency.value = 11000;
-      const noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(volume * 0.2, time);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.015);
-      noise.connect(noiseHP).connect(noiseGain).connect(master);
-      noise.start(time);
       break;
     }
     case 'clap1': {
