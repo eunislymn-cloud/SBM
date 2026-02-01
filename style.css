@@ -629,6 +629,22 @@ label {
   transition: all 0.15s;
 }
 
+/* Group steps in 4s - slightly lighter background for beats 1-4, 9-12 */
+.step:nth-child(4n+1),
+.step:nth-child(4n+2),
+.step:nth-child(4n+3),
+.step:nth-child(4n+4) {
+  background: #1a1a1a;
+}
+
+.step:nth-child(8n+5),
+.step:nth-child(8n+6),
+.step:nth-child(8n+7),
+.step:nth-child(8n+8) {
+  background: #222;
+  border-color: #333;
+}
+
 .step:hover { 
   transform: scaleY(1.05); 
   border-color: #555; 
