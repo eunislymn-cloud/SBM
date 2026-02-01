@@ -996,13 +996,21 @@ function tick() {
 
 function start() {
   if (isPlaying) return;
-  isPlaying = true;
-  currentSequenceIndex = 0;
   
   // Resume audio context if suspended
   if (audioCtx.state === 'suspended') {
     audioCtx.resume();
   }
+  
+  // Prime the audio context with a silent buffer to prevent initial stutter
+  const silentBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.01, audioCtx.sampleRate);
+  const silentSource = audioCtx.createBufferSource();
+  silentSource.buffer = silentBuffer;
+  silentSource.connect(audioCtx.destination);
+  silentSource.start();
+  
+  isPlaying = true;
+  currentSequenceIndex = 0;
   
   // Web Audio lookahead scheduler for tight timing
   const scheduleAheadTime = 0.1; // seconds to look ahead
