@@ -698,25 +698,33 @@ function playSound(trackName, patternOverride = null) {
       break;
     }
     case 'hat1': {
-      const bufferLen = Math.floor(audioCtx.sampleRate * 0.05 * decayMod);
+      // Crisp tight closed hi-hat
+      const bufferLen = Math.floor(audioCtx.sampleRate * 0.03 * decayMod);
       const noise = audioCtx.createBufferSource();
       const buffer = audioCtx.createBuffer(1, bufferLen, audioCtx.sampleRate);
       const data = buffer.getChannelData(0);
       for (let i = 0; i < bufferLen; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.005 * decayMod));
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.002 * decayMod));
       }
       noise.buffer = buffer;
       noise.playbackRate.value = pitchRatio;
       
+      // Steep highpass for metallic sizzle
       const filter = audioCtx.createBiquadFilter();
       filter.type = 'highpass';
-      filter.frequency.value = 7000 * pitchRatio;
+      filter.frequency.value = 8500 * pitchRatio;
+      
+      // Bandpass for presence
+      const bp = audioCtx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 10000 * pitchRatio;
+      bp.Q.value = 1.5;
       
       const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(volume * 0.4, time);
-      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05 * decayMod);
+      gain.gain.setValueAtTime(volume * 0.5, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.02 * decayMod);
       
-      noise.connect(filter).connect(gain).connect(masterGain);
+      noise.connect(filter).connect(bp).connect(gain).connect(masterGain);
       noise.start(time);
       break;
     }
@@ -1953,18 +1961,26 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
       break;
     }
     case 'hat1': {
+      // Crisp tight closed hi-hat (offline)
+      const bufferLen = Math.floor(ctx.sampleRate * 0.03);
       const noise = ctx.createBufferSource();
-      const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.1, ctx.sampleRate);
+      const buffer = ctx.createBuffer(1, bufferLen, ctx.sampleRate);
       const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      for (let i = 0; i < bufferLen; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.002));
+      }
       noise.buffer = buffer;
       const filter = ctx.createBiquadFilter();
       filter.type = 'highpass';
-      filter.frequency.value = 7000;
+      filter.frequency.value = 8500;
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 10000;
+      bp.Q.value = 1.5;
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(volume * 0.5, time);
-      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05);
-      noise.connect(filter).connect(gain).connect(master);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
+      noise.connect(filter).connect(bp).connect(gain).connect(master);
       noise.start(time);
       break;
     }
