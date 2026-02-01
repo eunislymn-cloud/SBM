@@ -111,6 +111,7 @@ const patterns = { A: {}, B: {}, C: {} };
 const trackVolumes = {};
 const trackPitch = {};
 const trackDecay = {};
+const trackPitchRatio = {}; // Pre-calculated pitch ratios for performance
 
 const trackSounds = {
   kick: 'kick1',
@@ -210,6 +211,7 @@ trackConfig.forEach(track => {
   
   // Initialize pitch and decay for this track
   trackPitch[track.name] = 0; // -12 to +12 semitones
+  trackPitchRatio[track.name] = 1; // Pre-calculated ratio
   trackDecay[track.name] = 100; // 10% to 200%
   
   const labels = soundLabels[track.name] || ['Sound 1', 'Sound 2'];
@@ -305,8 +307,10 @@ trackConfig.forEach(track => {
   const pitchControl = header.querySelector('.pitch-control');
   const pitchValue = header.querySelector('.pitch-value');
   pitchControl.addEventListener('input', e => {
-    trackPitch[track.name] = parseInt(e.target.value);
-    pitchValue.textContent = e.target.value > 0 ? '+' + e.target.value : e.target.value;
+    const semitones = parseInt(e.target.value);
+    trackPitch[track.name] = semitones;
+    trackPitchRatio[track.name] = Math.pow(2, semitones / 12); // Pre-calculate
+    pitchValue.textContent = semitones > 0 ? '+' + semitones : semitones;
   });
   
   // Decay control
@@ -472,10 +476,9 @@ function playSound(trackName) {
   const time = audioCtx.currentTime;
   const soundVariant = trackSounds[trackName];
   
-  // Get pitch and decay modifiers
-  const pitchSemitones = trackPitch[trackName] || 0;
-  const pitchRatio = Math.pow(2, pitchSemitones / 12); // Convert semitones to frequency ratio
-  const decayMod = (trackDecay[trackName] || 100) / 100; // Convert to multiplier
+  // Use pre-calculated values for performance
+  const pitchRatio = trackPitchRatio[trackName] || 1;
+  const decayMod = (trackDecay[trackName] || 100) / 100;
   
   switch(soundVariant) {
     case 'kick1': {
@@ -996,21 +999,13 @@ function tick() {
 
 function start() {
   if (isPlaying) return;
+  isPlaying = true;
+  currentSequenceIndex = 0;
   
   // Resume audio context if suspended
   if (audioCtx.state === 'suspended') {
     audioCtx.resume();
   }
-  
-  // Prime the audio context with a silent buffer to prevent initial stutter
-  const silentBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.01, audioCtx.sampleRate);
-  const silentSource = audioCtx.createBufferSource();
-  silentSource.buffer = silentBuffer;
-  silentSource.connect(audioCtx.destination);
-  silentSource.start();
-  
-  isPlaying = true;
-  currentSequenceIndex = 0;
   
   // Web Audio lookahead scheduler for tight timing
   const scheduleAheadTime = 0.1; // seconds to look ahead
