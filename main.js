@@ -1007,10 +1007,7 @@ function start() {
   // Web Audio lookahead scheduler for tight timing
   const scheduleAheadTime = 0.1; // seconds to look ahead
   const timerInterval = 25; // ms between scheduler checks
-  
-  // Add a small pre-roll delay to let audio context stabilize
-  const preRollDelay = 0.05; // 50ms warmup
-  let nextStepTime = audioCtx.currentTime + preRollDelay;
+  let nextStepTime = audioCtx.currentTime;
   
   function scheduler() {
     if (!isPlaying) return;
@@ -1030,6 +1027,7 @@ function start() {
     schedulerTimer = setTimeout(scheduler, timerInterval);
   }
   
+  nextStepTime = audioCtx.currentTime;
   scheduler();
 }
 
