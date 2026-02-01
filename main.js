@@ -109,6 +109,8 @@ let patternSequence = ['A', '', '', '', '', '', '', ''];
 let currentSequenceIndex = 0;
 const patterns = { A: {}, B: {}, C: {} };
 const trackVolumes = {};
+const trackMuted = {};
+const trackSoloed = {};
 
 // Per-pattern sound settings
 const patternSounds = {
@@ -238,7 +240,13 @@ trackConfig.forEach(track => {
   header.className = 'track-header';
   header.innerHTML = `
     <div class="track-label-wrapper">
-      <div class="track-label">${track.label} <span class="dropdown-arrow">▼</span></div>
+      <div class="track-label-row">
+        <div class="track-label">${track.label} <span class="dropdown-arrow">▼</span></div>
+        <div class="track-ms-buttons">
+          <button class="ms-btn mute-btn" data-track="${track.name}" title="Mute">M</button>
+          <button class="ms-btn solo-btn" data-track="${track.name}" title="Solo">S</button>
+        </div>
+      </div>
       <div class="sound-menu" style="display:none;">
         <div class="sound-option" data-sound="${track.name}1">${labels[0]}</div>
         <div class="sound-option" data-sound="${track.name}2">${labels[1]}</div>
@@ -367,6 +375,37 @@ trackConfig.forEach(track => {
   });
   
   soundMenu.querySelector(`[data-sound="${track.name}1"]`).classList.add('selected');
+  
+  // Mute/Solo buttons
+  trackMuted[track.name] = false;
+  trackSoloed[track.name] = false;
+  
+  const muteBtn = header.querySelector('.mute-btn');
+  const soloBtn = header.querySelector('.solo-btn');
+  
+  muteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    trackMuted[track.name] = !trackMuted[track.name];
+    muteBtn.classList.toggle('active', trackMuted[track.name]);
+    container.classList.toggle('track-muted', trackMuted[track.name]);
+  });
+  
+  soloBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    trackSoloed[track.name] = !trackSoloed[track.name];
+    soloBtn.classList.toggle('active', trackSoloed[track.name]);
+    
+    // Update visual mute state on all tracks
+    const anySoloed = Object.values(trackSoloed).some(s => s);
+    trackConfig.forEach(t => {
+      const cont = document.querySelector(`[data-track="${t.name}"]`);
+      if (anySoloed) {
+        cont.classList.toggle('track-muted', !trackSoloed[t.name] && !false);
+      } else {
+        cont.classList.toggle('track-muted', trackMuted[t.name]);
+      }
+    });
+  });
 });
 
 document.addEventListener('click', () => {
@@ -969,7 +1008,11 @@ function tick() {
   }
   
   // Schedule audio first (time-critical)
+  const anySoloed = Object.values(trackSoloed).some(s => s);
   trackConfig.forEach(track => {
+    // Skip muted tracks, or non-soloed tracks when any solo is active
+    if (trackMuted[track.name]) return;
+    if (anySoloed && !trackSoloed[track.name]) return;
     if (patterns[activePattern][track.name][currentStep]) playSound(track.name, activePattern);
   });
   
