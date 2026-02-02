@@ -41,6 +41,7 @@ h1 {
 }
 
 .logo-name {
+  font-family: 'Orbitron', sans-serif;
   font-size: 28px;
   font-weight: 800;
   background: linear-gradient(90deg, #9945FF, #14F195);
