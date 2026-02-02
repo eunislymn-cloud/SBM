@@ -137,6 +137,13 @@ const patternDecay = {
   C: { kick: 100, snare: 100, hat: 100, clap: 100, openhat: 100, rim: 100, tom: 100 }
 };
 
+// Per-pattern effects
+const patternEffects = {
+  A: { reverb: 0, delayMix: 0, delayTime: 250, filter: 20000, gain: 0 },
+  B: { reverb: 0, delayMix: 0, delayTime: 250, filter: 20000, gain: 0 },
+  C: { reverb: 0, delayMix: 0, delayTime: 250, filter: 20000, gain: 0 }
+};
+
 // Legacy references for backwards compatibility
 const trackSounds = patternSounds.A;
 const trackPitch = patternPitch.A;
@@ -1071,6 +1078,9 @@ function tick(scheduledTime) {
             el.classList.toggle('active', patterns[patternSnapshot][track.name][i]);
           });
         });
+        
+        // Apply per-pattern effects on pattern change
+        applyPatternEffects(patternSnapshot);
       }
     }
     
@@ -1167,6 +1177,7 @@ document.querySelectorAll('.pattern-btn').forEach(btn => {
     btn.classList.add('active');
     currentPattern = btn.dataset.pattern;
     updateUI();
+    applyPatternEffects(currentPattern);
   });
 });
 
@@ -1175,9 +1186,9 @@ let copiedPattern = null;
 
 document.getElementById('copyPattern').onclick = () => {
   // Deep copy the current pattern
-  copiedPattern = {};
+  copiedPattern = { steps: {}, effects: { ...patternEffects[currentPattern] } };
   trackConfig.forEach(track => {
-    copiedPattern[track.name] = [...patterns[currentPattern][track.name]];
+    copiedPattern.steps[track.name] = [...patterns[currentPattern][track.name]];
   });
   
   // Enable paste button and update UI
@@ -1228,20 +1239,27 @@ document.querySelectorAll('.paste-option').forEach(btn => {
       // Paste to all other patterns
       otherPatterns.forEach(targetPattern => {
         trackConfig.forEach(track => {
-          patterns[targetPattern][track.name] = [...copiedPattern[track.name]];
+          patterns[targetPattern][track.name] = [...copiedPattern.steps[track.name]];
         });
+        if (copiedPattern.effects) {
+          Object.assign(patternEffects[targetPattern], copiedPattern.effects);
+        }
       });
     } else if (['A', 'B', 'C'].includes(target)) {
       // Paste to specific pattern
       trackConfig.forEach(track => {
-        patterns[target][track.name] = [...copiedPattern[track.name]];
+        patterns[target][track.name] = [...copiedPattern.steps[track.name]];
       });
+      if (copiedPattern.effects) {
+        Object.assign(patternEffects[target], copiedPattern.effects);
+      }
       
       // Switch to the pasted pattern
       document.querySelectorAll('.pattern-btn').forEach(b => b.classList.remove('active'));
       document.querySelector(`[data-pattern="${target}"]`).classList.add('active');
       currentPattern = target;
       updateUI();
+      applyPatternEffects(currentPattern);
     }
     
     document.getElementById('pasteModal').style.display = 'none';
@@ -1283,6 +1301,50 @@ function updateUI() {
       decayValue.textContent = decay + '%';
     }
   });
+}
+
+// Apply effects for a given pattern - updates both audio nodes and UI sliders
+function applyPatternEffects(pattern) {
+  const fx = patternEffects[pattern];
+  
+  // Reverb
+  const wetAmount = fx.reverb / 100;
+  reverbWet.gain.value = wetAmount;
+  reverbDry.gain.value = 1 - wetAmount;
+  const reverbSlider = document.getElementById('reverb');
+  if (reverbSlider) reverbSlider.value = fx.reverb;
+  const reverbVal = document.getElementById('reverbValue');
+  if (reverbVal) reverbVal.textContent = fx.reverb + '%';
+  
+  // Delay Mix
+  delayWet.gain.value = fx.delayMix / 100;
+  const delaySlider = document.getElementById('delayMix');
+  if (delaySlider) delaySlider.value = fx.delayMix;
+  const delayVal = document.getElementById('delayValue');
+  if (delayVal) delayVal.textContent = fx.delayMix + '%';
+  
+  // Delay Time
+  delayNode.delayTime.value = fx.delayTime / 1000;
+  const delayTimeSlider = document.getElementById('delayTime');
+  if (delayTimeSlider) delayTimeSlider.value = fx.delayTime;
+  const delayTimeVal = document.getElementById('delayTimeValue');
+  if (delayTimeVal) delayTimeVal.textContent = fx.delayTime + 'ms';
+  
+  // Filter
+  filterNode.frequency.value = fx.filter;
+  const filterSlider = document.getElementById('filter');
+  if (filterSlider) filterSlider.value = fx.filter;
+  const filterVal = document.getElementById('filterValue');
+  if (filterVal) filterVal.textContent = fx.filter >= 1000 ? (fx.filter/1000).toFixed(1)+'k' : fx.filter;
+  
+  // Gain
+  const boost = 1 + (fx.gain / 100) * 3;
+  gainBoost.gain.value = boost;
+  highShelf.gain.value = (fx.gain / 100) * 12;
+  const gainSlider = document.getElementById('gain');
+  if (gainSlider) gainSlider.value = fx.gain;
+  const gainVal = document.getElementById('gainValue');
+  if (gainVal) gainVal.textContent = fx.gain + '%';
 }
 
 document.getElementById('play').onclick = () => { 
@@ -1432,23 +1494,29 @@ function rebuildGrid() {
 }
 
 document.getElementById('delayMix').oninput = e => {
-  delayWet.gain.value = e.target.value / 100;
-  document.getElementById('delayValue').textContent = e.target.value + '%';
+  const val = parseInt(e.target.value);
+  patternEffects[currentPattern].delayMix = val;
+  delayWet.gain.value = val / 100;
+  document.getElementById('delayValue').textContent = val + '%';
 };
 
 document.getElementById('delayTime').oninput = e => {
-  delayNode.delayTime.value = e.target.value / 1000;
-  document.getElementById('delayTimeValue').textContent = e.target.value + 'ms';
+  const val = parseInt(e.target.value);
+  patternEffects[currentPattern].delayTime = val;
+  delayNode.delayTime.value = val / 1000;
+  document.getElementById('delayTimeValue').textContent = val + 'ms';
 };
 
 document.getElementById('filter').oninput = e => {
-  filterNode.frequency.value = parseInt(e.target.value);
   const val = parseInt(e.target.value);
+  patternEffects[currentPattern].filter = val;
+  filterNode.frequency.value = val;
   document.getElementById('filterValue').textContent = val >= 1000 ? (val/1000).toFixed(1)+'k' : val;
 };
 
 document.getElementById('reverb').oninput = e => {
   const val = parseInt(e.target.value);
+  patternEffects[currentPattern].reverb = val;
   document.getElementById('reverbValue').textContent = val + '%';
   
   const wetAmount = val / 100;
@@ -1458,6 +1526,7 @@ document.getElementById('reverb').oninput = e => {
 
 document.getElementById('gain').oninput = e => {
   const val = parseInt(e.target.value);
+  patternEffects[currentPattern].gain = val;
   document.getElementById('gainValue').textContent = val + '%';
   
   // Gain boost: 0% = 1x, 100% = 4x
@@ -1528,7 +1597,7 @@ document.getElementById('exportBeat').onclick = () => {
   const name = document.getElementById('beatName').value.trim() || 'Untitled';
   const data = { 
     name,
-    version: '1.1',
+    version: '1.2',
     bpm, 
     swing, 
     patterns, 
@@ -1537,6 +1606,7 @@ document.getElementById('exportBeat').onclick = () => {
     patternSounds,
     patternPitch,
     patternDecay,
+    patternEffects,
     exportedAt: new Date().toISOString()
   };
   
@@ -1627,12 +1697,20 @@ document.getElementById('importFile').onchange = (e) => {
         });
       }
       
+      // Load per-pattern effects (v1.2 format)
+      if (data.patternEffects) {
+        Object.keys(data.patternEffects).forEach(pattern => {
+          Object.assign(patternEffects[pattern], data.patternEffects[pattern]);
+        });
+      }
+      
       document.getElementById('bpm').value = bpm;
       document.getElementById('bpmValue').textContent = bpm;
       document.getElementById('swing').value = swing;
       document.getElementById('swingValue').textContent = swing + '%';
       document.getElementById('beatName').value = data.name || 'Imported Beat';
       updateUI();
+      applyPatternEffects(currentPattern);
       
       alert(`"${data.name || 'Beat'}" imported successfully!`);
       if (window.firebaseLogEvent) window.firebaseLogEvent('import_beat', { beat_name: data.name });
@@ -1710,12 +1788,20 @@ document.getElementById('savedBeats').onchange = () => {
     });
   }
   
+  // Load per-pattern effects
+  if (data.patternEffects) {
+    Object.keys(data.patternEffects).forEach(pattern => {
+      Object.assign(patternEffects[pattern], data.patternEffects[pattern]);
+    });
+  }
+  
   document.getElementById('bpm').value = bpm;
   document.getElementById('bpmValue').textContent = bpm;
   document.getElementById('swing').value = swing;
   document.getElementById('swingValue').textContent = swing + '%';
   document.getElementById('beatName').value = name;
   updateUI();
+  applyPatternEffects(currentPattern);
   
   // Reset dropdown to placeholder
   document.getElementById('savedBeats').value = '';
@@ -4133,6 +4219,14 @@ loadNftConfirm.onclick = () => {
       }
       
       console.log('Effects loaded:', effects);
+    }
+    
+    // Load per-pattern effects (v1.2 format)
+    if (fetchedBeatData.patternEffects) {
+      Object.keys(fetchedBeatData.patternEffects).forEach(pattern => {
+        Object.assign(patternEffects[pattern], fetchedBeatData.patternEffects[pattern]);
+      });
+      applyPatternEffects(currentPattern);
     }
     
     // Load beat name
