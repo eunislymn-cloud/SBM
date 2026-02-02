@@ -547,21 +547,6 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       const clickOsc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       const clickGain = audioCtx.createGain();
-      const distortion = audioCtx.createWaveShaper();
-      
-      // Low-cut filter - removes sub-bass that causes speaker cone flutter
-      const lowcut = audioCtx.createBiquadFilter();
-      lowcut.type = 'highpass';
-      lowcut.frequency.value = 65;
-      lowcut.Q.value = 0.7;
-      
-      // Distortion curve for punch
-      const curve = new Float32Array(256);
-      for (let i = 0; i < 256; i++) {
-        const x = (i / 128) - 1;
-        curve[i] = Math.tanh(x * 2);
-      }
-      distortion.curve = curve;
       
       // Main body - tighter than 808 (apply pitch)
       osc.type = 'sine';
@@ -575,16 +560,16 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       clickOsc.frequency.exponentialRampToValueAtTime(100 * pitchRatio, time + 0.01);
       
       // Main envelope - punchy (apply decay)
-      gain.gain.setValueAtTime(volume * 1.4, time);
-      gain.gain.exponentialRampToValueAtTime(volume * 0.8, time + 0.02 * decayMod);
+      gain.gain.setValueAtTime(volume * 1.2, time);
+      gain.gain.exponentialRampToValueAtTime(volume * 0.7, time + 0.02 * decayMod);
       gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15 * decayMod);
       
       // Click envelope
       clickGain.gain.setValueAtTime(volume * 0.5, time);
       clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.015);
       
-      osc.connect(distortion).connect(gain).connect(lowcut).connect(masterGain);
-      clickOsc.connect(clickGain).connect(lowcut);
+      osc.connect(gain).connect(masterGain);
+      clickOsc.connect(clickGain).connect(masterGain);
       osc.start(time);
       osc.stop(time + 0.15 * decayMod);
       clickOsc.start(time);
@@ -597,12 +582,6 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       const osc2 = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       const gain2 = audioCtx.createGain();
-      
-      // Low-cut filter - removes sub-bass that causes speaker cone flutter
-      const lowcut = audioCtx.createBiquadFilter();
-      lowcut.type = 'highpass';
-      lowcut.frequency.value = 60;
-      lowcut.Q.value = 0.7;
       
       // Main sub oscillator (apply pitch)
       osc.type = 'sine';
@@ -624,8 +603,8 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
       gain2.gain.setValueAtTime(volume * 0.8, time);
       gain2.gain.exponentialRampToValueAtTime(0.001, time + 0.03);
       
-      osc.connect(gain).connect(lowcut).connect(masterGain);
-      osc2.connect(gain2).connect(lowcut);
+      osc.connect(gain).connect(masterGain);
+      osc2.connect(gain2).connect(masterGain);
       osc.start(time);
       osc.stop(time + 0.25 * decayMod);
       osc2.start(time);
@@ -1858,10 +1837,6 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
       const clickOsc = ctx.createOscillator();
       const gain = ctx.createGain();
       const clickGain = ctx.createGain();
-      const lowcut = ctx.createBiquadFilter();
-      lowcut.type = 'highpass';
-      lowcut.frequency.value = 65;
-      lowcut.Q.value = 0.7;
       
       osc.type = 'sine';
       osc.frequency.setValueAtTime(180, time);
@@ -1872,15 +1847,15 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
       clickOsc.frequency.setValueAtTime(800, time);
       clickOsc.frequency.exponentialRampToValueAtTime(100, time + 0.01);
       
-      gain.gain.setValueAtTime(volume * 1.4, time);
-      gain.gain.exponentialRampToValueAtTime(volume * 0.8, time + 0.02);
+      gain.gain.setValueAtTime(volume * 1.2, time);
+      gain.gain.exponentialRampToValueAtTime(volume * 0.7, time + 0.02);
       gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
       
       clickGain.gain.setValueAtTime(volume * 0.5, time);
       clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.015);
       
-      osc.connect(gain).connect(lowcut).connect(master);
-      clickOsc.connect(clickGain).connect(lowcut);
+      osc.connect(gain).connect(master);
+      clickOsc.connect(clickGain).connect(master);
       osc.start(time);
       osc.stop(time + 0.15);
       clickOsc.start(time);
