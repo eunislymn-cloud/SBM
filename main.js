@@ -542,73 +542,102 @@ function playSound(trackName, patternOverride = null, scheduledTime = null) {
   
   switch(soundVariant) {
     case 'kick1': {
-      // 909 style kick - punchy with click
-      const osc = audioCtx.createOscillator();
-      const clickOsc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      const clickGain = audioCtx.createGain();
+      // 909 style kick - buffer-based for perfectly consistent playback
+      const sampleRate = audioCtx.sampleRate;
+      const duration = 0.15 * decayMod;
+      const bufferLen = Math.floor(sampleRate * duration);
+      const buffer = audioCtx.createBuffer(1, bufferLen, sampleRate);
+      const data = buffer.getChannelData(0);
       
-      // Main body - tighter than 808 (apply pitch)
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(180 * pitchRatio, time);
-      osc.frequency.exponentialRampToValueAtTime(50 * pitchRatio, time + 0.05 * decayMod);
-      osc.frequency.exponentialRampToValueAtTime(40 * pitchRatio, time + 0.15 * decayMod);
+      // Synthesize kick into buffer - every hit is identical
+      let phase = 0;
+      for (let i = 0; i < bufferLen; i++) {
+        const t = i / sampleRate;
+        
+        // Frequency sweep: 180 -> 50 (fast) -> 40 (slow)
+        let freq;
+        if (t < 0.05 * decayMod) {
+          freq = 180 * pitchRatio * Math.pow((50 * pitchRatio) / (180 * pitchRatio), t / (0.05 * decayMod));
+        } else {
+          freq = 50 * pitchRatio * Math.pow((40 * pitchRatio) / (50 * pitchRatio), (t - 0.05 * decayMod) / (0.1 * decayMod));
+        }
+        
+        // Amplitude envelope: 1.2 -> 0.7 (fast) -> 0 (decay)
+        let amp;
+        if (t < 0.02 * decayMod) {
+          amp = 1.2 - (0.5 * t / (0.02 * decayMod));
+        } else {
+          amp = 0.7 * Math.exp(-((t - 0.02 * decayMod) / (0.03 * decayMod)));
+        }
+        
+        // Main sine body
+        phase += (2 * Math.PI * freq) / sampleRate;
+        let sample = Math.sin(phase) * amp;
+        
+        // Click transient: square-ish at 800->100Hz, 15ms
+        if (t < 0.015) {
+          const clickFreq = 800 * pitchRatio * Math.pow((100 * pitchRatio) / (800 * pitchRatio), t / 0.01);
+          const clickAmp = 0.5 * Math.exp(-t / 0.003);
+          sample += (Math.sin(2 * Math.PI * clickFreq * t) > 0 ? 1 : -1) * clickAmp;
+        }
+        
+        data[i] = sample * volume;
+      }
       
-      // Click transient (apply pitch)
-      clickOsc.type = 'square';
-      clickOsc.frequency.setValueAtTime(800 * pitchRatio, time);
-      clickOsc.frequency.exponentialRampToValueAtTime(100 * pitchRatio, time + 0.01);
-      
-      // Main envelope - punchy (apply decay)
-      gain.gain.setValueAtTime(volume * 1.2, time);
-      gain.gain.exponentialRampToValueAtTime(volume * 0.7, time + 0.02 * decayMod);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15 * decayMod);
-      
-      // Click envelope
-      clickGain.gain.setValueAtTime(volume * 0.5, time);
-      clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.015);
-      
-      osc.connect(gain).connect(masterGain);
-      clickOsc.connect(clickGain).connect(masterGain);
-      osc.start(time);
-      osc.stop(time + 0.15 * decayMod);
-      clickOsc.start(time);
-      clickOsc.stop(time + 0.015);
+      const source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(masterGain);
+      source.start(time);
       break;
     }
     case 'kick2': {
-      // 808 style kick - deep sub bass punch
-      const osc = audioCtx.createOscillator();
-      const osc2 = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      const gain2 = audioCtx.createGain();
+      // 808 style kick - buffer-based for perfectly consistent playback
+      const sampleRate = audioCtx.sampleRate;
+      const duration = 0.25 * decayMod;
+      const bufferLen = Math.floor(sampleRate * duration);
+      const buffer = audioCtx.createBuffer(1, bufferLen, sampleRate);
+      const data = buffer.getChannelData(0);
       
-      // Main sub oscillator (apply pitch)
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(150 * pitchRatio, time);
-      osc.frequency.exponentialRampToValueAtTime(35 * pitchRatio, time + 0.08 * decayMod);
-      osc.frequency.exponentialRampToValueAtTime(25 * pitchRatio, time + 0.2 * decayMod);
+      let phase = 0;
+      for (let i = 0; i < bufferLen; i++) {
+        const t = i / sampleRate;
+        
+        // Frequency sweep: 150 -> 35 (fast) -> 25 (slow)
+        let freq;
+        if (t < 0.08 * decayMod) {
+          freq = 150 * pitchRatio * Math.pow((35 * pitchRatio) / (150 * pitchRatio), t / (0.08 * decayMod));
+        } else {
+          freq = 35 * pitchRatio * Math.pow((25 * pitchRatio) / (35 * pitchRatio), (t - 0.08 * decayMod) / (0.12 * decayMod));
+        }
+        
+        // Amplitude envelope: 1.5 -> 0.8 (fast) -> 0 (decay)
+        let amp;
+        if (t < 0.05 * decayMod) {
+          amp = 1.5 - (0.7 * t / (0.05 * decayMod));
+        } else {
+          amp = 0.8 * Math.exp(-((t - 0.05 * decayMod) / (0.05 * decayMod)));
+        }
+        
+        // Main sine body
+        phase += (2 * Math.PI * freq) / sampleRate;
+        let sample = Math.sin(phase) * amp;
+        
+        // Click transient: triangle at 400->60Hz, 30ms
+        if (t < 0.03) {
+          const clickFreq = 400 * pitchRatio * Math.pow((60 * pitchRatio) / (400 * pitchRatio), t / 0.02);
+          const clickAmp = 0.8 * Math.exp(-t / 0.006);
+          // Triangle approximation
+          const clickPhase = (2 * clickFreq * t) % 1;
+          sample += (clickPhase < 0.5 ? 4 * clickPhase - 1 : 3 - 4 * clickPhase) * clickAmp;
+        }
+        
+        data[i] = sample * volume;
+      }
       
-      // Click/attack oscillator (apply pitch)
-      osc2.type = 'triangle';
-      osc2.frequency.setValueAtTime(400 * pitchRatio, time);
-      osc2.frequency.exponentialRampToValueAtTime(60 * pitchRatio, time + 0.02);
-      
-      // Main envelope (apply decay)
-      gain.gain.setValueAtTime(volume * 1.5, time);
-      gain.gain.exponentialRampToValueAtTime(volume * 0.8, time + 0.05 * decayMod);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25 * decayMod);
-      
-      // Click envelope - short
-      gain2.gain.setValueAtTime(volume * 0.8, time);
-      gain2.gain.exponentialRampToValueAtTime(0.001, time + 0.03);
-      
-      osc.connect(gain).connect(masterGain);
-      osc2.connect(gain2).connect(masterGain);
-      osc.start(time);
-      osc.stop(time + 0.25 * decayMod);
-      osc2.start(time);
-      osc2.stop(time + 0.03);
+      const source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(masterGain);
+      source.start(time);
       break;
     }
     case 'snare1': {
@@ -1832,69 +1861,78 @@ function renderSoundOffline(ctx, master, trackName, time, volume) {
   
   switch(soundVariant) {
     case 'kick1': {
-      // 909 style kick - punchy with click
-      const osc = ctx.createOscillator();
-      const clickOsc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const clickGain = ctx.createGain();
-      
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(180, time);
-      osc.frequency.exponentialRampToValueAtTime(50, time + 0.05);
-      osc.frequency.exponentialRampToValueAtTime(40, time + 0.15);
-      
-      clickOsc.type = 'square';
-      clickOsc.frequency.setValueAtTime(800, time);
-      clickOsc.frequency.exponentialRampToValueAtTime(100, time + 0.01);
-      
-      gain.gain.setValueAtTime(volume * 1.2, time);
-      gain.gain.exponentialRampToValueAtTime(volume * 0.7, time + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
-      
-      clickGain.gain.setValueAtTime(volume * 0.5, time);
-      clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.015);
-      
-      osc.connect(gain).connect(master);
-      clickOsc.connect(clickGain).connect(master);
-      osc.start(time);
-      osc.stop(time + 0.15);
-      clickOsc.start(time);
-      clickOsc.stop(time + 0.015);
+      // 909 style kick - buffer-based for consistent export
+      const sampleRate = ctx.sampleRate;
+      const duration = 0.15;
+      const bufferLen = Math.floor(sampleRate * duration);
+      const buffer = ctx.createBuffer(1, bufferLen, sampleRate);
+      const data = buffer.getChannelData(0);
+      let phase = 0;
+      for (let i = 0; i < bufferLen; i++) {
+        const t = i / sampleRate;
+        let freq;
+        if (t < 0.05) {
+          freq = 180 * Math.pow(50 / 180, t / 0.05);
+        } else {
+          freq = 50 * Math.pow(40 / 50, (t - 0.05) / 0.1);
+        }
+        let amp;
+        if (t < 0.02) {
+          amp = 1.2 - (0.5 * t / 0.02);
+        } else {
+          amp = 0.7 * Math.exp(-((t - 0.02) / 0.03));
+        }
+        phase += (2 * Math.PI * freq) / sampleRate;
+        let sample = Math.sin(phase) * amp;
+        if (t < 0.015) {
+          const clickFreq = 800 * Math.pow(100 / 800, t / 0.01);
+          const clickAmp = 0.5 * Math.exp(-t / 0.003);
+          sample += (Math.sin(2 * Math.PI * clickFreq * t) > 0 ? 1 : -1) * clickAmp;
+        }
+        data[i] = sample * volume;
+      }
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(master);
+      source.start(time);
       break;
     }
     case 'kick2': {
-      // 808 style kick - deep sub bass punch
-      const osc = ctx.createOscillator();
-      const osc2 = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const gain2 = ctx.createGain();
-      const lowcut = ctx.createBiquadFilter();
-      lowcut.type = 'highpass';
-      lowcut.frequency.value = 60;
-      lowcut.Q.value = 0.7;
-      
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(150, time);
-      osc.frequency.exponentialRampToValueAtTime(35, time + 0.08);
-      osc.frequency.exponentialRampToValueAtTime(25, time + 0.2);
-      
-      osc2.type = 'triangle';
-      osc2.frequency.setValueAtTime(400, time);
-      osc2.frequency.exponentialRampToValueAtTime(60, time + 0.02);
-      
-      gain.gain.setValueAtTime(volume * 1.5, time);
-      gain.gain.exponentialRampToValueAtTime(volume * 0.8, time + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
-      
-      gain2.gain.setValueAtTime(volume * 0.8, time);
-      gain2.gain.exponentialRampToValueAtTime(0.001, time + 0.03);
-      
-      osc.connect(gain).connect(lowcut).connect(master);
-      osc2.connect(gain2).connect(lowcut);
-      osc.start(time);
-      osc.stop(time + 0.25);
-      osc2.start(time);
-      osc2.stop(time + 0.03);
+      // 808 style kick - buffer-based for consistent export
+      const sampleRate = ctx.sampleRate;
+      const duration = 0.25;
+      const bufferLen = Math.floor(sampleRate * duration);
+      const buffer = ctx.createBuffer(1, bufferLen, sampleRate);
+      const data = buffer.getChannelData(0);
+      let phase = 0;
+      for (let i = 0; i < bufferLen; i++) {
+        const t = i / sampleRate;
+        let freq;
+        if (t < 0.08) {
+          freq = 150 * Math.pow(35 / 150, t / 0.08);
+        } else {
+          freq = 35 * Math.pow(25 / 35, (t - 0.08) / 0.12);
+        }
+        let amp;
+        if (t < 0.05) {
+          amp = 1.5 - (0.7 * t / 0.05);
+        } else {
+          amp = 0.8 * Math.exp(-((t - 0.05) / 0.05));
+        }
+        phase += (2 * Math.PI * freq) / sampleRate;
+        let sample = Math.sin(phase) * amp;
+        if (t < 0.03) {
+          const clickFreq = 400 * Math.pow(60 / 400, t / 0.02);
+          const clickAmp = 0.8 * Math.exp(-t / 0.006);
+          const clickPhase = (2 * clickFreq * t) % 1;
+          sample += (clickPhase < 0.5 ? 4 * clickPhase - 1 : 3 - 4 * clickPhase) * clickAmp;
+        }
+        data[i] = sample * volume;
+      }
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(master);
+      source.start(time);
       break;
     }
     case 'snare1': {
