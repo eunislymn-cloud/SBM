@@ -670,11 +670,12 @@ label {
   grid-template-columns: repeat(16, 1fr);
   gap: 3px;
   flex: 1;
-  height: 36px;
+  max-height: 50px;
 }
 
 .step {
-  height: 100%;
+  aspect-ratio: 1;
+  max-height: 50px;
   background: #1a1a1a;
   border: 2px solid #2a2a2a;
   border-radius: 4px;
