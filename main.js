@@ -1544,6 +1544,130 @@ document.getElementById('clear').onclick = () => {
   }
 };
 
+// Weighted randomize - generates musically useful patterns
+document.getElementById('randomize').onclick = () => {
+  const p = patterns[currentPattern];
+  
+  // Clear first
+  trackConfig.forEach(t => p[t.name].fill(false));
+  
+  // --- KICK ---
+  // Pick a kick style
+  const kickStyle = Math.random();
+  if (kickStyle < 0.4) {
+    // 4-on-the-floor (steps 0,4,8,12)
+    [0, 4, 8, 12].forEach(s => p.kick[s] = true);
+    // Maybe drop one for variation
+    if (Math.random() < 0.2) p.kick[12] = false;
+  } else if (kickStyle < 0.7) {
+    // Boom-bap / hip-hop style
+    p.kick[0] = true;
+    p.kick[Math.random() < 0.5 ? 6 : 7] = true;
+    p.kick[10] = Math.random() < 0.5;
+    if (Math.random() < 0.3) p.kick[3] = true;
+  } else {
+    // Syncopated
+    p.kick[0] = true;
+    p.kick[3] = Math.random() < 0.5;
+    p.kick[6] = Math.random() < 0.6;
+    p.kick[8] = Math.random() < 0.4;
+    p.kick[10] = Math.random() < 0.5;
+    p.kick[14] = Math.random() < 0.3;
+  }
+  
+  // --- SNARE ---
+  // Backbeat is almost always 4 and 12
+  const snareStyle = Math.random();
+  if (snareStyle < 0.6) {
+    // Standard backbeat
+    p.snare[4] = true;
+    p.snare[12] = true;
+  } else if (snareStyle < 0.85) {
+    // Backbeat with ghost notes
+    p.snare[4] = true;
+    p.snare[12] = true;
+    if (Math.random() < 0.5) p.snare[7] = true;
+    if (Math.random() < 0.4) p.snare[14] = true;
+  } else {
+    // Half-time (snare only on 8)
+    p.snare[8] = true;
+    if (Math.random() < 0.3) p.snare[14] = true;
+  }
+  
+  // --- HI-HAT ---
+  const hatStyle = Math.random();
+  if (hatStyle < 0.35) {
+    // Straight 8ths
+    for (let i = 0; i < 16; i += 2) p.hat[i] = true;
+  } else if (hatStyle < 0.65) {
+    // Straight 16ths
+    for (let i = 0; i < 16; i++) p.hat[i] = true;
+  } else if (hatStyle < 0.85) {
+    // Offbeat 8ths
+    for (let i = 2; i < 16; i += 4) p.hat[i] = true;
+    // Add some extras
+    for (let i = 0; i < 16; i++) {
+      if (!p.hat[i] && Math.random() < 0.2) p.hat[i] = true;
+    }
+  } else {
+    // Sparse / scattered
+    for (let i = 0; i < 16; i++) {
+      if (Math.random() < 0.35) p.hat[i] = true;
+    }
+  }
+  
+  // --- OPEN HAT ---
+  // Sparse - usually offbeats
+  const openHatCount = Math.floor(Math.random() * 3); // 0-2 hits
+  const openHatCandidates = [2, 6, 10, 14];
+  for (let i = 0; i < openHatCount; i++) {
+    const idx = openHatCandidates[Math.floor(Math.random() * openHatCandidates.length)];
+    p.openhat[idx] = true;
+    // Remove closed hat where open hat plays
+    p.hat[idx] = false;
+  }
+  
+  // --- CLAP ---
+  // Often layers with snare or adds accents
+  if (Math.random() < 0.6) {
+    // Layer with snare
+    for (let i = 0; i < 16; i++) {
+      if (p.snare[i]) p.clap[i] = Math.random() < 0.7;
+    }
+  }
+  if (Math.random() < 0.3) {
+    // Add a pickup clap
+    const pickups = [3, 7, 11, 15];
+    p.clap[pickups[Math.floor(Math.random() * pickups.length)]] = true;
+  }
+  
+  // --- RIM ---
+  // Sparse percussive accents
+  if (Math.random() < 0.5) {
+    for (let i = 0; i < 16; i++) {
+      if (!p.kick[i] && !p.snare[i] && Math.random() < 0.15) {
+        p.rim[i] = true;
+      }
+    }
+  }
+  
+  // --- TOM ---
+  // Very sparse - fills or accents
+  if (Math.random() < 0.3) {
+    const tomFillStart = Math.random() < 0.5 ? 12 : 14;
+    for (let i = tomFillStart; i < 16; i++) {
+      if (Math.random() < 0.5) p.tom[i] = true;
+    }
+  } else if (Math.random() < 0.2) {
+    // Single tom accent
+    const tomSpots = [3, 7, 11, 15];
+    p.tom[tomSpots[Math.floor(Math.random() * tomSpots.length)]] = true;
+  }
+  
+  updateUI();
+  if (window.firebaseLogEvent) window.firebaseLogEvent('randomize_pattern', { pattern: currentPattern });
+};
+
 // Share to X
 document.getElementById('shareX').onclick = () => {
   document.getElementById('shareXModal').style.display = 'flex';
