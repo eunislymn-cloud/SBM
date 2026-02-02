@@ -903,6 +903,17 @@ label {
   to { transform: rotate(360deg); }
 }
 
+/* Desktop only - square steps */
+@media (min-width: 1025px) {
+  .track-grid {
+    height: auto;
+  }
+  
+  .step {
+    aspect-ratio: 1;
+  }
+}
+
 @media (max-width: 1024px) {
   .track-grid {
     gap: 3px;
