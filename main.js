@@ -1836,6 +1836,18 @@ document.getElementById('importFile').onchange = (e) => {
       updateUI();
       applyPatternEffects(currentPattern);
       
+      // Update track volume sliders
+      trackConfig.forEach(track => {
+        const container = document.querySelector(`[data-track="${track.name}"]`);
+        if (container) {
+          const volumeSlider = container.querySelector('.volume-slider');
+          const volumeValue = container.querySelector('.volume-value');
+          const vol = Math.round((trackVolumes[track.name] || 0.8) * 100);
+          if (volumeSlider) volumeSlider.value = vol;
+          if (volumeValue) volumeValue.textContent = vol;
+        }
+      });
+      
       alert(`"${data.name || 'Beat'}" imported successfully!`);
       if (window.firebaseLogEvent) window.firebaseLogEvent('import_beat', { beat_name: data.name });
       
@@ -1926,6 +1938,18 @@ document.getElementById('savedBeats').onchange = () => {
   document.getElementById('beatName').value = name;
   updateUI();
   applyPatternEffects(currentPattern);
+  
+  // Update track volume sliders
+  trackConfig.forEach(track => {
+    const container = document.querySelector(`[data-track="${track.name}"]`);
+    if (container) {
+      const volumeSlider = container.querySelector('.volume-slider');
+      const volumeValue = container.querySelector('.volume-value');
+      const vol = Math.round((trackVolumes[track.name] || 0.8) * 100);
+      if (volumeSlider) volumeSlider.value = vol;
+      if (volumeValue) volumeValue.textContent = vol;
+    }
+  });
   
   // Reset dropdown to placeholder
   document.getElementById('savedBeats').value = '';
