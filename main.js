@@ -1665,6 +1665,39 @@ document.getElementById('randomize').onclick = () => {
   }
   
   updateUI();
+  
+  // --- SUBTLE SOUND VARIATIONS ---
+  // Randomize pitch slightly (-5 to +5 semitones)
+  trackConfig.forEach(track => {
+    const pitch = Math.floor(Math.random() * 11) - 5; // -5 to +5
+    patternPitch[currentPattern][track.name] = pitch;
+    patternPitchRatio[currentPattern][track.name] = Math.pow(2, pitch / 12);
+    
+    // Update UI
+    const container = document.querySelector(`[data-track="${track.name}"]`);
+    if (container) {
+      const pitchControl = container.querySelector('.pitch-control');
+      const pitchValue = container.querySelector('.pitch-value');
+      if (pitchControl) pitchControl.value = pitch;
+      if (pitchValue) pitchValue.textContent = pitch > 0 ? '+' + pitch : pitch;
+    }
+  });
+  
+  // Randomize decay slightly (70% to 130%)
+  trackConfig.forEach(track => {
+    const decay = Math.floor(Math.random() * 61) + 70; // 70 to 130
+    patternDecay[currentPattern][track.name] = decay;
+    
+    // Update UI
+    const container = document.querySelector(`[data-track="${track.name}"]`);
+    if (container) {
+      const decayControl = container.querySelector('.decay-control');
+      const decayValue = container.querySelector('.decay-value');
+      if (decayControl) decayControl.value = decay;
+      if (decayValue) decayValue.textContent = decay + '%';
+    }
+  });
+  
   if (window.firebaseLogEvent) window.firebaseLogEvent('randomize_pattern', { pattern: currentPattern });
 };
 
