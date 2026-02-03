@@ -1721,12 +1721,13 @@ document.getElementById('exportBeat').onclick = () => {
   const name = document.getElementById('beatName').value.trim() || 'Untitled';
   const data = { 
     name,
-    version: '1.2',
+    version: '1.3',
     bpm, 
     swing, 
     patterns, 
     trackVolumes, 
-    patternSequence, 
+    patternSequence,
+    sequencerEnabled,
     patternSounds,
     patternPitch,
     patternDecay,
@@ -1774,6 +1775,16 @@ document.getElementById('importFile').onchange = (e) => {
         document.querySelectorAll('.pattern-select').forEach((select, i) => {
           select.value = patternSequence[i] || '';
         });
+      }
+      
+      // Load sequencer enabled state (v1.3)
+      if (data.sequencerEnabled !== undefined) {
+        sequencerEnabled = data.sequencerEnabled;
+        const seqToggle = document.querySelector('.seq-toggle');
+        if (seqToggle) {
+          seqToggle.classList.toggle('active', sequencerEnabled);
+          seqToggle.textContent = sequencerEnabled ? 'Chain: ON' : 'Chain: OFF';
+        }
       }
       
       // Load per-pattern sounds (v1.1 format)
@@ -1878,6 +1889,16 @@ document.getElementById('savedBeats').onchange = () => {
     document.querySelectorAll('.pattern-select').forEach((select, i) => {
       select.value = patternSequence[i] || '';
     });
+  }
+  
+  // Load sequencer enabled state
+  if (data.sequencerEnabled !== undefined) {
+    sequencerEnabled = data.sequencerEnabled;
+    const seqToggle = document.querySelector('.seq-toggle');
+    if (seqToggle) {
+      seqToggle.classList.toggle('active', sequencerEnabled);
+      seqToggle.textContent = sequencerEnabled ? 'Chain: ON' : 'Chain: OFF';
+    }
   }
   
   // Load per-pattern sounds (new format)
