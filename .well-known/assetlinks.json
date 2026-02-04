@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.mpseeker.twa",
+        "sha256_cert_fingerprints": ["C7:1E:E1:74:CC:13:9D:A3:34:E4:9A:5A:01:E9:24:98:DB:20:2A:8A:17:AF:66:27:43:5C:2C:34:9B:F3:DF:29"]
+      }
+    }]
