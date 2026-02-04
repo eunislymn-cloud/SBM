@@ -1754,9 +1754,10 @@ document.getElementById('exportBeat').onclick = () => {
   const name = document.getElementById('beatName').value.trim() || 'Untitled';
   const data = { 
     name,
-    version: '1.3',
+    version: '1.4',
     bpm, 
-    swing, 
+    swing,
+    steps,
     patterns, 
     trackVolumes, 
     patternSequence,
@@ -1800,6 +1801,17 @@ document.getElementById('importFile').onchange = (e) => {
       // Load the beat data
       bpm = data.bpm || 120;
       swing = data.swing || 0;
+      
+      // Load steps (v1.4 format)
+      if (data.steps) {
+        steps = data.steps;
+        const patternLengthSelect = document.getElementById('patternLength');
+        if (patternLengthSelect) {
+          patternLengthSelect.value = steps;
+        }
+        rebuildGrid();
+      }
+      
       Object.assign(patterns, data.patterns);
       Object.assign(trackVolumes, data.trackVolumes || {});
       
