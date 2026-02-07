@@ -564,7 +564,7 @@ let dragTrack = null;
 // Burst menu system
 let activeBurstMenu = null;
 let longPressTimer = null;
-const LONG_PRESS_MS = 400;
+const LONG_PRESS_MS = 200;
 
 function createBurstMenu() {
   const menu = document.createElement('div');
@@ -701,6 +701,8 @@ document.addEventListener('mouseup', () => {
 });
 
 // Touch support for mobile with long-press burst
+let longPressStep = null;
+
 document.addEventListener('touchstart', (e) => {
   const step = e.target.closest('.step');
   if (!step || e.target.closest('.burst-menu')) return;
@@ -711,7 +713,20 @@ document.addEventListener('touchstart', (e) => {
   const track = step.dataset.track;
   const index = parseInt(step.dataset.index);
   
-  // Normal tap toggle FIRST
+  // Store step for potential long-press
+  longPressStep = step;
+  
+  // Start long-press timer
+  longPressTimer = setTimeout(() => {
+    // Check if step is active when timer fires
+    if (longPressStep && patterns[currentPattern][track][index]) {
+      showBurstMenu(longPressStep);
+    }
+    longPressTimer = null;
+    longPressStep = null;
+  }, LONG_PRESS_MS);
+  
+  // Normal tap toggle
   isDragging = true;
   dragTrack = track;
   patterns[currentPattern][dragTrack][index] = !patterns[currentPattern][dragTrack][index];
@@ -724,14 +739,6 @@ document.addEventListener('touchstart', (e) => {
   } else {
     applyBurstVisual(step, patternBurst[currentPattern][dragTrack][index] || 1);
   }
-  
-  // NOW check if it's active (after the toggle) for burst menu
-  if (patterns[currentPattern][track][index]) {
-    longPressTimer = setTimeout(() => {
-      showBurstMenu(step);
-      longPressTimer = null;
-    }, LONG_PRESS_MS);
-  }
 }, { passive: false });
 
 document.addEventListener('touchmove', (e) => {
@@ -739,6 +746,7 @@ document.addEventListener('touchmove', (e) => {
   if (longPressTimer) {
     clearTimeout(longPressTimer);
     longPressTimer = null;
+    longPressStep = null;
   }
   
   if (!isDragging || dragTrack === null) return;
@@ -764,6 +772,7 @@ document.addEventListener('touchend', () => {
     clearTimeout(longPressTimer);
     longPressTimer = null;
   }
+  longPressStep = null;
   isDragging = false;
   dragFillState = null;
   dragTrack = null;
