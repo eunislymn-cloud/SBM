@@ -711,19 +711,7 @@ document.addEventListener('touchstart', (e) => {
   const track = step.dataset.track;
   const index = parseInt(step.dataset.index);
   
-  console.log('Touch start on step', index, 'track', track, 'active:', step.classList.contains('active'));
-  
-  // Only show burst menu on ALREADY ACTIVE steps
-  if (patterns[currentPattern][track][index] && step.classList.contains('active')) {
-    console.log('Starting long-press timer for step', index);
-    longPressTimer = setTimeout(() => {
-      console.log('Long-press timer fired! Showing burst menu');
-      showBurstMenu(step);
-      longPressTimer = null;
-    }, LONG_PRESS_MS);
-  }
-  
-  // Normal tap toggle
+  // Normal tap toggle FIRST
   isDragging = true;
   dragTrack = track;
   patterns[currentPattern][dragTrack][index] = !patterns[currentPattern][dragTrack][index];
@@ -736,12 +724,19 @@ document.addEventListener('touchstart', (e) => {
   } else {
     applyBurstVisual(step, patternBurst[currentPattern][dragTrack][index] || 1);
   }
+  
+  // NOW check if it's active (after the toggle) for burst menu
+  if (patterns[currentPattern][track][index]) {
+    longPressTimer = setTimeout(() => {
+      showBurstMenu(step);
+      longPressTimer = null;
+    }, LONG_PRESS_MS);
+  }
 }, { passive: false });
 
 document.addEventListener('touchmove', (e) => {
   // Cancel long press timer on any movement
   if (longPressTimer) {
-    console.log('Touch move - cancelling long-press timer');
     clearTimeout(longPressTimer);
     longPressTimer = null;
   }
