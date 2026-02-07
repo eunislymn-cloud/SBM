@@ -714,12 +714,16 @@ document.addEventListener('touchstart', (e) => {
   // Start long-press timer for burst menu (only on active steps)
   if (patterns[currentPattern][track][index]) {
     longPressTimer = setTimeout(() => {
-      longPressTimer = null;
+      // Long-press detected - show menu and prevent normal behavior
       showBurstMenu(step);
+      longPressTimer = null;
+      isDragging = false; // Prevent drag from starting
+      dragTrack = null;
+      return;
     }, LONG_PRESS_MS);
   }
   
-  // Normal tap toggle
+  // Normal tap toggle (will be cancelled if long-press triggers)
   isDragging = true;
   dragTrack = track;
   patterns[currentPattern][dragTrack][index] = !patterns[currentPattern][dragTrack][index];
@@ -735,7 +739,7 @@ document.addEventListener('touchstart', (e) => {
 }, { passive: false });
 
 document.addEventListener('touchmove', (e) => {
-  // Cancel long press on move
+  // Cancel long press timer on any movement
   if (longPressTimer) {
     clearTimeout(longPressTimer);
     longPressTimer = null;
@@ -759,6 +763,7 @@ document.addEventListener('touchmove', (e) => {
 }, { passive: false });
 
 document.addEventListener('touchend', () => {
+  // Clean up
   if (longPressTimer) {
     clearTimeout(longPressTimer);
     longPressTimer = null;
