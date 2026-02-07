@@ -1,3 +1,123 @@
+// Inject Burst/Ratchet CSS
+(function() {
+  const burstCSS = document.createElement('style');
+  burstCSS.textContent = `
+    /* Burst step colors */
+    .step.active.burst-2 {
+      background: linear-gradient(135deg, #14F195, #0BC076) !important;
+      border-color: #14F195 !important;
+      box-shadow: 0 0 6px rgba(20, 241, 149, 0.4);
+    }
+    .step.active.burst-3 {
+      background: linear-gradient(135deg, #FFD700, #FFA500) !important;
+      border-color: #FFD700 !important;
+      box-shadow: 0 0 6px rgba(255, 215, 0, 0.4);
+    }
+    .step.active.burst-4 {
+      background: linear-gradient(135deg, #FF4444, #CC2222) !important;
+      border-color: #FF4444 !important;
+      box-shadow: 0 0 6px rgba(255, 68, 68, 0.4);
+    }
+    .step.active.burst-6 {
+      background: linear-gradient(135deg, #FF44FF, #CC22CC) !important;
+      border-color: #FF44FF !important;
+      box-shadow: 0 0 6px rgba(255, 68, 255, 0.4);
+    }
+    .step.active.burst-8 {
+      background: linear-gradient(135deg, #44FFFF, #22CCCC) !important;
+      border-color: #44FFFF !important;
+      box-shadow: 0 0 6px rgba(68, 255, 255, 0.4);
+    }
+    
+    /* Burst badge (number on step) */
+    .burst-badge {
+      position: absolute;
+      top: 1px;
+      right: 1px;
+      font-size: 7px;
+      font-weight: 800;
+      font-family: 'Orbitron', system-ui, sans-serif;
+      line-height: 1;
+      pointer-events: none;
+      color: rgba(0,0,0,0.7);
+    }
+    .step.active.burst-4 .burst-badge,
+    .step.active.burst-6 .burst-badge {
+      color: rgba(255,255,255,0.8);
+    }
+    .step.active.burst-8 .burst-badge {
+      color: rgba(0,0,0,0.7);
+    }
+    
+    /* Burst popup menu */
+    .burst-menu {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%) scale(0.8);
+      background: #1a1a2e;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 4px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: row;
+      gap: 3px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+      opacity: 0;
+      transition: opacity 0.12s, transform 0.12s;
+      pointer-events: none;
+    }
+    .burst-menu.show {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+      pointer-events: auto;
+    }
+    .burst-menu-arrow {
+      position: absolute;
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%) rotate(45deg);
+      width: 8px;
+      height: 8px;
+      background: #1a1a2e;
+      border-right: 1px solid #444;
+      border-bottom: 1px solid #444;
+    }
+    .burst-option {
+      width: 28px;
+      height: 28px;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Orbitron', system-ui, sans-serif;
+      font-size: 8px;
+      font-weight: 800;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      transition: transform 0.1s;
+    }
+    .burst-option:hover, .burst-option:active {
+      transform: scale(1.15);
+    }
+    .burst-option.selected {
+      outline: 2px solid #fff;
+      outline-offset: 1px;
+    }
+    .burst-opt-1 { background: #9945FF33; color: #9945FF; border-color: #9945FF; }
+    .burst-opt-2 { background: #14F19533; color: #14F195; border-color: #14F195; }
+    .burst-opt-3 { background: #FFD70033; color: #FFD700; border-color: #FFD700; }
+    .burst-opt-4 { background: #FF444433; color: #FF4444; border-color: #FF4444; }
+    .burst-opt-6 { background: #FF44FF33; color: #FF44FF; border-color: #FF44FF; }
+    .burst-opt-8 { background: #44FFFF33; color: #44FFFF; border-color: #44FFFF; }
+    
+    /* Ensure steps have position for burst menu anchoring */
+    .step { position: relative; }
+  `;
+  document.head.appendChild(burstCSS);
+})();
+
 // Audio Context
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const masterGain = audioCtx.createGain();
@@ -144,6 +264,18 @@ const patternEffects = {
   C: { reverb: 0, delayMix: 0, delayTime: 250, filter: 20000, gain: 0 }
 };
 
+// Per-pattern burst/ratchet data (1 = normal, 2/3/4/6/8 = subdivisions)
+const patternBurst = { A: {}, B: {}, C: {} };
+const BURST_OPTIONS = [1, 2, 3, 4, 6, 8];
+const BURST_COLORS = {
+  1: '',           // normal purple (default)
+  2: 'burst-2',    // green
+  3: 'burst-3',    // gold
+  4: 'burst-4',    // red
+  6: 'burst-6',    // pink
+  8: 'burst-8'     // cyan
+};
+
 // Legacy references for backwards compatibility
 const trackSounds = patternSounds.A;
 const trackPitch = patternPitch.A;
@@ -215,6 +347,9 @@ trackConfig.forEach(t => {
   patterns.A[t.name] = Array(steps).fill(false);
   patterns.B[t.name] = Array(steps).fill(false);
   patterns.C[t.name] = Array(steps).fill(false);
+  patternBurst.A[t.name] = Array(steps).fill(1);
+  patternBurst.B[t.name] = Array(steps).fill(1);
+  patternBurst.C[t.name] = Array(steps).fill(1);
   trackVolumes[t.name] = 0.8;
 });
 
@@ -426,10 +561,104 @@ let isDragging = false;
 let dragFillState = null; // true = filling, false = clearing
 let dragTrack = null;
 
-document.addEventListener('mousedown', (e) => {
+// Burst menu system
+let activeBurstMenu = null;
+let longPressTimer = null;
+const LONG_PRESS_MS = 400;
+
+function createBurstMenu() {
+  const menu = document.createElement('div');
+  menu.className = 'burst-menu';
+  menu.innerHTML = BURST_OPTIONS.map(val => 
+    `<div class="burst-option burst-opt-${val}" data-burst="${val}">${val}x</div>`
+  ).join('') + '<div class="burst-menu-arrow"></div>';
+  return menu;
+}
+
+function showBurstMenu(stepEl) {
+  closeBurstMenu();
+  const track = stepEl.dataset.track;
+  const index = parseInt(stepEl.dataset.index);
+  
+  // Only show on active steps
+  if (!patterns[currentPattern][track][index]) return;
+  
+  const menu = createBurstMenu();
+  const currentBurst = patternBurst[currentPattern][track][index] || 1;
+  
+  // Highlight current selection
+  const currentOpt = menu.querySelector(`[data-burst="${currentBurst}"]`);
+  if (currentOpt) currentOpt.classList.add('selected');
+  
+  menu.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const opt = e.target.closest('.burst-option');
+    if (!opt) return;
+    const val = parseInt(opt.dataset.burst);
+    patternBurst[currentPattern][track][index] = val;
+    applyBurstVisual(stepEl, val);
+    closeBurstMenu();
+  });
+  
+  // Prevent menu clicks from toggling steps
+  menu.addEventListener('mousedown', e => e.stopPropagation());
+  menu.addEventListener('touchstart', e => e.stopPropagation());
+  
+  stepEl.style.position = 'relative';
+  stepEl.appendChild(menu);
+  
+  // Animate in
+  requestAnimationFrame(() => menu.classList.add('show'));
+  activeBurstMenu = { menu, stepEl };
+}
+
+function closeBurstMenu() {
+  if (activeBurstMenu) {
+    activeBurstMenu.menu.remove();
+    activeBurstMenu = null;
+  }
+}
+
+function applyBurstVisual(stepEl, burstVal) {
+  // Remove all burst classes
+  stepEl.classList.remove('burst-2', 'burst-3', 'burst-4', 'burst-6', 'burst-8');
+  // Remove old badge
+  const oldBadge = stepEl.querySelector('.burst-badge');
+  if (oldBadge) oldBadge.remove();
+  
+  if (burstVal > 1) {
+    stepEl.classList.add(BURST_COLORS[burstVal]);
+    const badge = document.createElement('span');
+    badge.className = 'burst-badge';
+    badge.textContent = burstVal + 'x';
+    stepEl.appendChild(badge);
+  }
+}
+
+// Right-click to open burst menu (desktop)
+document.addEventListener('contextmenu', (e) => {
   const step = e.target.closest('.step');
   if (step) {
     e.preventDefault();
+    showBurstMenu(step);
+  }
+});
+
+// Close burst menu on outside click
+document.addEventListener('click', (e) => {
+  if (activeBurstMenu && !e.target.closest('.burst-menu') && !e.target.closest('.burst-option')) {
+    closeBurstMenu();
+  }
+});
+
+document.addEventListener('mousedown', (e) => {
+  // Ignore right-clicks for drag
+  if (e.button === 2) return;
+  
+  const step = e.target.closest('.step');
+  if (step && !e.target.closest('.burst-menu')) {
+    e.preventDefault();
+    closeBurstMenu();
     isDragging = true;
     dragTrack = step.dataset.track;
     const index = parseInt(step.dataset.index);
@@ -438,6 +667,15 @@ document.addEventListener('mousedown', (e) => {
     patterns[currentPattern][dragTrack][index] = !patterns[currentPattern][dragTrack][index];
     dragFillState = patterns[currentPattern][dragTrack][index];
     step.classList.toggle('active', dragFillState);
+    
+    // Reset burst when turning step off
+    if (!dragFillState) {
+      patternBurst[currentPattern][dragTrack][index] = 1;
+      applyBurstVisual(step, 1);
+    } else {
+      // Apply existing burst visual when activating
+      applyBurstVisual(step, patternBurst[currentPattern][dragTrack][index] || 1);
+    }
   }
 });
 
@@ -449,6 +687,10 @@ document.addEventListener('mousemove', (e) => {
     const index = parseInt(step.dataset.index);
     patterns[currentPattern][dragTrack][index] = dragFillState;
     step.classList.toggle('active', dragFillState);
+    if (!dragFillState) {
+      patternBurst[currentPattern][dragTrack][index] = 1;
+      applyBurstVisual(step, 1);
+    }
   }
 });
 
@@ -458,22 +700,47 @@ document.addEventListener('mouseup', () => {
   dragTrack = null;
 });
 
-// Touch support for mobile
+// Touch support for mobile with long-press burst
 document.addEventListener('touchstart', (e) => {
   const step = e.target.closest('.step');
-  if (step) {
-    e.preventDefault();
-    isDragging = true;
-    dragTrack = step.dataset.track;
-    const index = parseInt(step.dataset.index);
-    
-    patterns[currentPattern][dragTrack][index] = !patterns[currentPattern][dragTrack][index];
-    dragFillState = patterns[currentPattern][dragTrack][index];
-    step.classList.toggle('active', dragFillState);
+  if (!step || e.target.closest('.burst-menu')) return;
+  
+  e.preventDefault();
+  closeBurstMenu();
+  
+  const track = step.dataset.track;
+  const index = parseInt(step.dataset.index);
+  
+  // Start long-press timer for burst menu (only on active steps)
+  if (patterns[currentPattern][track][index]) {
+    longPressTimer = setTimeout(() => {
+      longPressTimer = null;
+      showBurstMenu(step);
+    }, LONG_PRESS_MS);
+  }
+  
+  // Normal tap toggle
+  isDragging = true;
+  dragTrack = track;
+  patterns[currentPattern][dragTrack][index] = !patterns[currentPattern][dragTrack][index];
+  dragFillState = patterns[currentPattern][dragTrack][index];
+  step.classList.toggle('active', dragFillState);
+  
+  if (!dragFillState) {
+    patternBurst[currentPattern][dragTrack][index] = 1;
+    applyBurstVisual(step, 1);
+  } else {
+    applyBurstVisual(step, patternBurst[currentPattern][dragTrack][index] || 1);
   }
 }, { passive: false });
 
 document.addEventListener('touchmove', (e) => {
+  // Cancel long press on move
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+  
   if (!isDragging || dragTrack === null) return;
   
   const touch = e.touches[0];
@@ -484,10 +751,18 @@ document.addEventListener('touchmove', (e) => {
     const index = parseInt(step.dataset.index);
     patterns[currentPattern][dragTrack][index] = dragFillState;
     step.classList.toggle('active', dragFillState);
+    if (!dragFillState) {
+      patternBurst[currentPattern][dragTrack][index] = 1;
+      applyBurstVisual(step, 1);
+    }
   }
 }, { passive: false });
 
 document.addEventListener('touchend', () => {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
   isDragging = false;
   dragFillState = null;
   dragTrack = null;
@@ -1050,13 +1325,29 @@ function tick(scheduledTime) {
     }
   }
   
+  // Calculate step duration for burst subdivision timing
+  const stepDuration = 60 / bpm / 4;
+  
   // Schedule audio first (time-critical) - use precise scheduled time
   const anySoloed = Object.values(trackSoloed).some(s => s);
   trackConfig.forEach(track => {
     // Skip muted tracks, or non-soloed tracks when any solo is active
     if (trackMuted[track.name]) return;
     if (anySoloed && !trackSoloed[track.name]) return;
-    if (patterns[activePattern][track.name][currentStep]) playSound(track.name, activePattern, scheduledTime);
+    if (patterns[activePattern][track.name][currentStep]) {
+      const burstCount = (patternBurst[activePattern] && patternBurst[activePattern][track.name] && patternBurst[activePattern][track.name][currentStep]) || 1;
+      
+      if (burstCount <= 1) {
+        // Normal single hit
+        playSound(track.name, activePattern, scheduledTime);
+      } else {
+        // Burst: subdivide the step into multiple rapid-fire triggers
+        const subInterval = stepDuration / burstCount;
+        for (let b = 0; b < burstCount; b++) {
+          playSound(track.name, activePattern, scheduledTime + (b * subInterval));
+        }
+      }
+    }
   });
   
   // Defer UI updates to next animation frame (non-blocking)
@@ -1076,6 +1367,9 @@ function tick(scheduledTime) {
           const stepEls = container.querySelectorAll('.step');
           stepEls.forEach((el, i) => {
             el.classList.toggle('active', patterns[patternSnapshot][track.name][i]);
+            // Update burst visuals on pattern switch
+            const burstVal = (patternBurst[patternSnapshot][track.name] && patternBurst[patternSnapshot][track.name][i]) || 1;
+            applyBurstVisual(el, patterns[patternSnapshot][track.name][i] ? burstVal : 1);
           });
         });
         
@@ -1166,6 +1460,9 @@ function stop() {
       const stepEls = container.querySelectorAll('.step');
       stepEls.forEach((step, i) => {
         step.classList.toggle('active', patterns[currentPattern][track.name][i]);
+        // Restore burst visuals
+        const burstVal = (patternBurst[currentPattern][track.name] && patternBurst[currentPattern][track.name][i]) || 1;
+        applyBurstVisual(step, patterns[currentPattern][track.name][i] ? burstVal : 1);
       });
     });
   });
@@ -1186,9 +1483,10 @@ let copiedPattern = null;
 
 document.getElementById('copyPattern').onclick = () => {
   // Deep copy the current pattern
-  copiedPattern = { steps: {}, effects: { ...patternEffects[currentPattern] } };
+  copiedPattern = { steps: {}, effects: { ...patternEffects[currentPattern] }, burst: {} };
   trackConfig.forEach(track => {
     copiedPattern.steps[track.name] = [...patterns[currentPattern][track.name]];
+    copiedPattern.burst[track.name] = [...(patternBurst[currentPattern][track.name] || Array(steps).fill(1))];
   });
   
   // Enable paste button and update UI
@@ -1240,6 +1538,9 @@ document.querySelectorAll('.paste-option').forEach(btn => {
       otherPatterns.forEach(targetPattern => {
         trackConfig.forEach(track => {
           patterns[targetPattern][track.name] = [...copiedPattern.steps[track.name]];
+          if (copiedPattern.burst && copiedPattern.burst[track.name]) {
+            patternBurst[targetPattern][track.name] = [...copiedPattern.burst[track.name]];
+          }
         });
         if (copiedPattern.effects) {
           Object.assign(patternEffects[targetPattern], copiedPattern.effects);
@@ -1249,6 +1550,9 @@ document.querySelectorAll('.paste-option').forEach(btn => {
       // Paste to specific pattern
       trackConfig.forEach(track => {
         patterns[target][track.name] = [...copiedPattern.steps[track.name]];
+        if (copiedPattern.burst && copiedPattern.burst[track.name]) {
+          patternBurst[target][track.name] = [...copiedPattern.burst[track.name]];
+        }
       });
       if (copiedPattern.effects) {
         Object.assign(patternEffects[target], copiedPattern.effects);
@@ -1272,6 +1576,9 @@ function updateUI() {
     const stepEls = container.querySelectorAll('.step');
     stepEls.forEach((el, i) => {
       el.classList.toggle('active', patterns[currentPattern][track.name][i]);
+      // Update burst visuals
+      const burstVal = (patternBurst[currentPattern][track.name] && patternBurst[currentPattern][track.name][i]) || 1;
+      applyBurstVisual(el, patterns[currentPattern][track.name][i] ? burstVal : 1);
     });
     
     // Update sound selection display
@@ -1468,6 +1775,13 @@ function rebuildGrid() {
       while (patterns[patternKey][track.name].length < 16) {
         patterns[patternKey][track.name].push(false);
       }
+      // Ensure burst arrays exist and are correct length
+      if (!patternBurst[patternKey][track.name]) {
+        patternBurst[patternKey][track.name] = new Array(16).fill(1);
+      }
+      while (patternBurst[patternKey][track.name].length < 16) {
+        patternBurst[patternKey][track.name].push(1);
+      }
     });
     
     for (let i = 0; i < steps; i++) {
@@ -1477,6 +1791,15 @@ function rebuildGrid() {
       step.dataset.track = track.name;
       if (patterns[currentPattern][track.name][i]) {
         step.classList.add('active');
+        // Apply burst visual
+        const burstVal = patternBurst[currentPattern][track.name][i] || 1;
+        if (burstVal > 1) {
+          step.classList.add(BURST_COLORS[burstVal]);
+          const badge = document.createElement('span');
+          badge.className = 'burst-badge';
+          badge.textContent = burstVal + 'x';
+          step.appendChild(badge);
+        }
       }
       grid.appendChild(step);
     }
@@ -1539,7 +1862,10 @@ document.getElementById('gain').oninput = e => {
 
 document.getElementById('clear').onclick = () => {
   if (confirm('Clear current pattern?')) {
-    trackConfig.forEach(t => patterns[currentPattern][t.name].fill(false));
+    trackConfig.forEach(t => {
+      patterns[currentPattern][t.name].fill(false);
+      if (patternBurst[currentPattern][t.name]) patternBurst[currentPattern][t.name].fill(1);
+    });
     updateUI();
   }
 };
@@ -1548,8 +1874,11 @@ document.getElementById('clear').onclick = () => {
 document.getElementById('randomize').onclick = () => {
   const p = patterns[currentPattern];
   
-  // Clear first
-  trackConfig.forEach(t => p[t.name].fill(false));
+  // Clear first (including bursts)
+  trackConfig.forEach(t => {
+    p[t.name].fill(false);
+    if (patternBurst[currentPattern][t.name]) patternBurst[currentPattern][t.name].fill(1);
+  });
   
   // --- KICK ---
   // Pick a kick style
@@ -1698,6 +2027,26 @@ document.getElementById('randomize').onclick = () => {
     }
   });
   
+  // Randomly add some bursts (30% chance per active step, favor hi-hats/snare fills)
+  trackConfig.forEach(track => {
+    for (let i = 0; i < 16; i++) {
+      if (!p[track.name][i]) continue;
+      
+      let burstChance = 0.08; // 8% base chance
+      // Hi-hats get more bursts
+      if (track.name === 'hat' || track.name === 'openhat') burstChance = 0.15;
+      // Snare fills at end of pattern
+      if (track.name === 'snare' && i >= 12) burstChance = 0.25;
+      // Toms/clap at end
+      if ((track.name === 'tom' || track.name === 'clap') && i >= 14) burstChance = 0.2;
+      
+      if (Math.random() < burstChance) {
+        const burstOptions = [2, 2, 3, 3, 4, 4, 6, 8]; // weighted toward 2x-4x
+        patternBurst[currentPattern][track.name][i] = burstOptions[Math.floor(Math.random() * burstOptions.length)];
+      }
+    }
+  });
+  
   if (window.firebaseLogEvent) window.firebaseLogEvent('randomize_pattern', { pattern: currentPattern });
 };
 
@@ -1740,7 +2089,7 @@ function updateBeatDropdown() {
 document.getElementById('save').onclick = () => {
   const name = document.getElementById('beatName').value.trim();
   if (!name) return alert('Enter a beat name.');
-  const data = { bpm, swing, patterns, trackVolumes, patternSequence, patternSounds, patternPitch, patternDecay };
+  const data = { bpm, swing, patterns, trackVolumes, patternSequence, patternSounds, patternPitch, patternDecay, patternBurst };
   const library = JSON.parse(localStorage.getItem('beatLibrary') || '{}');
   library[name] = data;
   localStorage.setItem('beatLibrary', JSON.stringify(library));
@@ -1754,7 +2103,7 @@ document.getElementById('exportBeat').onclick = () => {
   const name = document.getElementById('beatName').value.trim() || 'Untitled';
   const data = { 
     name,
-    version: '1.4',
+    version: '1.5',
     bpm, 
     swing,
     steps,
@@ -1766,6 +2115,7 @@ document.getElementById('exportBeat').onclick = () => {
     patternPitch,
     patternDecay,
     patternEffects,
+    patternBurst,
     exportedAt: new Date().toISOString()
   };
   
@@ -1881,6 +2231,24 @@ document.getElementById('importFile').onchange = (e) => {
       if (data.patternEffects) {
         Object.keys(data.patternEffects).forEach(pattern => {
           Object.assign(patternEffects[pattern], data.patternEffects[pattern]);
+        });
+      }
+      
+      // Load per-pattern burst data (v1.5 format)
+      if (data.patternBurst) {
+        Object.keys(data.patternBurst).forEach(pattern => {
+          if (patternBurst[pattern]) {
+            Object.keys(data.patternBurst[pattern]).forEach(track => {
+              patternBurst[pattern][track] = [...data.patternBurst[pattern][track]];
+            });
+          }
+        });
+      } else {
+        // No burst data - initialize all to 1x
+        ['A', 'B', 'C'].forEach(pattern => {
+          trackConfig.forEach(track => {
+            patternBurst[pattern][track.name] = Array(steps).fill(1);
+          });
         });
       }
       
@@ -2104,7 +2472,16 @@ document.querySelectorAll('.export-option').forEach(btn => {
             // Play each track
             trackConfig.forEach(track => {
               if (pattern[track.name] && pattern[track.name][step]) {
-                renderSoundOffline(offlineCtx, offlineMaster, track.name, stepTime, trackVolumes[track.name]);
+                const burstCount = (patternBurst[patternKey] && patternBurst[patternKey][track.name] && patternBurst[patternKey][track.name][step]) || 1;
+                
+                if (burstCount <= 1) {
+                  renderSoundOffline(offlineCtx, offlineMaster, track.name, stepTime, trackVolumes[track.name]);
+                } else {
+                  const subInterval = secondsPerBeat / burstCount;
+                  for (let b = 0; b < burstCount; b++) {
+                    renderSoundOffline(offlineCtx, offlineMaster, track.name, stepTime + (b * subInterval), trackVolumes[track.name]);
+                  }
+                }
               }
             });
           }
