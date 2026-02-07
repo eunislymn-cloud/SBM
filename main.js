@@ -711,9 +711,13 @@ document.addEventListener('touchstart', (e) => {
   const track = step.dataset.track;
   const index = parseInt(step.dataset.index);
   
+  console.log('Touch start on step', index, 'track', track, 'active:', step.classList.contains('active'));
+  
   // Only show burst menu on ALREADY ACTIVE steps
   if (patterns[currentPattern][track][index] && step.classList.contains('active')) {
+    console.log('Starting long-press timer for step', index);
     longPressTimer = setTimeout(() => {
+      console.log('Long-press timer fired! Showing burst menu');
       showBurstMenu(step);
       longPressTimer = null;
     }, LONG_PRESS_MS);
@@ -737,6 +741,7 @@ document.addEventListener('touchstart', (e) => {
 document.addEventListener('touchmove', (e) => {
   // Cancel long press timer on any movement
   if (longPressTimer) {
+    console.log('Touch move - cancelling long-press timer');
     clearTimeout(longPressTimer);
     longPressTimer = null;
   }
