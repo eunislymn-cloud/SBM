@@ -701,6 +701,9 @@ document.addEventListener('mouseup', () => {
 });
 
 // Touch support for mobile with long-press burst
+let touchStarted = false;
+let normalTapTimer = null;
+
 document.addEventListener('touchstart', (e) => {
   const step = e.target.closest('.step');
   if (!step || e.target.closest('.burst-menu')) return;
@@ -710,36 +713,48 @@ document.addEventListener('touchstart', (e) => {
   
   const track = step.dataset.track;
   const index = parseInt(step.dataset.index);
+  touchStarted = true;
   
   // Start long-press timer for burst menu (only on active steps)
   if (patterns[currentPattern][track][index]) {
     longPressTimer = setTimeout(() => {
       longPressTimer = null;
+      touchStarted = false; // Prevent normal tap
       showBurstMenu(step);
     }, LONG_PRESS_MS);
   }
   
-  // Normal tap toggle
-  isDragging = true;
-  dragTrack = track;
-  patterns[currentPattern][dragTrack][index] = !patterns[currentPattern][dragTrack][index];
-  dragFillState = patterns[currentPattern][dragTrack][index];
-  step.classList.toggle('active', dragFillState);
-  
-  if (!dragFillState) {
-    patternBurst[currentPattern][dragTrack][index] = 1;
-    applyBurstVisual(step, 1);
-  } else {
-    applyBurstVisual(step, patternBurst[currentPattern][dragTrack][index] || 1);
-  }
+  // Delay normal tap behavior to allow long-press
+  normalTapTimer = setTimeout(() => {
+    if (!touchStarted) return; // Long-press happened
+    
+    // Normal tap toggle
+    isDragging = true;
+    dragTrack = track;
+    patterns[currentPattern][dragTrack][index] = !patterns[currentPattern][dragTrack][index];
+    dragFillState = patterns[currentPattern][dragTrack][index];
+    step.classList.toggle('active', dragFillState);
+    
+    if (!dragFillState) {
+      patternBurst[currentPattern][dragTrack][index] = 1;
+      applyBurstVisual(step, 1);
+    } else {
+      applyBurstVisual(step, patternBurst[currentPattern][dragTrack][index] || 1);
+    }
+  }, 50); // Small delay to let long-press trigger first
 }, { passive: false });
 
 document.addEventListener('touchmove', (e) => {
-  // Cancel long press on move
+  // Cancel both timers on move
   if (longPressTimer) {
     clearTimeout(longPressTimer);
     longPressTimer = null;
   }
+  if (normalTapTimer) {
+    clearTimeout(normalTapTimer);
+    normalTapTimer = null;
+  }
+  touchStarted = false;
   
   if (!isDragging || dragTrack === null) return;
   
@@ -759,10 +774,17 @@ document.addEventListener('touchmove', (e) => {
 }, { passive: false });
 
 document.addEventListener('touchend', () => {
+  // Clean up timers
   if (longPressTimer) {
     clearTimeout(longPressTimer);
     longPressTimer = null;
   }
+  if (normalTapTimer) {
+    clearTimeout(normalTapTimer);
+    normalTapTimer = null;
+  }
+  touchStarted = false;
+  
   isDragging = false;
   dragFillState = null;
   dragTrack = null;
