@@ -1669,6 +1669,24 @@ document.getElementById('stop').onclick = () => {
   if (window.firebaseLogEvent) window.firebaseLogEvent('stop_beat');
 };
 
+// Spacebar play/stop for desktop
+document.addEventListener('keydown', (e) => {
+  // Only trigger if not typing in an input field
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  
+  if (e.code === 'Space') {
+    e.preventDefault(); // Prevent page scroll
+    if (isPlaying) {
+      stop();
+      if (window.firebaseLogEvent) window.firebaseLogEvent('spacebar_stop');
+    } else {
+      audioCtx.resume();
+      start();
+      if (window.firebaseLogEvent) window.firebaseLogEvent('spacebar_play', { bpm: bpm });
+    }
+  }
+});
+
 document.getElementById('bpm').oninput = e => {
   bpm = parseInt(e.target.value);
   document.getElementById('bpmValue').textContent = bpm;
