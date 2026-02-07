@@ -700,8 +700,10 @@ document.addEventListener('mouseup', () => {
   dragTrack = null;
 });
 
-// Touch support for mobile with long-press burst
-let longPressStep = null;
+// Touch support for mobile with double-tap burst
+let lastTapTime = 0;
+let lastTappedStep = null;
+const DOUBLE_TAP_MS = 300;
 
 document.addEventListener('touchstart', (e) => {
   const step = e.target.closest('.step');
@@ -712,19 +714,21 @@ document.addEventListener('touchstart', (e) => {
   
   const track = step.dataset.track;
   const index = parseInt(step.dataset.index);
+  const now = Date.now();
   
-  // Store step for potential long-press
-  longPressStep = step;
-  
-  // Start long-press timer
-  longPressTimer = setTimeout(() => {
-    // Check if step is active when timer fires
-    if (longPressStep && patterns[currentPattern][track][index]) {
-      showBurstMenu(longPressStep);
+  // Check for double-tap on same step
+  if (lastTappedStep === step && (now - lastTapTime) < DOUBLE_TAP_MS) {
+    // Double-tap detected! Show burst menu if step is active
+    if (patterns[currentPattern][track][index]) {
+      showBurstMenu(step);
+      lastTappedStep = null; // Reset
+      return; // Don't do normal toggle
     }
-    longPressTimer = null;
-    longPressStep = null;
-  }, LONG_PRESS_MS);
+  }
+  
+  // Record this tap
+  lastTapTime = now;
+  lastTappedStep = step;
   
   // Normal tap toggle
   isDragging = true;
@@ -742,12 +746,8 @@ document.addEventListener('touchstart', (e) => {
 }, { passive: false });
 
 document.addEventListener('touchmove', (e) => {
-  // Cancel long press timer on any movement
-  if (longPressTimer) {
-    clearTimeout(longPressTimer);
-    longPressTimer = null;
-    longPressStep = null;
-  }
+  // Reset double-tap on movement
+  lastTappedStep = null;
   
   if (!isDragging || dragTrack === null) return;
   
@@ -767,12 +767,6 @@ document.addEventListener('touchmove', (e) => {
 }, { passive: false });
 
 document.addEventListener('touchend', () => {
-  // Clean up
-  if (longPressTimer) {
-    clearTimeout(longPressTimer);
-    longPressTimer = null;
-  }
-  longPressStep = null;
   isDragging = false;
   dragFillState = null;
   dragTrack = null;
