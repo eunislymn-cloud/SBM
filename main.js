@@ -711,19 +711,15 @@ document.addEventListener('touchstart', (e) => {
   const track = step.dataset.track;
   const index = parseInt(step.dataset.index);
   
-  // Start long-press timer for burst menu (only on active steps)
-  if (patterns[currentPattern][track][index]) {
+  // Only show burst menu on ALREADY ACTIVE steps
+  if (patterns[currentPattern][track][index] && step.classList.contains('active')) {
     longPressTimer = setTimeout(() => {
-      // Long-press detected - show menu and prevent normal behavior
       showBurstMenu(step);
       longPressTimer = null;
-      isDragging = false; // Prevent drag from starting
-      dragTrack = null;
-      return;
     }, LONG_PRESS_MS);
   }
   
-  // Normal tap toggle (will be cancelled if long-press triggers)
+  // Normal tap toggle
   isDragging = true;
   dragTrack = track;
   patterns[currentPattern][dragTrack][index] = !patterns[currentPattern][dragTrack][index];
