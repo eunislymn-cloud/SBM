@@ -2031,7 +2031,7 @@ document.getElementById('randomize').onclick = () => {
     }
   });
   
-  // Randomly add some bursts (30% chance per active step, favor hi-hats/snare fills)
+  // Randomly add some bursts (favor hi-hats/snare fills)
   trackConfig.forEach(track => {
     for (let i = 0; i < 16; i++) {
       if (!p[track.name][i]) continue;
@@ -2046,7 +2046,17 @@ document.getElementById('randomize').onclick = () => {
       
       if (Math.random() < burstChance) {
         const burstOptions = [2, 2, 3, 3, 4, 4, 6, 8]; // weighted toward 2x-4x
-        patternBurst[currentPattern][track.name][i] = burstOptions[Math.floor(Math.random() * burstOptions.length)];
+        const burstVal = burstOptions[Math.floor(Math.random() * burstOptions.length)];
+        patternBurst[currentPattern][track.name][i] = burstVal;
+        
+        // Apply visual burst colors immediately
+        const container = document.querySelector(`[data-track="${track.name}"]`);
+        if (container) {
+          const stepEl = container.querySelectorAll('.step')[i];
+          if (stepEl) {
+            applyBurstVisual(stepEl, burstVal);
+          }
+        }
       }
     }
   });
