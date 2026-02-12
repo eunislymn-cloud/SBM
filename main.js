@@ -727,6 +727,7 @@ function initBurstMode() {
   // Create burst control group
   const burstControlGroup = document.createElement('div');
   burstControlGroup.className = 'control-group';
+  burstControlGroup.style.marginLeft = '15px'; // Add extra spacing
   burstControlGroup.innerHTML = `
     <label>Burst 
       <button id="burstModeBtn" style="
