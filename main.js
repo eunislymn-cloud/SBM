@@ -605,6 +605,11 @@ function showBurstMenu(stepEl) {
     patternBurst[currentPattern][track][index] = val;
     applyBurstVisual(stepEl, val);
     closeBurstMenu();
+    // Exit burst mode after selection
+    if (burstModeActive) {
+      burstModeActive = false;
+      updateBurstModeButton();
+    }
   });
   
   // Prevent menu clicks from toggling steps
@@ -624,7 +629,6 @@ function closeBurstMenu() {
     activeBurstMenu.menu.remove();
     activeBurstMenu = null;
   }
-  hideMobileBurstButton();
 }
 
 function applyBurstVisual(stepEl, burstVal) {
@@ -708,74 +712,82 @@ document.addEventListener('mouseup', () => {
   dragTrack = null;
 });
 
-// Mobile burst button system
-let activeBurstButton = null;
+// Global burst mode system
+let burstModeActive = false;
+let burstModeButton = null;
 
-function showMobileBurstButton(stepEl) {
-  hideMobileBurstButton();
+function initBurstMode() {
+  // Create burst mode button
+  const controlsSection = document.querySelector('.controls') || document.querySelector('.top-controls') || document.body;
   
-  const track = stepEl.dataset.track;
-  const index = parseInt(stepEl.dataset.index);
-  
-  // Only show for active steps
-  if (!patterns[currentPattern][track][index]) return;
-  
-  const button = document.createElement('div');
-  button.className = 'mobile-burst-btn';
-  button.innerHTML = '⚡';
-  button.style.cssText = `
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    width: 20px;
-    height: 20px;
-    background: #9945FF;
-    border: 1px solid #fff;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
+  burstModeButton = document.createElement('button');
+  burstModeButton.id = 'burstModeBtn';
+  burstModeButton.textContent = '⚡ BURST';
+  burstModeButton.style.cssText = `
+    padding: 8px 12px;
+    margin: 5px;
+    background: #333;
+    border: 1px solid #666;
+    border-radius: 6px;
+    color: #fff;
     cursor: pointer;
-    z-index: 100;
-    animation: burstBtnPop 0.2s ease-out;
+    font-size: 11px;
+    font-weight: bold;
+    transition: all 0.2s;
   `;
   
-  // Prevent button from triggering step events
-  button.addEventListener('click', (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    showBurstMenu(stepEl);
-    hideMobileBurstButton();
-  });
-  
-  button.addEventListener('touchstart', (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-  });
-  
-  stepEl.appendChild(button);
-  activeBurstButton = { button, stepEl };
+  burstModeButton.addEventListener('click', toggleBurstMode);
+  controlsSection.appendChild(burstModeButton);
 }
 
-function hideMobileBurstButton() {
-  if (activeBurstButton) {
-    activeBurstButton.button.remove();
-    activeBurstButton = null;
+function toggleBurstMode() {
+  burstModeActive = !burstModeActive;
+  updateBurstModeButton();
+  closeBurstMenu();
+}
+
+function updateBurstModeButton() {
+  if (burstModeButton) {
+    if (burstModeActive) {
+      burstModeButton.style.background = 'linear-gradient(135deg, #9945FF, #7B3FCC)';
+      burstModeButton.style.borderColor = '#9945FF';
+      burstModeButton.style.boxShadow = '0 0 8px rgba(153, 69, 255, 0.4)';
+      burstModeButton.textContent = '⚡ BURST ON';
+    } else {
+      burstModeButton.style.background = '#333';
+      burstModeButton.style.borderColor = '#666';
+      burstModeButton.style.boxShadow = 'none';
+      burstModeButton.textContent = '⚡ BURST';
+    }
   }
 }
 
-// Touch support for mobile with burst button
+// Initialize burst mode button when page loads
+document.addEventListener('DOMContentLoaded', initBurstMode);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initBurstMode);
+} else {
+  initBurstMode();
+}
+
+// Touch support for mobile with global burst mode
 document.addEventListener('touchstart', (e) => {
   const step = e.target.closest('.step');
-  if (!step || e.target.closest('.burst-menu') || e.target.closest('.mobile-burst-btn')) return;
+  if (!step || e.target.closest('.burst-menu')) return;
   
   e.preventDefault();
-  closeBurstMenu();
-  hideMobileBurstButton();
   
   const track = step.dataset.track;
   const index = parseInt(step.dataset.index);
+  
+  // If burst mode is active and step is active, show burst menu
+  if (burstModeActive && patterns[currentPattern][track][index]) {
+    closeBurstMenu();
+    showBurstMenu(step);
+    return; // Don't do normal toggle
+  }
+  
+  closeBurstMenu();
   
   // Normal tap toggle
   isDragging = true;
@@ -789,16 +801,10 @@ document.addEventListener('touchstart', (e) => {
     applyBurstVisual(step, 1);
   } else {
     applyBurstVisual(step, patternBurst[currentPattern][dragTrack][index] || 1);
-    // Show burst button for newly activated step (small delay to let step render)
-    setTimeout(() => showMobileBurstButton(step), 50);
   }
 }, { passive: false });
 
 document.addEventListener('touchmove', (e) => {
-  // Reset double-tap on movement
-  lastTappedStep = null;
-  hideMobileBurstButton();
-  
   if (!isDragging || dragTrack === null) return;
   
   const touch = e.touches[0];
