@@ -717,27 +717,38 @@ let burstModeActive = false;
 let burstModeButton = null;
 
 function initBurstMode() {
-  // Create burst mode button
-  const controlsSection = document.querySelector('.controls') || document.querySelector('.top-controls') || document.body;
+  // Find the Steps control group and add burst button after it
+  const stepsSelect = document.getElementById('patternLength');
+  if (!stepsSelect) return;
   
-  burstModeButton = document.createElement('button');
-  burstModeButton.id = 'burstModeBtn';
-  burstModeButton.textContent = '⚡ BURST';
-  burstModeButton.style.cssText = `
-    padding: 8px 12px;
-    margin: 5px;
-    background: #333;
-    border: 1px solid #666;
-    border-radius: 6px;
-    color: #fff;
-    cursor: pointer;
-    font-size: 11px;
-    font-weight: bold;
-    transition: all 0.2s;
+  const stepsControlGroup = stepsSelect.closest('.control-group');
+  if (!stepsControlGroup) return;
+  
+  // Create burst control group
+  const burstControlGroup = document.createElement('div');
+  burstControlGroup.className = 'control-group';
+  burstControlGroup.innerHTML = `
+    <label>Burst 
+      <button id="burstModeBtn" style="
+        padding: 4px 8px;
+        background: #333;
+        border: 1px solid #666;
+        border-radius: 4px;
+        color: #fff;
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: bold;
+        transition: all 0.2s;
+        margin-left: 5px;
+      ">⚡ OFF</button>
+    </label>
   `;
   
+  // Insert after steps control group
+  stepsControlGroup.parentNode.insertBefore(burstControlGroup, stepsControlGroup.nextSibling);
+  
+  burstModeButton = document.getElementById('burstModeBtn');
   burstModeButton.addEventListener('click', toggleBurstMode);
-  controlsSection.appendChild(burstModeButton);
 }
 
 function toggleBurstMode() {
@@ -752,12 +763,12 @@ function updateBurstModeButton() {
       burstModeButton.style.background = 'linear-gradient(135deg, #9945FF, #7B3FCC)';
       burstModeButton.style.borderColor = '#9945FF';
       burstModeButton.style.boxShadow = '0 0 8px rgba(153, 69, 255, 0.4)';
-      burstModeButton.textContent = '⚡ BURST ON';
+      burstModeButton.textContent = '⚡ ON';
     } else {
       burstModeButton.style.background = '#333';
       burstModeButton.style.borderColor = '#666';
       burstModeButton.style.boxShadow = 'none';
-      burstModeButton.textContent = '⚡ BURST';
+      burstModeButton.textContent = '⚡ OFF';
     }
   }
 }
