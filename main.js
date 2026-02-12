@@ -114,6 +114,13 @@
     
     /* Ensure steps have position for burst menu anchoring */
     .step { position: relative; }
+    
+    /* Mobile burst button animation */
+    @keyframes burstBtnPop {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
   `;
   document.head.appendChild(burstCSS);
 })();
@@ -617,6 +624,7 @@ function closeBurstMenu() {
     activeBurstMenu.menu.remove();
     activeBurstMenu = null;
   }
+  hideMobileBurstButton();
 }
 
 function applyBurstVisual(stepEl, burstVal) {
@@ -700,35 +708,74 @@ document.addEventListener('mouseup', () => {
   dragTrack = null;
 });
 
-// Touch support for mobile with double-tap burst
-let lastTapTime = 0;
-let lastTappedStep = null;
-const DOUBLE_TAP_MS = 300;
+// Mobile burst button system
+let activeBurstButton = null;
 
+function showMobileBurstButton(stepEl) {
+  hideMobileBurstButton();
+  
+  const track = stepEl.dataset.track;
+  const index = parseInt(stepEl.dataset.index);
+  
+  // Only show for active steps
+  if (!patterns[currentPattern][track][index]) return;
+  
+  const button = document.createElement('div');
+  button.className = 'mobile-burst-btn';
+  button.innerHTML = '⚡';
+  button.style.cssText = `
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 20px;
+    height: 20px;
+    background: #9945FF;
+    border: 1px solid #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    cursor: pointer;
+    z-index: 100;
+    animation: burstBtnPop 0.2s ease-out;
+  `;
+  
+  // Prevent button from triggering step events
+  button.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    showBurstMenu(stepEl);
+    hideMobileBurstButton();
+  });
+  
+  button.addEventListener('touchstart', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+  });
+  
+  stepEl.appendChild(button);
+  activeBurstButton = { button, stepEl };
+}
+
+function hideMobileBurstButton() {
+  if (activeBurstButton) {
+    activeBurstButton.button.remove();
+    activeBurstButton = null;
+  }
+}
+
+// Touch support for mobile with burst button
 document.addEventListener('touchstart', (e) => {
   const step = e.target.closest('.step');
-  if (!step || e.target.closest('.burst-menu')) return;
+  if (!step || e.target.closest('.burst-menu') || e.target.closest('.mobile-burst-btn')) return;
   
   e.preventDefault();
   closeBurstMenu();
+  hideMobileBurstButton();
   
   const track = step.dataset.track;
   const index = parseInt(step.dataset.index);
-  const now = Date.now();
-  
-  // Check for double-tap on same step
-  if (lastTappedStep === step && (now - lastTapTime) < DOUBLE_TAP_MS) {
-    // Double-tap detected! Show burst menu if step is active
-    if (patterns[currentPattern][track][index]) {
-      showBurstMenu(step);
-      lastTappedStep = null; // Reset
-      return; // Don't do normal toggle
-    }
-  }
-  
-  // Record this tap
-  lastTapTime = now;
-  lastTappedStep = step;
   
   // Normal tap toggle
   isDragging = true;
@@ -742,12 +789,15 @@ document.addEventListener('touchstart', (e) => {
     applyBurstVisual(step, 1);
   } else {
     applyBurstVisual(step, patternBurst[currentPattern][dragTrack][index] || 1);
+    // Show burst button for newly activated step (small delay to let step render)
+    setTimeout(() => showMobileBurstButton(step), 50);
   }
 }, { passive: false });
 
 document.addEventListener('touchmove', (e) => {
   // Reset double-tap on movement
   lastTappedStep = null;
+  hideMobileBurstButton();
   
   if (!isDragging || dragTrack === null) return;
   
