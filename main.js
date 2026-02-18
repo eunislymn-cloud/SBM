@@ -5146,6 +5146,8 @@ let selectedDonationAmount = 0;
 const SOLSYNTH_DONATION_WALLET = '2YGZRBKU4SzbmNj4t7SNiVmc2Cr2fhDCfoyQL6bFs3f8';
 
 function initDonationSystem() {
+  console.log('Initializing donation system...');
+  
   const supportBtn = document.getElementById('supportBtn');
   const supportModal = document.getElementById('supportModal');
   const closeSupportModal = document.getElementById('closeSupportModal');
@@ -5154,10 +5156,19 @@ function initDonationSystem() {
   const donateBtn = document.getElementById('donateBtn');
   const donationStatus = document.getElementById('donationStatus');
   
-  if (!supportBtn || !supportModal) return; // Elements not loaded yet
+  console.log('Support button found:', !!supportBtn);
+  console.log('Support modal found:', !!supportModal);
+  
+  if (!supportBtn || !supportModal) {
+    console.log('Support elements not ready, retrying...');
+    return; // Elements not loaded yet
+  }
+  
+  console.log('Adding event listeners...');
   
   // Modal controls
   supportBtn.addEventListener('click', () => {
+    console.log('Support button clicked!');
     supportModal.style.display = 'flex';
   });
   
@@ -5312,5 +5323,8 @@ document.addEventListener('DOMContentLoaded', initDonationSystem);
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initDonationSystem);
 } else {
-  setTimeout(initDonationSystem, 500); // Wait for all other systems to load
+  // Try multiple times with increasing delays
+  setTimeout(initDonationSystem, 500);
+  setTimeout(initDonationSystem, 1000);
+  setTimeout(initDonationSystem, 2000);
 }
