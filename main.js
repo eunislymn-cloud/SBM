@@ -965,181 +965,6 @@ if (document.readyState === 'loading') {
   initBurstMode();
 }
 
-// Support/Donation System
-let selectedDonationAmount = 0;
-
-function initDonationSystem() {
-  const donationBtns = document.querySelectorAll('.donation-btn');
-  const customAmountInput = document.getElementById('customAmount');
-  const donateBtn = document.getElementById('donateBtn');
-  const donationStatus = document.getElementById('donationStatus');
-  const supportBtn = document.getElementById('supportBtn');
-  const supportModal = document.getElementById('supportModal');
-  const closeSupportModal = document.getElementById('closeSupportModal');
-  
-  if (!donateBtn || !supportBtn) return; // Support section not loaded yet
-  
-  // Modal controls
-  supportBtn.addEventListener('click', () => {
-    supportModal.style.display = 'flex';
-  });
-  
-  closeSupportModal.addEventListener('click', () => {
-    supportModal.style.display = 'none';
-    resetDonationForm();
-  });
-  
-  // Close modal on overlay click
-  supportModal.addEventListener('click', (e) => {
-    if (e.target === supportModal) {
-      supportModal.style.display = 'none';
-      resetDonationForm();
-    }
-  });
-  
-  // Close modal on escape key
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && supportModal.style.display === 'flex') {
-      supportModal.style.display = 'none';
-      resetDonationForm();
-    }
-  });
-  
-  // Preset amount buttons
-  donationBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const amount = parseFloat(btn.dataset.amount);
-      selectDonationAmount(amount);
-      customAmountInput.value = '';
-    });
-  });
-  
-  // Custom amount input
-  customAmountInput.addEventListener('input', () => {
-    const amount = parseFloat(customAmountInput.value) || 0;
-    selectDonationAmount(amount);
-    donationBtns.forEach(btn => btn.classList.remove('selected'));
-  });
-  
-  // Donate button
-  donateBtn.addEventListener('click', processDonation);
-  
-  function selectDonationAmount(amount) {
-    selectedDonationAmount = amount;
-    donateBtn.disabled = amount <= 0;
-    donateBtn.textContent = amount > 0 ? `💖 Donate ${amount} SOL` : '💖 Donate SOL';
-    
-    // Update button selection
-    donationBtns.forEach(btn => {
-      btn.classList.toggle('selected', parseFloat(btn.dataset.amount) === amount);
-    });
-  }
-  
-  function resetDonationForm() {
-    selectedDonationAmount = 0;
-    customAmountInput.value = '';
-    donationBtns.forEach(btn => btn.classList.remove('selected'));
-    donateBtn.disabled = true;
-    donateBtn.textContent = '💖 Donate SOL';
-    donationStatus.textContent = '';
-    donationStatus.className = 'donation-status';
-  }
-  
-  async function processDonation() {
-    if (selectedDonationAmount <= 0) return;
-    
-    try {
-      donateBtn.disabled = true;
-      donateBtn.textContent = 'Processing...';
-      donationStatus.textContent = '';
-      donationStatus.className = 'donation-status';
-      
-      // Check wallet connection
-      if (!walletAddress) {
-        throw new Error('Please connect your wallet first!');
-      }
-      
-      // Get the connected wallet provider
-      let walletProvider;
-      if (window.solana && window.solana.isConnected) {
-        walletProvider = window.solana;
-      } else if (window.solflare && window.solflare.isConnected) {
-        walletProvider = window.solflare;
-      } else if (window.backpack && window.backpack.isConnected) {
-        walletProvider = window.backpack;
-      } else {
-        throw new Error('No wallet connected or available');
-      }
-      
-      // SolSynth Labs donation wallet
-      const SOLSYNTH_DONATION_WALLET = new solanaWeb3.PublicKey('2YGZRBKU4SzbmNj4t7SNiVmc2Cr2fhDCfoyQL6bFs3f8');
-      
-      const connection = new solanaWeb3.Connection(
-        solanaWeb3.clusterApiUrl(SOLANA_NETWORK),
-        'confirmed'
-      );
-      
-      const transaction = new solanaWeb3.Transaction().add(
-        solanaWeb3.SystemProgram.transfer({
-          fromPubkey: new solanaWeb3.PublicKey(walletAddress),
-          toPubkey: SOLSYNTH_DONATION_WALLET,
-          lamports: selectedDonationAmount * solanaWeb3.LAMPORTS_PER_SOL
-        })
-      );
-      
-      const { blockhash } = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = new solanaWeb3.PublicKey(walletAddress);
-      
-      const signedTransaction = await walletProvider.signTransaction(transaction);
-      const signature = await connection.sendRawTransaction(signedTransaction.serialize());
-      
-      // Wait for confirmation
-      await connection.confirmTransaction(signature);
-      
-      // Success!
-      donationStatus.textContent = `Thank you! Donation of ${selectedDonationAmount} SOL sent successfully! 💜`;
-      donationStatus.className = 'donation-status success';
-      
-      // Close modal after showing success for 3 seconds
-      setTimeout(() => {
-        supportModal.style.display = 'none';
-        resetDonationForm();
-      }, 3000);
-      
-      if (window.firebaseLogEvent) {
-        window.firebaseLogEvent('donation_success', { 
-          amount: selectedDonationAmount,
-          network: SOLANA_NETWORK 
-        });
-      }
-      
-    } catch (error) {
-      console.error('Donation failed:', error);
-      donationStatus.textContent = `Donation failed: ${error.message}`;
-      donationStatus.className = 'donation-status error';
-      
-      if (window.firebaseLogEvent) {
-        window.firebaseLogEvent('donation_failed', { 
-          amount: selectedDonationAmount,
-          error: error.message 
-        });
-      }
-    } finally {
-      donateBtn.disabled = false;
-      donateBtn.textContent = '💖 Donate SOL';
-    }
-  }
-}
-
-// Initialize donation system when page loads
-document.addEventListener('DOMContentLoaded', initDonationSystem);
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initDonationSystem);
-} else {
-  setTimeout(initDonationSystem, 100); // Small delay to ensure HTML is rendered
-}
-
 // Touch support for mobile with global burst mode
 document.addEventListener('touchstart', (e) => {
   const step = e.target.closest('.step');
@@ -5311,4 +5136,178 @@ function updateGridUI() {
       step.classList.toggle('active', isActive);
     });
   });
+}
+
+// ============================================================================
+// DONATION SYSTEM - Added separately to avoid conflicts
+// ============================================================================
+
+let selectedDonationAmount = 0;
+const SOLSYNTH_DONATION_WALLET = '2YGZRBKU4SzbmNj4t7SNiVmc2Cr2fhDCfoyQL6bFs3f8';
+
+function initDonationSystem() {
+  const supportBtn = document.getElementById('supportBtn');
+  const supportModal = document.getElementById('supportModal');
+  const closeSupportModal = document.getElementById('closeSupportModal');
+  const donationBtns = document.querySelectorAll('.donation-btn');
+  const customAmountInput = document.getElementById('customAmount');
+  const donateBtn = document.getElementById('donateBtn');
+  const donationStatus = document.getElementById('donationStatus');
+  
+  if (!supportBtn || !supportModal) return; // Elements not loaded yet
+  
+  // Modal controls
+  supportBtn.addEventListener('click', () => {
+    supportModal.style.display = 'flex';
+  });
+  
+  closeSupportModal.addEventListener('click', () => {
+    supportModal.style.display = 'none';
+    resetDonationForm();
+  });
+  
+  // Close modal on overlay click
+  supportModal.addEventListener('click', (e) => {
+    if (e.target === supportModal) {
+      supportModal.style.display = 'none';
+      resetDonationForm();
+    }
+  });
+  
+  // Close modal on escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && supportModal.style.display === 'flex') {
+      supportModal.style.display = 'none';
+      resetDonationForm();
+    }
+  });
+  
+  // Preset amount buttons
+  donationBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const amount = parseFloat(btn.dataset.amount);
+      selectDonationAmount(amount);
+      customAmountInput.value = '';
+    });
+  });
+  
+  // Custom amount input
+  customAmountInput.addEventListener('input', () => {
+    const amount = parseFloat(customAmountInput.value) || 0;
+    selectDonationAmount(amount);
+    donationBtns.forEach(btn => btn.classList.remove('selected'));
+  });
+  
+  // Donate button
+  donateBtn.addEventListener('click', processDonation);
+  
+  function selectDonationAmount(amount) {
+    selectedDonationAmount = amount;
+    donateBtn.disabled = amount <= 0;
+    donateBtn.textContent = amount > 0 ? `💖 Donate ${amount} SOL` : '💖 Donate SOL';
+    
+    // Update button selection
+    donationBtns.forEach(btn => {
+      btn.classList.toggle('selected', parseFloat(btn.dataset.amount) === amount);
+    });
+  }
+  
+  function resetDonationForm() {
+    selectedDonationAmount = 0;
+    customAmountInput.value = '';
+    donationBtns.forEach(btn => btn.classList.remove('selected'));
+    donateBtn.disabled = true;
+    donateBtn.textContent = '💖 Donate SOL';
+    donationStatus.textContent = '';
+    donationStatus.className = 'donation-status';
+  }
+  
+  async function processDonation() {
+    if (selectedDonationAmount <= 0) return;
+    
+    try {
+      donateBtn.disabled = true;
+      donateBtn.textContent = 'Processing...';
+      donationStatus.textContent = '';
+      donationStatus.className = 'donation-status';
+      
+      // Check if wallet is connected using existing system
+      if (!walletAddress) {
+        throw new Error('Please connect your wallet first!');
+      }
+      
+      // Use existing connection from getSolanaConnection()
+      const connection = await getSolanaConnection();
+      
+      const transaction = new solanaWeb3.Transaction().add(
+        solanaWeb3.SystemProgram.transfer({
+          fromPubkey: new solanaWeb3.PublicKey(walletAddress),
+          toPubkey: new solanaWeb3.PublicKey(SOLSYNTH_DONATION_WALLET),
+          lamports: selectedDonationAmount * solanaWeb3.LAMPORTS_PER_SOL
+        })
+      );
+      
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = new solanaWeb3.PublicKey(walletAddress);
+      
+      // Use existing wallet provider system
+      let walletProvider;
+      if (window.solana && window.solana.isConnected) {
+        walletProvider = window.solana;
+      } else if (window.solflare && window.solflare.isConnected) {
+        walletProvider = window.solflare;
+      } else if (window.backpack && window.backpack.isConnected) {
+        walletProvider = window.backpack;
+      } else {
+        throw new Error('No connected wallet found');
+      }
+      
+      const signedTransaction = await walletProvider.signTransaction(transaction);
+      const signature = await connection.sendRawTransaction(signedTransaction.serialize());
+      
+      // Wait for confirmation
+      await connection.confirmTransaction(signature);
+      
+      // Success!
+      donationStatus.textContent = `Thank you! Donation of ${selectedDonationAmount} SOL sent successfully! 💜`;
+      donationStatus.className = 'donation-status success';
+      
+      // Close modal after showing success for 3 seconds
+      setTimeout(() => {
+        supportModal.style.display = 'none';
+        resetDonationForm();
+      }, 3000);
+      
+      if (window.firebaseLogEvent) {
+        window.firebaseLogEvent('donation_success', { 
+          amount: selectedDonationAmount,
+          network: SOLANA_NETWORK 
+        });
+      }
+      
+    } catch (error) {
+      console.error('Donation failed:', error);
+      donationStatus.textContent = `Donation failed: ${error.message}`;
+      donationStatus.className = 'donation-status error';
+      
+      if (window.firebaseLogEvent) {
+        window.firebaseLogEvent('donation_failed', { 
+          amount: selectedDonationAmount,
+          error: error.message 
+        });
+      }
+    } finally {
+      donateBtn.disabled = false;
+      donateBtn.textContent = '💖 Donate SOL';
+    }
+  }
+}
+
+// Initialize donation system when page loads
+document.addEventListener('DOMContentLoaded', initDonationSystem);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initDonationSystem);
+} else {
+  setTimeout(initDonationSystem, 500); // Wait for all other systems to load
 }
