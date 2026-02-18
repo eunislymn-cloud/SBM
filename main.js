@@ -1065,9 +1065,8 @@ function initDonationSystem() {
       const SOLSYNTH_DONATION_WALLET = new solanaWeb3.PublicKey('2YGZRBKU4SzbmNj4t7SNiVmc2Cr2fhDCfoyQL6bFs3f8');
       
       const connection = new solanaWeb3.Connection(
-        SOLANA_NETWORK === 'devnet' ? 
-        'https://api.devnet.solana.com' : 
-        'https://api.mainnet-beta.solana.com'
+        solanaWeb3.clusterApiUrl(SOLANA_NETWORK),
+        'confirmed'
       );
       
       const transaction = new solanaWeb3.Transaction().add(
