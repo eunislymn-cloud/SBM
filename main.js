@@ -122,17 +122,88 @@
       100% { transform: scale(1); opacity: 1; }
     }
     
-    /* Support Section Styles */
-    #supportSection {
+    /* Support Button */
+    .support-button-container {
+      text-align: center;
+      margin: 20px 0;
+    }
+    .support-btn {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #9945FF, #7B3FCC);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+      transition: all 0.2s;
+      font-family: 'Orbitron', sans-serif;
+    }
+    .support-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 15px rgba(153, 69, 255, 0.3);
+    }
+    
+    /* Modal Overlay */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      backdrop-filter: blur(4px);
+    }
+    .modal-content {
       background: #1a1a2e;
       border: 1px solid #333;
       border-radius: 12px;
-      padding: 20px;
-      margin-top: 20px;
-      text-align: center;
+      padding: 0;
+      max-width: 400px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: modalPop 0.3s ease-out;
     }
-    .support-header {
-      margin-bottom: 15px;
+    @keyframes modalPop {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 20px 10px 20px;
+      border-bottom: 1px solid #333;
+    }
+    .close-btn {
+      background: none;
+      border: none;
+      color: #aaa;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+    .close-btn:hover {
+      background: #333;
+      color: #fff;
+    }
+    
+    /* Support Modal Content */
+    .support-modal .support-content {
+      padding: 20px;
+      text-align: center;
     }
     .support-title {
       font-size: 16px;
@@ -902,8 +973,37 @@ function initDonationSystem() {
   const customAmountInput = document.getElementById('customAmount');
   const donateBtn = document.getElementById('donateBtn');
   const donationStatus = document.getElementById('donationStatus');
+  const supportBtn = document.getElementById('supportBtn');
+  const supportModal = document.getElementById('supportModal');
+  const closeSupportModal = document.getElementById('closeSupportModal');
   
-  if (!donateBtn) return; // Support section not loaded yet
+  if (!donateBtn || !supportBtn) return; // Support section not loaded yet
+  
+  // Modal controls
+  supportBtn.addEventListener('click', () => {
+    supportModal.style.display = 'flex';
+  });
+  
+  closeSupportModal.addEventListener('click', () => {
+    supportModal.style.display = 'none';
+    resetDonationForm();
+  });
+  
+  // Close modal on overlay click
+  supportModal.addEventListener('click', (e) => {
+    if (e.target === supportModal) {
+      supportModal.style.display = 'none';
+      resetDonationForm();
+    }
+  });
+  
+  // Close modal on escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && supportModal.style.display === 'flex') {
+      supportModal.style.display = 'none';
+      resetDonationForm();
+    }
+  });
   
   // Preset amount buttons
   donationBtns.forEach(btn => {
@@ -935,6 +1035,16 @@ function initDonationSystem() {
     });
   }
   
+  function resetDonationForm() {
+    selectedDonationAmount = 0;
+    customAmountInput.value = '';
+    donationBtns.forEach(btn => btn.classList.remove('selected'));
+    donateBtn.disabled = true;
+    donateBtn.textContent = '💖 Donate SOL';
+    donationStatus.textContent = '';
+    donationStatus.className = 'donation-status';
+  }
+  
   async function processDonation() {
     if (selectedDonationAmount <= 0) return;
     
@@ -955,9 +1065,9 @@ function initDonationSystem() {
       const SOLSYNTH_DONATION_WALLET = new solanaWeb3.PublicKey('2YGZRBKU4SzbmNj4t7SNiVmc2Cr2fhDCfoyQL6bFs3f8');
       
       const connection = new solanaWeb3.Connection(
-        currentNetwork === 'mainnet' ? 
-        'https://api.mainnet-beta.solana.com' : 
-        'https://api.devnet.solana.com'
+        SOLANA_NETWORK === 'devnet' ? 
+        'https://api.devnet.solana.com' : 
+        'https://api.mainnet-beta.solana.com'
       );
       
       const transaction = new solanaWeb3.Transaction().add(
@@ -982,15 +1092,16 @@ function initDonationSystem() {
       donationStatus.textContent = `Thank you! Donation of ${selectedDonationAmount} SOL sent successfully! 💜`;
       donationStatus.className = 'donation-status success';
       
-      // Reset form
-      selectedDonationAmount = 0;
-      customAmountInput.value = '';
-      donationBtns.forEach(btn => btn.classList.remove('selected'));
+      // Close modal after showing success for 3 seconds
+      setTimeout(() => {
+        supportModal.style.display = 'none';
+        resetDonationForm();
+      }, 3000);
       
       if (window.firebaseLogEvent) {
         window.firebaseLogEvent('donation_success', { 
           amount: selectedDonationAmount,
-          network: currentNetwork 
+          network: SOLANA_NETWORK 
         });
       }
       
