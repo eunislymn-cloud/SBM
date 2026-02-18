@@ -1055,10 +1055,20 @@ function initDonationSystem() {
       donationStatus.className = 'donation-status';
       
       // Check wallet connection
-      if (!window.solana || !window.solana.isConnected) {
-        // Connect wallet first
-        const connection = await window.solana.connect();
-        if (!connection) throw new Error('Wallet connection failed');
+      if (!walletAddress) {
+        throw new Error('Please connect your wallet first!');
+      }
+      
+      // Get the connected wallet provider
+      let walletProvider;
+      if (window.solana && window.solana.isConnected) {
+        walletProvider = window.solana;
+      } else if (window.solflare && window.solflare.isConnected) {
+        walletProvider = window.solflare;
+      } else if (window.backpack && window.backpack.isConnected) {
+        walletProvider = window.backpack;
+      } else {
+        throw new Error('No wallet connected or available');
       }
       
       // SolSynth Labs donation wallet
@@ -1071,7 +1081,7 @@ function initDonationSystem() {
       
       const transaction = new solanaWeb3.Transaction().add(
         solanaWeb3.SystemProgram.transfer({
-          fromPubkey: window.solana.publicKey,
+          fromPubkey: new solanaWeb3.PublicKey(walletAddress),
           toPubkey: SOLSYNTH_DONATION_WALLET,
           lamports: selectedDonationAmount * solanaWeb3.LAMPORTS_PER_SOL
         })
@@ -1079,9 +1089,9 @@ function initDonationSystem() {
       
       const { blockhash } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
-      transaction.feePayer = window.solana.publicKey;
+      transaction.feePayer = new solanaWeb3.PublicKey(walletAddress);
       
-      const signedTransaction = await window.solana.signTransaction(transaction);
+      const signedTransaction = await walletProvider.signTransaction(transaction);
       const signature = await connection.sendRawTransaction(signedTransaction.serialize());
       
       // Wait for confirmation
