@@ -5236,8 +5236,11 @@ function initDonationSystem() {
         throw new Error('Please connect your wallet first!');
       }
       
-      // Use existing connection from getSolanaConnection()
-      const connection = await getSolanaConnection();
+      // Use same connection approach as mint function
+      const connection = new solanaWeb3.Connection(
+        solanaWeb3.clusterApiUrl(SOLANA_NETWORK),
+        'confirmed'
+      );
       
       const transaction = new solanaWeb3.Transaction().add(
         solanaWeb3.SystemProgram.transfer({
