@@ -10,6 +10,7 @@
   <meta name="description" content="MPSeeker - Drum sequencer on Solana. Beat maker built for Solana Mobile by SolSynth Labs.">
   
   <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="mpseeker-logo.png">
   <link rel="icon" type="image/png" href="mpseeker-logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -451,6 +452,38 @@
           <div class="pack-name">Industrial</div>
           <div class="pack-description">Heavy industrial sounds</div>
         </div>
+      </div>
+    </div>
+    
+    <!-- Support Section -->
+    <div id="supportSection">
+      <div class="support-header">
+        <span class="support-title">💜 Support SolSynth Labs</span>
+      </div>
+      <div class="support-content">
+        <p class="support-message">Help us build more creative tools on Solana</p>
+        
+        <div class="donation-amounts">
+          <button class="donation-btn" data-amount="0.01">0.01 SOL</button>
+          <button class="donation-btn" data-amount="0.05">0.05 SOL</button>
+          <button class="donation-btn" data-amount="0.1">0.1 SOL</button>
+        </div>
+        
+        <div class="custom-amount-section">
+          <label for="customAmount">Custom amount (SOL)</label>
+          <input type="number" id="customAmount" placeholder="0.00" min="0" step="0.01">
+        </div>
+        
+        <button id="donateBtn" class="donate-main-btn" disabled>
+          💖 Donate SOL
+        </button>
+        
+        <p class="support-description">
+          Your support helps us create innovative music tools, maintain servers, and develop new features. 
+          Every contribution helps us keep building!
+        </p>
+        
+        <div id="donationStatus" class="donation-status"></div>
       </div>
     </div>
   </div>

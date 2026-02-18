@@ -121,6 +121,118 @@
       50% { transform: scale(1.2); }
       100% { transform: scale(1); opacity: 1; }
     }
+    
+    /* Support Section Styles */
+    #supportSection {
+      background: #1a1a2e;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+      text-align: center;
+    }
+    .support-header {
+      margin-bottom: 15px;
+    }
+    .support-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+    }
+    .support-message {
+      color: #aaa;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    .donation-amounts {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .donation-btn {
+      padding: 8px 16px;
+      background: #333;
+      border: 1px solid #666;
+      border-radius: 6px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: bold;
+      transition: all 0.2s;
+      min-width: 70px;
+    }
+    .donation-btn:hover, .donation-btn.selected {
+      background: linear-gradient(135deg, #9945FF, #7B3FCC);
+      border-color: #9945FF;
+      box-shadow: 0 0 8px rgba(153, 69, 255, 0.4);
+    }
+    .custom-amount-section {
+      margin-bottom: 20px;
+    }
+    .custom-amount-section label {
+      display: block;
+      color: #aaa;
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+    .custom-amount-section input {
+      padding: 8px 12px;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #fff;
+      text-align: center;
+      width: 120px;
+      font-size: 14px;
+    }
+    .donate-main-btn {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #14F195, #0BC076);
+      border: none;
+      border-radius: 8px;
+      color: #000;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      transition: all 0.2s;
+    }
+    .donate-main-btn:disabled {
+      background: #333;
+      color: #666;
+      cursor: not-allowed;
+    }
+    .donate-main-btn:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 15px rgba(20, 241, 149, 0.3);
+    }
+    .support-description {
+      color: #888;
+      font-size: 11px;
+      line-height: 1.4;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    .donation-status {
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .donation-status.success {
+      background: rgba(20, 241, 149, 0.1);
+      color: #14F195;
+      border: 1px solid rgba(20, 241, 149, 0.3);
+    }
+    .donation-status.error {
+      background: rgba(255, 68, 68, 0.1);
+      color: #FF4444;
+      border: 1px solid rgba(255, 68, 68, 0.3);
+    }
   `;
   document.head.appendChild(burstCSS);
 })();
@@ -780,6 +892,132 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initBurstMode);
 } else {
   initBurstMode();
+}
+
+// Support/Donation System
+let selectedDonationAmount = 0;
+
+function initDonationSystem() {
+  const donationBtns = document.querySelectorAll('.donation-btn');
+  const customAmountInput = document.getElementById('customAmount');
+  const donateBtn = document.getElementById('donateBtn');
+  const donationStatus = document.getElementById('donationStatus');
+  
+  if (!donateBtn) return; // Support section not loaded yet
+  
+  // Preset amount buttons
+  donationBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const amount = parseFloat(btn.dataset.amount);
+      selectDonationAmount(amount);
+      customAmountInput.value = '';
+    });
+  });
+  
+  // Custom amount input
+  customAmountInput.addEventListener('input', () => {
+    const amount = parseFloat(customAmountInput.value) || 0;
+    selectDonationAmount(amount);
+    donationBtns.forEach(btn => btn.classList.remove('selected'));
+  });
+  
+  // Donate button
+  donateBtn.addEventListener('click', processDonation);
+  
+  function selectDonationAmount(amount) {
+    selectedDonationAmount = amount;
+    donateBtn.disabled = amount <= 0;
+    donateBtn.textContent = amount > 0 ? `💖 Donate ${amount} SOL` : '💖 Donate SOL';
+    
+    // Update button selection
+    donationBtns.forEach(btn => {
+      btn.classList.toggle('selected', parseFloat(btn.dataset.amount) === amount);
+    });
+  }
+  
+  async function processDonation() {
+    if (selectedDonationAmount <= 0) return;
+    
+    try {
+      donateBtn.disabled = true;
+      donateBtn.textContent = 'Processing...';
+      donationStatus.textContent = '';
+      donationStatus.className = 'donation-status';
+      
+      // Check wallet connection
+      if (!window.solana || !window.solana.isConnected) {
+        // Connect wallet first
+        const connection = await window.solana.connect();
+        if (!connection) throw new Error('Wallet connection failed');
+      }
+      
+      // SolSynth Labs donation wallet
+      const SOLSYNTH_DONATION_WALLET = new solanaWeb3.PublicKey('2YGZRBKU4SzbmNj4t7SNiVmc2Cr2fhDCfoyQL6bFs3f8');
+      
+      const connection = new solanaWeb3.Connection(
+        currentNetwork === 'mainnet' ? 
+        'https://api.mainnet-beta.solana.com' : 
+        'https://api.devnet.solana.com'
+      );
+      
+      const transaction = new solanaWeb3.Transaction().add(
+        solanaWeb3.SystemProgram.transfer({
+          fromPubkey: window.solana.publicKey,
+          toPubkey: SOLSYNTH_DONATION_WALLET,
+          lamports: selectedDonationAmount * solanaWeb3.LAMPORTS_PER_SOL
+        })
+      );
+      
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = window.solana.publicKey;
+      
+      const signedTransaction = await window.solana.signTransaction(transaction);
+      const signature = await connection.sendRawTransaction(signedTransaction.serialize());
+      
+      // Wait for confirmation
+      await connection.confirmTransaction(signature);
+      
+      // Success!
+      donationStatus.textContent = `Thank you! Donation of ${selectedDonationAmount} SOL sent successfully! 💜`;
+      donationStatus.className = 'donation-status success';
+      
+      // Reset form
+      selectedDonationAmount = 0;
+      customAmountInput.value = '';
+      donationBtns.forEach(btn => btn.classList.remove('selected'));
+      
+      if (window.firebaseLogEvent) {
+        window.firebaseLogEvent('donation_success', { 
+          amount: selectedDonationAmount,
+          network: currentNetwork 
+        });
+      }
+      
+    } catch (error) {
+      console.error('Donation failed:', error);
+      donationStatus.textContent = `Donation failed: ${error.message}`;
+      donationStatus.className = 'donation-status error';
+      
+      if (window.firebaseLogEvent) {
+        window.firebaseLogEvent('donation_failed', { 
+          amount: selectedDonationAmount,
+          error: error.message 
+        });
+      }
+    } finally {
+      donateBtn.disabled = false;
+      donateBtn.textContent = '💖 Donate SOL';
+    }
+  }
+}
+
+// Initialize donation system when page loads
+document.addEventListener('DOMContentLoaded', initDonationSystem);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initDonationSystem);
+} else {
+  setTimeout(initDonationSystem, 100); // Small delay to ensure HTML is rendered
 }
 
 // Touch support for mobile with global burst mode
