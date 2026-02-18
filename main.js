@@ -5145,6 +5145,26 @@ function updateGridUI() {
 let selectedDonationAmount = 0;
 const SOLSYNTH_DONATION_WALLET = '2YGZRBKU4SzbmNj4t7SNiVmc2Cr2fhDCfoyQL6bFs3f8';
 
+// Global functions for HTML onclick handlers
+window.openSupportModal = function() {
+  console.log('Opening support modal...');
+  const supportModal = document.getElementById('supportModal');
+  if (supportModal) {
+    supportModal.style.display = 'flex';
+  } else {
+    console.error('Support modal not found!');
+  }
+};
+
+window.closeSupportModal = function() {
+  console.log('Closing support modal...');
+  const supportModal = document.getElementById('supportModal');
+  if (supportModal) {
+    supportModal.style.display = 'none';
+    resetDonationForm();
+  }
+};
+
 function initDonationSystem() {
   console.log('Initializing donation system...');
   
@@ -5166,7 +5186,7 @@ function initDonationSystem() {
   
   console.log('Adding event listeners...');
   
-  // Modal controls
+  // Modal controls  
   supportBtn.addEventListener('click', () => {
     console.log('Support button clicked!');
     supportModal.style.display = 'flex';
@@ -5327,4 +5347,39 @@ if (document.readyState === 'loading') {
   setTimeout(initDonationSystem, 500);
   setTimeout(initDonationSystem, 1000);
   setTimeout(initDonationSystem, 2000);
+}
+
+// Global functions for onclick handlers
+window.openSupportModal = function() {
+  const supportModal = document.getElementById('supportModal');
+  if (supportModal) {
+    supportModal.style.display = 'flex';
+  }
+};
+
+window.closeSupportModal = function() {
+  const supportModal = document.getElementById('supportModal');
+  if (supportModal) {
+    supportModal.style.display = 'none';
+    resetDonationForm();
+  }
+};
+
+function resetDonationForm() {
+  selectedDonationAmount = 0;
+  const customAmountInput = document.getElementById('customAmount');
+  const donationBtns = document.querySelectorAll('.donation-btn');
+  const donateBtn = document.getElementById('donateBtn');
+  const donationStatus = document.getElementById('donationStatus');
+  
+  if (customAmountInput) customAmountInput.value = '';
+  donationBtns.forEach(btn => btn.classList.remove('selected'));
+  if (donateBtn) {
+    donateBtn.disabled = true;
+    donateBtn.textContent = '💖 Donate SOL';
+  }
+  if (donationStatus) {
+    donationStatus.textContent = '';
+    donationStatus.className = 'donation-status';
+  }
 }
