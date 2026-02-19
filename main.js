@@ -1709,6 +1709,11 @@ document.querySelectorAll('.paste-option').forEach(btn => {
         }
         if (copiedPattern.pitch) {
           Object.assign(patternPitch[targetPattern], copiedPattern.pitch);
+          // Update pitch ratios too
+          trackConfig.forEach(track => {
+            const semitones = copiedPattern.pitch[track.name] || 0;
+            patternPitchRatio[targetPattern][track.name] = Math.pow(2, semitones / 12);
+          });
         }
         if (copiedPattern.decay) {
           Object.assign(patternDecay[targetPattern], copiedPattern.decay);
@@ -1731,6 +1736,11 @@ document.querySelectorAll('.paste-option').forEach(btn => {
       }
       if (copiedPattern.pitch) {
         Object.assign(patternPitch[target], copiedPattern.pitch);
+        // Update pitch ratios too
+        trackConfig.forEach(track => {
+          const semitones = copiedPattern.pitch[track.name] || 0;
+          patternPitchRatio[target][track.name] = Math.pow(2, semitones / 12);
+        });
       }
       if (copiedPattern.decay) {
         Object.assign(patternDecay[target], copiedPattern.decay);
