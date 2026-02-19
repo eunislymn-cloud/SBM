@@ -1647,12 +1647,6 @@ document.getElementById('copyPattern').onclick = () => {
     copiedPattern.burst[track.name] = [...(patternBurst[currentPattern][track.name] || Array(steps).fill(1))];
   });
   
-  // Debug logging
-  console.log('Copied pattern data:', copiedPattern);
-  console.log('Current pattern sounds:', patternSounds[currentPattern]);
-  console.log('Current pattern pitch:', patternPitch[currentPattern]);
-  console.log('Current pattern decay:', patternDecay[currentPattern]);
-  
   // Enable paste button and update UI
   const pasteBtn = document.getElementById('pastePattern');
   pasteBtn.disabled = false;
@@ -1738,11 +1732,9 @@ document.querySelectorAll('.paste-option').forEach(btn => {
       }
       // Copy sample parameters
       if (copiedPattern.sounds) {
-        console.log('Pasting sounds to', target, ':', copiedPattern.sounds);
         Object.assign(patternSounds[target], copiedPattern.sounds);
       }
       if (copiedPattern.pitch) {
-        console.log('Pasting pitch to', target, ':', copiedPattern.pitch);
         Object.assign(patternPitch[target], copiedPattern.pitch);
         // Update pitch ratios too
         trackConfig.forEach(track => {
@@ -1751,7 +1743,6 @@ document.querySelectorAll('.paste-option').forEach(btn => {
         });
       }
       if (copiedPattern.decay) {
-        console.log('Pasting decay to', target, ':', copiedPattern.decay);
         Object.assign(patternDecay[target], copiedPattern.decay);
       }
       
