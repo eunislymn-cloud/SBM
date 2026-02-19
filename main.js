@@ -121,9 +121,88 @@
       50% { transform: scale(1.2); }
       100% { transform: scale(1); opacity: 1; }
     }
+    
+    /* Loading Animation */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #0a0a0a, #1a1a2e);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+      animation: fadeOut 0.5s ease-out 3s forwards;
+    }
+    
+    @keyframes fadeOut {
+      to { opacity: 0; pointer-events: none; }
+    }
+    
+    .loading-pyramid {
+      position: relative;
+      margin-bottom: 30px;
+    }
+    
+    .loading-pyramid svg {
+      width: 120px;
+      height: 80px;
+      animation: pyramidGlow 2s ease-in-out infinite alternate;
+    }
+    
+    @keyframes pyramidGlow {
+      0% { filter: drop-shadow(0 0 10px rgba(153, 69, 255, 0.3)); }
+      100% { filter: drop-shadow(0 0 20px rgba(153, 69, 255, 0.6)); }
+    }
+    
+    .step-cursor {
+      position: absolute;
+      top: 50%;
+      left: -10px;
+      transform: translateY(-50%);
+      width: 8px;
+      height: 8px;
+      background: linear-gradient(45deg, #FFD700, #FFA500);
+      border-radius: 2px;
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+      animation: cursorSweep 2s ease-in-out 0.5s;
+    }
+    
+    @keyframes cursorSweep {
+      0% { left: -10px; opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { left: 130px; opacity: 0; }
+    }
+    
+    .loading-text {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 0 20px rgba(20, 241, 149, 0.5);
+      opacity: 0;
+      animation: textAppear 0.8s ease-out 1.5s forwards;
+    }
+    
+    @keyframes textAppear {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
   `;
   document.head.appendChild(burstCSS);
 })();
+
+// Remove loading animation after it completes
+setTimeout(() => {
+  const loadingAnimation = document.getElementById('loadingAnimation');
+  if (loadingAnimation) {
+    loadingAnimation.remove();
+  }
+}, 3500); // Remove after 3.5 seconds (animation completes at 3s)
 
 // Audio Context
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1555,7 +1634,14 @@ let copiedPattern = null;
 
 document.getElementById('copyPattern').onclick = () => {
   // Deep copy the current pattern
-  copiedPattern = { steps: {}, effects: { ...patternEffects[currentPattern] }, burst: {} };
+  copiedPattern = { 
+    steps: {}, 
+    effects: { ...patternEffects[currentPattern] }, 
+    burst: {},
+    sounds: { ...patternSounds[currentPattern] },
+    pitch: { ...patternPitch[currentPattern] },
+    decay: { ...patternDecay[currentPattern] }
+  };
   trackConfig.forEach(track => {
     copiedPattern.steps[track.name] = [...patterns[currentPattern][track.name]];
     copiedPattern.burst[track.name] = [...(patternBurst[currentPattern][track.name] || Array(steps).fill(1))];
@@ -1617,6 +1703,16 @@ document.querySelectorAll('.paste-option').forEach(btn => {
         if (copiedPattern.effects) {
           Object.assign(patternEffects[targetPattern], copiedPattern.effects);
         }
+        // Copy sample parameters
+        if (copiedPattern.sounds) {
+          Object.assign(patternSounds[targetPattern], copiedPattern.sounds);
+        }
+        if (copiedPattern.pitch) {
+          Object.assign(patternPitch[targetPattern], copiedPattern.pitch);
+        }
+        if (copiedPattern.decay) {
+          Object.assign(patternDecay[targetPattern], copiedPattern.decay);
+        }
       });
     } else if (['A', 'B', 'C'].includes(target)) {
       // Paste to specific pattern
@@ -1628,6 +1724,16 @@ document.querySelectorAll('.paste-option').forEach(btn => {
       });
       if (copiedPattern.effects) {
         Object.assign(patternEffects[target], copiedPattern.effects);
+      }
+      // Copy sample parameters
+      if (copiedPattern.sounds) {
+        Object.assign(patternSounds[target], copiedPattern.sounds);
+      }
+      if (copiedPattern.pitch) {
+        Object.assign(patternPitch[target], copiedPattern.pitch);
+      }
+      if (copiedPattern.decay) {
+        Object.assign(patternDecay[target], copiedPattern.decay);
       }
       
       // Switch to the pasted pattern
