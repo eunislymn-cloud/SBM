@@ -1696,7 +1696,7 @@ label {
   }
 }
 
-/* Portrait message removed - users will naturally rotate device */
+/* Portrait message removed for cleaner UX */
 
 /* Footer */
 .app-footer {
