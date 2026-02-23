@@ -2011,18 +2011,9 @@ function rebuildGrid() {
     }
   });
   
-  // Update grid CSS - cap step width at 12-step sizing
+  // Update grid CSS
   document.querySelectorAll('.track-grid').forEach(grid => {
-    if (steps <= 12) {
-      // For 12 steps or fewer, use fixed step width equivalent to 12-step pattern
-      const stepWidth = `calc((100% / 12) - 3px)`;
-      grid.style.gridTemplateColumns = `repeat(${steps}, ${stepWidth})`;
-      grid.style.justifyContent = 'flex-start';
-    } else {
-      // For more than 12 steps, use flexible sizing
-      grid.style.gridTemplateColumns = `repeat(${steps}, 1fr)`;
-      grid.style.justifyContent = 'stretch';
-    }
+    grid.style.gridTemplateColumns = `repeat(${steps}, 1fr)`;
   });
   
   // Reset current step if beyond new length
@@ -5079,41 +5070,3 @@ function updateGridUI() {
     });
   });
 }
-
-// Portrait message dismiss functionality
-function dismissPortraitMessage() {
-  console.log('Dismiss function called'); // Debug log
-  const portraitMessage = document.getElementById('portraitMessage');
-  console.log('Portrait message element:', portraitMessage); // Debug log
-  
-  if (portraitMessage) {
-    portraitMessage.style.display = 'none';
-    // Store preference to not show again this session
-    sessionStorage.setItem('portraitMessageDismissed', 'true');
-    console.log('Portrait message dismissed'); // Debug log
-  } else {
-    console.log('Portrait message element not found'); // Debug log
-  }
-}
-
-// Make function globally available
-window.dismissPortraitMessage = dismissPortraitMessage;
-
-// Check if message was already dismissed this session
-document.addEventListener('DOMContentLoaded', () => {
-  // Handle session storage check
-  if (sessionStorage.getItem('portraitMessageDismissed') === 'true') {
-    const portraitMessage = document.getElementById('portraitMessage');
-    if (portraitMessage) {
-      portraitMessage.style.display = 'none';
-    }
-  }
-  
-  // Add event listener to close button
-  const portraitCloseBtn = document.getElementById('portraitCloseBtn');
-  if (portraitCloseBtn) {
-    portraitCloseBtn.addEventListener('click', dismissPortraitMessage);
-    portraitCloseBtn.addEventListener('touchstart', dismissPortraitMessage);
-    console.log('Portrait close button event listeners added'); // Debug log
-  }
-});
