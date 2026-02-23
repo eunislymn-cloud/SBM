@@ -1710,8 +1710,8 @@ label {
     padding-top: 60px;
   }
   
-  /* Hide message when checkbox is checked */
-  .dismiss-portrait-checkbox:checked + .portrait-message {
+  /* Hide ENTIRE message window when checkbox is checked */
+  .dismiss-portrait-checkbox:checked ~ .portrait-message {
     display: none !important;
   }
   
