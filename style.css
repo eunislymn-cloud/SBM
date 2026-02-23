@@ -1696,32 +1696,14 @@ label {
   }
 }
 
-/* Portrait Container - CSS-only dismiss */
-.portrait-container {
-  position: relative;
-}
-
-.dismiss-portrait-checkbox {
-  display: none;
-}
-
+/* Simple portrait message */
 @media screen and (orientation: portrait) {
-  .portrait-container .portrait-message {
+  .portrait-message {
     display: flex !important;
   }
   
   .container {
     padding-top: 60px;
-  }
-  
-  /* Hide ENTIRE portrait message when checkbox is checked */
-  .dismiss-portrait-checkbox:checked + .portrait-message {
-    display: none !important;
-  }
-  
-  /* Remove padding when message is dismissed */
-  .portrait-container:has(.dismiss-portrait-checkbox:checked) ~ .container {
-    padding-top: 0 !important;
   }
 }
 
