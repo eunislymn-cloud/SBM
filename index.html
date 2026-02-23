@@ -108,6 +108,55 @@
   </script>
 </head>
 <body>
+  
+  <!-- Dismissible Portrait Mode Message -->
+  <div class="portrait-message" id="portraitMessage">
+    <div class="portrait-message-content">
+      📱 Rotate sideways for best experience<br>
+      <small>(Note: Wallet browsers may not rotate)</small>
+    </div>
+    <button class="portrait-message-close" onclick="dismissPortraitMessage()" title="Close">&times;</button>
+  </div>
+  
+  <!-- Loading Animation -->
+  <div class="loading-overlay" id="loadingAnimation">
+    <div class="loading-pyramid">
+      <!-- SolSynth Labs Pyramid Logo -->
+      <svg width="120" height="80" viewBox="0 0 140 90">
+        <!-- Row 1: 1 square -->
+        <rect x="60" y="2" width="14" height="14" rx="2" fill="#14F195"/>
+        <!-- Row 2: 3 squares -->
+        <rect x="44" y="18" width="14" height="14" rx="2" fill="#6BD1C2"/>
+        <rect x="60" y="18" width="14" height="14" rx="2" fill="#6BD1C2"/>
+        <rect x="76" y="18" width="14" height="14" rx="2" fill="#6BD1C2"/>
+        <!-- Row 3: 5 squares -->
+        <rect x="28" y="34" width="14" height="14" rx="2" fill="#9945FF"/>
+        <rect x="44" y="34" width="14" height="14" rx="2" fill="#9945FF"/>
+        <rect x="60" y="34" width="14" height="14" rx="2" fill="#9945FF"/>
+        <rect x="76" y="34" width="14" height="14" rx="2" fill="#9945FF"/>
+        <rect x="92" y="34" width="14" height="14" rx="2" fill="#9945FF"/>
+        <!-- Row 4: 7 squares -->
+        <rect x="12" y="50" width="14" height="14" rx="2" fill="#7B3FCC"/>
+        <rect x="28" y="50" width="14" height="14" rx="2" fill="#7B3FCC"/>
+        <rect x="44" y="50" width="14" height="14" rx="2" fill="#7B3FCC"/>
+        <rect x="60" y="50" width="14" height="14" rx="2" fill="#7B3FCC"/>
+        <rect x="76" y="50" width="14" height="14" rx="2" fill="#7B3FCC"/>
+        <rect x="92" y="50" width="14" height="14" rx="2" fill="#7B3FCC"/>
+        <rect x="108" y="50" width="14" height="14" rx="2" fill="#7B3FCC"/>
+        <!-- Row 5: 5 squares -->
+        <rect x="28" y="66" width="14" height="14" rx="2" fill="#5D2A99"/>
+        <rect x="44" y="66" width="14" height="14" rx="2" fill="#5D2A99"/>
+        <rect x="60" y="66" width="14" height="14" rx="2" fill="#5D2A99"/>
+        <rect x="76" y="66" width="14" height="14" rx="2" fill="#5D2A99"/>
+        <rect x="92" y="66" width="14" height="14" rx="2" fill="#5D2A99"/>
+      </svg>
+      
+      <!-- Step Cursor -->
+      <div class="step-cursor"></div>
+    </div>
+    
+    <div class="loading-text">SolSynth Labs</div>
+  </div>
 
   <!-- Password Gate - Remove this section for public launch -->
   <div id="passwordGate" style="position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,#0a0a0a,#1a1a2e);z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;">

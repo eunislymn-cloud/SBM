@@ -5079,3 +5079,26 @@ function updateGridUI() {
     });
   });
 }
+
+// Portrait message dismiss functionality
+function dismissPortraitMessage() {
+  const portraitMessage = document.getElementById('portraitMessage');
+  if (portraitMessage) {
+    portraitMessage.style.display = 'none';
+    // Store preference to not show again this session
+    sessionStorage.setItem('portraitMessageDismissed', 'true');
+  }
+}
+
+// Make function globally available
+window.dismissPortraitMessage = dismissPortraitMessage;
+
+// Check if message was already dismissed this session
+document.addEventListener('DOMContentLoaded', () => {
+  if (sessionStorage.getItem('portraitMessageDismissed') === 'true') {
+    const portraitMessage = document.getElementById('portraitMessage');
+    if (portraitMessage) {
+      portraitMessage.style.display = 'none';
+    }
+  }
+});
