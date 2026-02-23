@@ -1696,7 +1696,58 @@ label {
   }
 }
 
-/* Portrait message removed for cleaner UX */
+/* Landscape optimization */
+@media screen and (orientation: portrait) {
+  .portrait-message {
+    display: flex !important;
+  }
+  
+  .container {
+    padding-top: 60px;
+  }
+}
+
+.portrait-message {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #9945FF, #14F195);
+  color: white;
+  text-align: center;
+  padding: 12px 15px;
+  font-weight: bold;
+  font-size: 13px;
+  z-index: 10000;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.portrait-message-content {
+  flex: 1;
+  text-align: center;
+}
+
+.portrait-message-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  margin-left: 15px;
+}
+
+.portrait-message-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
 
 /* Footer */
 .app-footer {
