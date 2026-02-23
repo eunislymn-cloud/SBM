@@ -1696,13 +1696,17 @@ label {
   }
 }
 
-/* Landscape optimization - CSS-only dismiss */
+/* Portrait Container - CSS-only dismiss */
+.portrait-container {
+  position: relative;
+}
+
 .dismiss-portrait-checkbox {
   display: none;
 }
 
 @media screen and (orientation: portrait) {
-  .portrait-message {
+  .portrait-container .portrait-message {
     display: flex !important;
   }
   
@@ -1710,13 +1714,13 @@ label {
     padding-top: 60px;
   }
   
-  /* Hide ENTIRE message window when checkbox is checked */
-  .dismiss-portrait-checkbox:checked ~ .portrait-message {
+  /* Hide ENTIRE portrait message when checkbox is checked */
+  .dismiss-portrait-checkbox:checked + .portrait-message {
     display: none !important;
   }
   
   /* Remove padding when message is dismissed */
-  .dismiss-portrait-checkbox:checked ~ .container {
+  .portrait-container:has(.dismiss-portrait-checkbox:checked) ~ .container {
     padding-top: 0 !important;
   }
 }

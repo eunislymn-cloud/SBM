@@ -109,14 +109,16 @@
 </head>
 <body>
   
-  <!-- Dismissible Portrait Mode Message - CSS Only Solution -->
-  <input type="checkbox" id="dismissPortrait" class="dismiss-portrait-checkbox">
-  <div class="portrait-message">
-    <div class="portrait-message-content">
-      📱 Rotate sideways for best experience<br>
-      <small>(Note: Wallet browsers may not rotate)</small>
+  <!-- Portrait Message Container with Checkbox Control -->
+  <div class="portrait-container">
+    <input type="checkbox" id="dismissPortrait" class="dismiss-portrait-checkbox">
+    <div class="portrait-message">
+      <div class="portrait-message-content">
+        📱 Rotate sideways for best experience<br>
+        <small>(Note: Wallet browsers may not rotate)</small>
+      </div>
+      <label for="dismissPortrait" class="portrait-message-close" title="Close">&times;</label>
     </div>
-    <label for="dismissPortrait" class="portrait-message-close" title="Close">&times;</label>
   </div>
   
   <!-- Loading Animation -->
