@@ -2014,8 +2014,9 @@ function rebuildGrid() {
   // Update grid CSS - cap step width at 12-step sizing
   document.querySelectorAll('.track-grid').forEach(grid => {
     if (steps <= 12) {
-      // For 12 steps or fewer, use fixed sizing based on 12 steps
-      grid.style.gridTemplateColumns = `repeat(${steps}, minmax(auto, calc((100% - (11 * 3px)) / 12)))`;
+      // For 12 steps or fewer, use fixed step width equivalent to 12-step pattern
+      const stepWidth = `calc((100% / 12) - 3px)`;
+      grid.style.gridTemplateColumns = `repeat(${steps}, ${stepWidth})`;
       grid.style.justifyContent = 'flex-start';
     } else {
       // For more than 12 steps, use flexible sizing

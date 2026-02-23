@@ -681,7 +681,6 @@ label {
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.15s;
-  max-width: calc((100% - (11 * 3px)) / 12); /* Cap at 12-step width */
 }
 
 /* Group steps in 4s - slightly lighter background for beats 1-4, 9-12 */
