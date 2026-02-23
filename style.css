@@ -1696,7 +1696,11 @@ label {
   }
 }
 
-/* Landscape optimization */
+/* Landscape optimization - CSS-only dismiss */
+.dismiss-portrait-checkbox {
+  display: none;
+}
+
 @media screen and (orientation: portrait) {
   .portrait-message {
     display: flex !important;
@@ -1704,6 +1708,16 @@ label {
   
   .container {
     padding-top: 60px;
+  }
+  
+  /* Hide message when checkbox is checked */
+  .dismiss-portrait-checkbox:checked + .portrait-message {
+    display: none !important;
+  }
+  
+  /* Remove padding when message is dismissed */
+  .dismiss-portrait-checkbox:checked ~ .container {
+    padding-top: 0 !important;
   }
 }
 
