@@ -2011,9 +2011,18 @@ function rebuildGrid() {
     }
   });
   
-  // Update grid CSS
+  // Update grid CSS - cap step width at 12-step sizing for desktop
   document.querySelectorAll('.track-grid').forEach(grid => {
-    grid.style.gridTemplateColumns = `repeat(${steps}, 1fr)`;
+    if (steps <= 12) {
+      // For 12 steps or fewer, use fixed step width equivalent to 12-step pattern
+      const stepWidth = `calc((100% / 12) - 3px)`;
+      grid.style.gridTemplateColumns = `repeat(${steps}, ${stepWidth})`;
+      grid.style.justifyContent = 'flex-start';
+    } else {
+      // For more than 12 steps, use flexible sizing
+      grid.style.gridTemplateColumns = `repeat(${steps}, 1fr)`;
+      grid.style.justifyContent = 'stretch';
+    }
   });
   
   // Reset current step if beyond new length
