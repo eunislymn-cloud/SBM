@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#9945FF">
+  <title>User Manual - MPSeeker | SolSynth Labs</title>
+  <link rel="icon" type="image/png" href="mpseeker-logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #0A0A0A 0%, #1a0a2e 100%);
+      color: #fff;
+      padding: 40px 20px;
+      min-height: 100vh;
+      line-height: 1.7;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
+    .logo-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      margin-bottom: 40px;
+    }
+    
+    .logo-img {
+      width: 45px;
+      height: 45px;
+      border-radius: 6px;
+    }
+    
+    .logo-name {
+      font-size: 24px;
+      font-weight: 800;
+      background: linear-gradient(90deg, #9945FF, #14F195);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, #9945FF, #14F195);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .subtitle {
+      color: #888;
+      margin-bottom: 40px;
+      font-size: 1.1em;
+    }
+    
+    h2 {
+      color: #14F195;
+      margin-top: 40px;
+      margin-bottom: 20px;
+      font-size: 1.6em;
+    }
+    
+    h3 {
+      color: #9945FF;
+      margin-top: 25px;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+    
+    p {
+      color: #ccc;
+      margin-bottom: 15px;
+    }
+    
+    .feature-box {
+      background: rgba(153, 69, 255, 0.1);
+      border: 1px solid #9945FF;
+      border-radius: 10px;
+      padding: 25px;
+      margin: 30px 0;
+    }
+    
+    .feature-box h3 {
+      color: #9945FF;
+      margin-top: 0;
+      margin-bottom: 15px;
+    }
+    
+    .tip-box {
+      background: rgba(20, 241, 149, 0.1);
+      border: 1px solid #14F195;
+      border-radius: 10px;
+      padding: 20px;
+      margin: 25px 0;
+    }
+    
+    .tip-box h4 {
+      color: #14F195;
+      margin-bottom: 10px;
+      font-size: 1.1em;
+    }
+    
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+    
+    .control-item {
+      background: rgba(34, 34, 34, 0.6);
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid #333;
+    }
+    
+    .control-item h4 {
+      color: #14F195;
+      margin-bottom: 10px;
+    }
+    
+    .device-instructions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+      margin: 25px 0;
+    }
+    
+    .device-box {
+      background: rgba(34, 34, 34, 0.8);
+      padding: 20px;
+      border-radius: 10px;
+      border: 2px solid #333;
+    }
+    
+    .device-box.desktop {
+      border-color: #9945FF;
+    }
+    
+    .device-box.mobile {
+      border-color: #14F195;
+    }
+    
+    .device-title {
+      font-weight: bold;
+      margin-bottom: 15px;
+      font-size: 1.1em;
+    }
+    
+    .desktop .device-title {
+      color: #9945FF;
+    }
+    
+    .mobile .device-title {
+      color: #14F195;
+    }
+    
+    ul {
+      color: #ccc;
+      margin-left: 20px;
+      margin-bottom: 15px;
+    }
+    
+    li {
+      margin-bottom: 8px;
+    }
+    
+    .highlight {
+      color: #FFD700;
+      font-weight: bold;
+    }
+    
+    .back-link {
+      display: inline-block;
+      margin-top: 40px;
+      padding: 12px 25px;
+      background: linear-gradient(135deg, #9945FF, #7d3acc);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: bold;
+      transition: transform 0.2s;
+    }
+    
+    .back-link:hover {
+      transform: translateY(-2px);
+    }
+    
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 50px;
+      padding-top: 30px;
+      border-top: 1px solid #333;
+    }
+    
+    .conjured-text {
+      font-size: 11px;
+      color: #555;
+      font-style: italic;
+    }
+    
+    .solsynth-text {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+    }
+    
+    .labs-text {
+      color: #9945FF;
+      letter-spacing: 2px;
+    }
+    
+    @media (max-width: 768px) {
+      .device-instructions {
+        grid-template-columns: 1fr;
+      }
+      
+      .controls-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="logo-link">
+      <img src="mpseeker-logo.png" alt="MPSeeker" class="logo-img">
+      <span class="logo-name">MPSeeker</span>
+    </a>
+    
+    <h1>User Manual</h1>
+    <p class="subtitle">Everything you need to know to create amazing beats with MPSeeker</p>
+    
+    <h2>🎵 Getting Started</h2>
+    <p>MPSeeker is a professional drum sequencer designed for mobile and desktop. Create complex beats with 7 drum tracks, multiple patterns, and advanced features like burst effects. No account required - just start making music!</p>
+    
+    <div class="feature-box">
+      <h3>What Makes MPSeeker Special?</h3>
+      <ul>
+        <li><strong>7 Professional Drum Tracks:</strong> Kick, Snare, Hi-Hat, Clap, Open Hat, Rim, and Tom</li>
+        <li><strong>3 Chainable Patterns (A/B/C):</strong> Create complex song structures</li>
+        <li><strong>Burst/Ratchet Effects:</strong> Add rapid-fire drum hits for dynamic rhythms</li>
+        <li><strong>Per-Pattern Sound Design:</strong> Different sounds, pitch, and decay for each pattern</li>
+        <li><strong>Audio Export:</strong> Download your beats as WAV or MP3 files</li>
+        <li><strong>Mobile Optimized:</strong> Works perfectly on phones and tablets</li>
+      </ul>
+    </div>
+
+    <h2>🎛️ Interface Overview</h2>
+    
+    <div class="controls-grid">
+      <div class="control-item">
+        <h4>Playback Controls</h4>
+        <p><strong>Play/Stop:</strong> Start and stop your beat</p>
+        <p><strong>BPM:</strong> Adjust tempo (60-200 BPM)</p>
+        <p><strong>Swing:</strong> Add groove to your rhythm</p>
+        <p><strong>Steps:</strong> Change pattern length (4-16 steps)</p>
+      </div>
+      
+      <div class="control-item">
+        <h4>Pattern Controls</h4>
+        <p><strong>Pattern A/B/C:</strong> Switch between patterns</p>
+        <p><strong>Chain:</strong> Link patterns for longer sequences</p>
+        <p><strong>Copy/Paste:</strong> Duplicate patterns easily</p>
+        <p><strong>Clear:</strong> Reset current pattern</p>
+      </div>
+      
+      <div class="control-item">
+        <h4>Track Controls</h4>
+        <p><strong>Mute/Solo:</strong> Isolate or silence individual tracks</p>
+        <p><strong>Sound/Pitch/Decay:</strong> Customize each track per pattern</p>
+        <p><strong>Step Grid:</strong> Click to activate/deactivate drum hits</p>
+        <p><strong>Burst:</strong> Add rapid-fire effects to steps</p>
+      </div>
+      
+      <div class="control-item">
+        <h4>Effects & Export</h4>
+        <p><strong>Global Effects:</strong> Reverb, delay, filter, and gain boost</p>
+        <p><strong>Export Audio:</strong> Save as WAV or MP3</p>
+        <p><strong>Save/Load:</strong> Store your beats locally</p>
+        <p><strong>Randomize:</strong> Generate new patterns automatically</p>
+      </div>
+    </div>
+
+    <h2>⚡ Burst/Ratchet Effects</h2>
+    <p>The most unique feature in MPSeeker! Burst effects create rapid-fire drum hits within a single step, perfect for snare rolls, hi-hat flourishes, and dynamic rhythms.</p>
+    
+    <div class="device-instructions">
+      <div class="device-box desktop">
+        <div class="device-title">🖥️ Desktop</div>
+        <ul>
+          <li><strong>Right-click</strong> any active step (colored step)</li>
+          <li>Choose burst amount: 2x, 3x, 4x, 5x, or 6x</li>
+          <li>Step turns orange/red with burst indicator</li>
+          <li>Right-click again to remove burst</li>
+        </ul>
+      </div>
+      
+      <div class="device-box mobile">
+        <div class="device-title">📱 Mobile</div>
+        <ul>
+          <li>Click the <strong>"⚡ BURST"</strong> button (turns purple)</li>
+          <li><strong>Tap any active step</strong> to set burst amount</li>
+          <li>Choose: 2x, 3x, 4x, 5x, or 6x</li>
+          <li>Burst mode automatically turns off</li>
+          <li>Repeat to add more bursts</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="tip-box">
+      <h4>💡 Pro Tip: Burst Effects</h4>
+      <p>Try adding 3x burst to snare on beat 4 for classic drum rolls, or 2x burst on hi-hats for shuffle feels. Experiment with different burst amounts on different tracks!</p>
+    </div>
+
+    <h2>🎨 Pattern Creation Workflow</h2>
+    
+    <h3>1. Start with the Kick</h3>
+    <p>Click steps 1, 5, 9, 13 for a basic four-on-the-floor pattern, or try 1 and 7 for hip-hop style.</p>
+    
+    <h3>2. Add the Snare</h3>
+    <p>Typically on steps 5 and 13 (beats 2 and 4). This creates the classic backbeat.</p>
+    
+    <h3>3. Build Hi-Hat Patterns</h3>
+    <p>Add hi-hats on off-beats for drive. Try every other step or experiment with burst effects.</p>
+    
+    <h3>4. Layer Additional Sounds</h3>
+    <p>Use claps to double snares, open hats for accents, rim shots for subtle percussion, and toms for fills.</p>
+    
+    <h3>5. Add Effects and Variation</h3>
+    <p>Use global effects to polish your sound, then create patterns B and C for verse/chorus variations.</p>
+
+    <h2>🔧 Advanced Features</h2>
+    
+    <h3>Per-Pattern Sound Design</h3>
+    <p>Each pattern (A/B/C) can have different sounds, pitch, and decay settings:</p>
+    <ul>
+      <li><strong>Sound:</strong> Different drum samples per pattern</li>
+      <li><strong>Pitch:</strong> Tune drums higher or lower</li>
+      <li><strong>Decay:</strong> Control how long drums ring out</li>
+    </ul>
+    
+    <h3>Pattern Chaining</h3>
+    <p>Enable "Chain" to play patterns in sequence: A → B → C → A. Perfect for creating full song structures with verse, chorus, and bridge sections.</p>
+    
+    <h3>Copy & Paste</h3>
+    <p>Copy any pattern and paste to a specific pattern or ALL patterns at once. Great for creating variations quickly.</p>
+    
+    <h3>Global Effects</h3>
+    <ul>
+      <li><strong>Reverb:</strong> Add spaciousness and depth</li>
+      <li><strong>Delay:</strong> Create echoes and rhythmic interest</li>
+      <li><strong>Filter:</strong> Shape the frequency content</li>
+      <li><strong>Gain:</strong> Boost volume and add presence</li>
+    </ul>
+
+    <h2>💾 Saving & Exporting</h2>
+    
+    <h3>Save Your Work</h3>
+    <p>Use "Save" to store beats in your browser. Beats are saved locally and persist between sessions. Use "Load" to access saved beats.</p>
+    
+    <h3>Export Audio</h3>
+    <p>Click "Export" to render your beat as audio:</p>
+    <ul>
+      <li><strong>WAV:</strong> High-quality, uncompressed (larger files)</li>
+      <li><strong>MP3:</strong> Compressed, smaller files for sharing</li>
+      <li>Choose 1, 2, 4, or 8 loops for different lengths</li>
+    </ul>
+    
+    <div class="tip-box">
+      <h4>💡 Pro Tip: Exporting</h4>
+      <p>Export 2-4 loops for most uses. Single loops are great for sampling, while 8 loops work well for longer compositions or background music.</p>
+    </div>
+
+    <h2>📱 Mobile Tips</h2>
+    <ul>
+      <li><strong>Landscape orientation</strong> works best for the full interface</li>
+      <li><strong>Burst mode</strong> is essential for mobile - use the ⚡ button</li>
+      <li><strong>Two-finger scrolling</strong> helps navigate effects on smaller screens</li>
+      <li><strong>Save frequently</strong> - your browser keeps your beats safe</li>
+    </ul>
+
+    <h2>🎯 Creative Tips</h2>
+    
+    <div class="tip-box">
+      <h4>🎵 Beat-Making Techniques</h4>
+      <ul>
+        <li><strong>Less is more:</strong> Start simple, add complexity gradually</li>
+        <li><strong>Swing adds groove:</strong> Try 10-20% swing for human feel</li>
+        <li><strong>Use burst sparingly:</strong> Burst effects are powerful - a little goes a long way</li>
+        <li><strong>Experiment with step counts:</strong> 12 or 14 steps can create interesting rhythms</li>
+        <li><strong>Layer patterns:</strong> Use A/B/C patterns for intro/verse/chorus structures</li>
+        <li><strong>Effects enhance mood:</strong> Reverb for space, delay for movement, filter for texture</li>
+      </ul>
+    </div>
+
+    <h2>🔍 Troubleshooting</h2>
+    
+    <h3>Audio Issues</h3>
+    <p>If you can't hear audio, check your device volume and make sure MPSeeker has permission to play sound. On mobile, try tapping the screen first to enable audio context.</p>
+    
+    <h3>Performance</h3>
+    <p>For best performance, close other browser tabs and apps. MPSeeker works best with modern browsers (Chrome, Safari, Firefox).</p>
+    
+    <h3>Saving Problems</h3>
+    <p>Beats are saved in your browser's local storage. Clearing browser data will remove saved beats. Always export important beats as audio files.</p>
+
+    <a href="index.html" class="back-link">← Back to MPSeeker</a>
+    
+    <div class="footer-brand">
+      <span class="conjured-text">Conjured by</span>
+      <svg width="70" height="45" viewBox="0 0 140 90">
+        <!-- Row 1: 1 square -->
+        <rect x="60" y="2" width="14" height="14" rx="2" fill="#14F195"/>
+        <!-- Row 2: 3 squares -->
+        <rect x="44" y="18" width="14" height="14" rx="2" fill="#6BD1C2"/>
+        <rect x="60" y="18" width="14" height="14" rx="2" fill="#6BD1C2"/>
+        <rect x="76" y="18" width="14" height="14" rx="2" fill="#6BD1C2"/>
+        <!-- Row 3: 5 squares -->
+        <rect x="28" y="34" width="14" height="14" rx="2" fill="#9945FF"/>
+        <rect x="44" y="34" width="14" height="14" rx="2" fill="#9945FF"/>
+        <rect x="60" y="34" width="14" height="14" rx="2" fill="#9945FF"/>
+        <rect x="76" y="34" width="14" height="14" rx="2" fill="#9945FF"/>
+        <rect x="92" y="34" width="14" height="14" rx="2" fill="#9945FF"/>
+        <!-- Row 4: 7 squares -->
+        <rect x="12" y="50" width="14" height="14" rx="2" fill="#6BD1C2"/>
+        <rect x="28" y="50" width="14" height="14" rx="2" fill="#6BD1C2"/>
+        <rect x="44" y="50" width="14" height="14" rx="2" fill="#6BD1C2"/>
+        <rect x="60" y="50" width="14" height="14" rx="2" fill="#6BD1C2"/>
+        <rect x="76" y="50" width="14" height="14" rx="2" fill="#6BD1C2"/>
+        <rect x="92" y="50" width="14" height="14" rx="2" fill="#6BD1C2"/>
+        <rect x="108" y="50" width="14" height="14" rx="2" fill="#6BD1C2"/>
+        <!-- Row 5: 9 squares -->
+        <rect x="-4" y="66" width="14" height="14" rx="2" fill="#14F195"/>
+        <rect x="12" y="66" width="14" height="14" rx="2" fill="#14F195"/>
+        <rect x="28" y="66" width="14" height="14" rx="2" fill="#14F195"/>
+        <rect x="44" y="66" width="14" height="14" rx="2" fill="#14F195"/>
+        <rect x="60" y="66" width="14" height="14" rx="2" fill="#14F195"/>
+        <rect x="76" y="66" width="14" height="14" rx="2" fill="#14F195"/>
+        <rect x="92" y="66" width="14" height="14" rx="2" fill="#14F195"/>
+        <rect x="108" y="66" width="14" height="14" rx="2" fill="#14F195"/>
+        <rect x="124" y="66" width="14" height="14" rx="2" fill="#14F195"/>
+      </svg>
+      <span class="solsynth-text">SolSynth <span class="labs-text">LABS</span></span>
+    </div>
+  </div>
+</body>
+</html>
