@@ -20,7 +20,27 @@
   <title>MPSeeker - Drum Sequencer on Solana</title>
   <link rel="stylesheet" href="style.css?v=2" />
   <style>
-    /* Portrait rotation message removed for cleaner UX */
+    @media screen and (orientation: portrait) {
+      body::before {
+        content: '📱 Rotate sideways for best experience\A(Note: Wallet browsers may not rotate)';
+        white-space: pre-wrap;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #9945FF, #14F195);
+        color: white;
+        text-align: center;
+        padding: 12px 15px;
+        font-weight: bold;
+        font-size: 13px;
+        z-index: 10000;
+      }
+      
+      .container {
+        padding-top: 70px;
+      }
+    }
   </style>
   <!-- Buffer polyfill for browser -->
   <script src="https://bundle.run/buffer@6.0.3"></script>
@@ -89,6 +109,42 @@
 </head>
 <body>
 
+  <!-- Password Gate - Remove this section for public launch -->
+  <div id="passwordGate" style="position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,#0a0a0a,#1a1a2e);z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+    <img src="mpseeker-logo.png" alt="MPSeeker" style="width:120px;margin-bottom:20px;">
+    <h2 style="color:#fff;margin-bottom:10px;font-family:system-ui;">MPSeeker</h2>
+    <p style="color:#888;margin-bottom:20px;font-size:14px;">Early access - Enter password to continue</p>
+    <input type="password" id="gatePassword" placeholder="Password" style="padding:12px 20px;font-size:16px;border:2px solid #333;border-radius:8px;background:#111;color:#fff;text-align:center;width:200px;">
+    <button onclick="checkPassword()" style="margin-top:15px;padding:12px 30px;font-size:16px;border:none;border-radius:8px;background:linear-gradient(135deg,#9945FF,#14F195);color:#fff;cursor:pointer;font-weight:bold;">Enter</button>
+    <p id="gateError" style="color:#ff4444;margin-top:10px;display:none;font-size:13px;">Incorrect password</p>
+  </div>
+  <script>
+    // Simple password gate - change 'solsynth' to your password
+    const GATE_PASSWORD = 'Critters';
+    
+    // Check if already authenticated this session
+    if (sessionStorage.getItem('mpseeker_auth_v2') === 'true') {
+      document.getElementById('passwordGate').style.display = 'none';
+    }
+    
+    function checkPassword() {
+      const input = document.getElementById('gatePassword').value;
+      if (input === GATE_PASSWORD) {
+        sessionStorage.setItem('mpseeker_auth_v2', 'true');
+        document.getElementById('passwordGate').style.display = 'none';
+      } else {
+        document.getElementById('gateError').style.display = 'block';
+        document.getElementById('gatePassword').value = '';
+      }
+    }
+    
+    // Allow Enter key
+    document.getElementById('gatePassword').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') checkPassword();
+    });
+  </script>
+  <!-- End Password Gate -->
+
   <div class="container">
     <div class="top-bar">
       <div class="logo-container">
@@ -98,10 +154,42 @@
           <span class="logo-tagline">Drum sequencer on Solana</span>
         </div>
       </div>
-      <!-- Wallet UI removed for v1.0 - backend functionality preserved for v2.0 -->
+      <div class="wallet-area">
+        <div id="walletInfo" class="wallet-info" style="display: none;">
+          <div class="balance-display">
+            <span class="sol-icon">◎</span>
+            <span id="solBalance">0.00</span>
+            <span class="sol-label">SOL</span>
+          </div>
+          <!-- Airdrop hidden on mainnet -->
+          <button id="airdropBtn" class="airdrop-btn" style="display:none;" title="Request devnet SOL">💧 Airdrop</button>
+        </div>
+        <!-- Connect Wallet button removed for v1.0 -->
+      </div>
     </div>
     
-    <!-- Wallet Modal removed for v1.0 - backend preserved -->
+    <!-- Wallet Modal -->
+    <div id="walletModal" class="modal" style="display:none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <span class="modal-title">Connect Wallet</span>
+          <button id="closeModal" class="close-btn">&times;</button>
+        </div>
+        <div class="wallet-options">
+          <button class="wallet-option" data-wallet="phantom">
+            <span class="wallet-icon">👻</span>
+            <span class="wallet-name">Phantom</span>
+            <span class="wallet-desc">Popular Solana wallet</span>
+          </button>
+          <button class="wallet-option" data-wallet="solflare">
+            <span class="wallet-icon">🔆</span>
+            <span class="wallet-name">Solflare</span>
+            <span class="wallet-desc">Secure Solana wallet</span>
+          </button>
+        </div>
+        <div id="walletStatus" class="wallet-status"></div>
+      </div>
+    </div>
     
     <!-- Paste Modal -->
     <div id="pasteModal" class="modal" style="display:none;">
