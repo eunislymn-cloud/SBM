@@ -3255,18 +3255,34 @@ function loadScript(src) {
 
 updateBeatDropdown();
 
-// ============ WALLET CONNECTION ============
+// ============ WALLET CONNECTION DISABLED ============
+// Wallet functionality removed for initial release
+// Coming in future update with NFT minting
+
 let connectedWallet = null;
 let walletAddress = null;
-let solanaConnection = null;
 
+// Get wallet button for "coming soon" message
 const walletBtn = document.getElementById('walletBtn');
+
+// Wallet UI disabled for v1.0 - backend functions preserved
+/*
+// Show "coming soon" message when wallet button is clicked
+if (walletBtn) {
+  walletBtn.onclick = () => {
+    alert('🔮 Wallet connection coming soon!\n\nNFT minting will be available in the next update. For now, enjoy creating beats and exporting them as audio files!');
+  };
+}
+*/
+
+// Hide wallet modal and related elements
 const walletModal = document.getElementById('walletModal');
-const closeModal = document.getElementById('closeModal');
-const walletStatus = document.getElementById('walletStatus');
 const walletInfo = document.getElementById('walletInfo');
-const solBalanceEl = document.getElementById('solBalance');
 const airdropBtn = document.getElementById('airdropBtn');
+
+if (walletModal) walletModal.style.display = 'none';
+if (walletInfo) walletInfo.style.display = 'none';
+if (airdropBtn) airdropBtn.style.display = 'none';
 
 // Initialize Solana connection
 function initSolanaConnection() {
@@ -3382,6 +3398,8 @@ async function requestAirdrop() {
 // Airdrop button click handler
 airdropBtn.onclick = requestAirdrop;
 
+// Wallet UI event handlers disabled for v1.0 - backend preserved
+/*
 // Open modal
 walletBtn.onclick = () => {
   if (connectedWallet) {
@@ -3408,7 +3426,10 @@ walletModal.onclick = (e) => {
     walletStatus.textContent = '';
   }
 };
+*/
 
+// Wallet option click handlers disabled for v1.0 - functions preserved
+/*
 // Wallet option click handlers
 document.querySelectorAll('.wallet-option').forEach(option => {
   option.onclick = async () => {
@@ -3416,6 +3437,7 @@ document.querySelectorAll('.wallet-option').forEach(option => {
     await connectWallet(walletType);
   };
 });
+*/
 
 // Connect wallet function
 async function connectWallet(walletType) {
@@ -3431,6 +3453,32 @@ async function connectWallet(walletType) {
     
     let provider = null;
     
+    // Mobile-first approach: Check if we're on mobile and use deeplinks
+    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile && !window.phantom?.solana && !window.solflare && !window.solana) {
+      // On mobile without injected wallet - use deeplinks
+      if (walletType === 'phantom') {
+        // Create deeplink to Phantom
+        const currentUrl = encodeURIComponent(window.location.href);
+        const phantomUrl = `https://phantom.app/ul/browse/${currentUrl}?ref=https://mpseeker.app`;
+        
+        walletStatus.textContent = 'Opening Phantom...';
+        window.location.href = phantomUrl;
+        return; // Exit here as user will be redirected
+        
+      } else if (walletType === 'solflare') {
+        // Create deeplink to Solflare  
+        const currentUrl = encodeURIComponent(window.location.href);
+        const solflareUrl = `https://solflare.com/access-wallet?url=${currentUrl}`;
+        
+        walletStatus.textContent = 'Opening Solflare...';
+        window.location.href = solflareUrl;
+        return; // Exit here as user will be redirected
+      }
+    }
+    
+    // Desktop/injected wallet logic
     if (walletType === 'seedvault') {
       if (window.solana && window.solana.isSeedVault) {
         provider = window.solana;
@@ -3443,13 +3491,13 @@ async function connectWallet(walletType) {
       } else if (window.solana && window.solana.isPhantom) {
         provider = window.solana;
       } else {
-        throw new Error('Phantom not detected.\n\n📱 On mobile? Save your beat, then open mpseeker.app in Phantom\'s browser to connect & mint.');
+        throw new Error('Phantom not detected.\n\n📱 On mobile? Click again to open in Phantom browser.');
       }
     } else if (walletType === 'solflare') {
       if (window.solflare) {
         provider = window.solflare;
       } else {
-        throw new Error('Solflare not detected.\n\n📱 On mobile? Save your beat, then open mpseeker.app in Solflare\'s browser to connect & mint.');
+        throw new Error('Solflare not detected.\n\n📱 On mobile? Click again to open in Solflare browser.');
       }
     }
     
@@ -4009,13 +4057,8 @@ function createMasterEditionV3Instruction(
 }
 
 document.getElementById('mint').onclick = async () => {
-  if (!connectedWallet || !walletAddress) {
-    alert('Please connect your wallet first!');
-    walletModal.classList.add('show');
-    return;
-  }
-  
-  const beatName = document.getElementById('beatName').value.trim() || 'My Beat';
+  alert('🔮 NFT minting coming soon!\n\nWallet connection and NFT minting will be available in the next update. For now, enjoy creating beats and exporting them as audio files!');
+};
   
   if (!confirm(`Mint "${beatName}" as an NFT on Solana ${SOLANA_NETWORK}?\n\nThis will:\n1. Generate artwork from your beat pattern\n2. Upload metadata to IPFS\n3. Create your NFT on Solana`)) {
     return;

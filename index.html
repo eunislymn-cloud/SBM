@@ -98,42 +98,10 @@
           <span class="logo-tagline">Drum sequencer on Solana</span>
         </div>
       </div>
-      <div class="wallet-area">
-        <div id="walletInfo" class="wallet-info" style="display: none;">
-          <div class="balance-display">
-            <span class="sol-icon">◎</span>
-            <span id="solBalance">0.00</span>
-            <span class="sol-label">SOL</span>
-          </div>
-          <!-- Airdrop hidden on mainnet -->
-          <button id="airdropBtn" class="airdrop-btn" style="display:none;" title="Request devnet SOL">💧 Airdrop</button>
-        </div>
-        <button id="walletBtn" class="wallet-btn">Connect Wallet</button>
-      </div>
+      <!-- Wallet UI removed for v1.0 - backend functionality preserved for v2.0 -->
     </div>
     
-    <!-- Wallet Modal -->
-    <div id="walletModal" class="modal" style="display:none;">
-      <div class="modal-content">
-        <div class="modal-header">
-          <span class="modal-title">Connect Wallet</span>
-          <button id="closeModal" class="close-btn">&times;</button>
-        </div>
-        <div class="wallet-options">
-          <button class="wallet-option" data-wallet="phantom">
-            <span class="wallet-icon">👻</span>
-            <span class="wallet-name">Phantom</span>
-            <span class="wallet-desc">Popular Solana wallet</span>
-          </button>
-          <button class="wallet-option" data-wallet="solflare">
-            <span class="wallet-icon">🔆</span>
-            <span class="wallet-name">Solflare</span>
-            <span class="wallet-desc">Secure Solana wallet</span>
-          </button>
-        </div>
-        <div id="walletStatus" class="wallet-status"></div>
-      </div>
-    </div>
+    <!-- Wallet Modal removed for v1.0 - backend preserved -->
     
     <!-- Paste Modal -->
     <div id="pasteModal" class="modal" style="display:none;">
