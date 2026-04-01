@@ -2066,6 +2066,71 @@ document.getElementById('gain').oninput = e => {
   highShelf.gain.value = (val / 100) * 12;
 };
 
+// Effects manual input - click value to edit
+document.getElementById('reverbValue').onclick = () => {
+  const current = patternEffects[currentPattern].reverb;
+  const newVal = prompt('Enter reverb amount (0-100%):', current);
+  if (newVal !== null && !isNaN(newVal) && newVal >= 0 && newVal <= 100) {
+    const val = parseInt(newVal);
+    patternEffects[currentPattern].reverb = val;
+    document.getElementById('reverb').value = val;
+    document.getElementById('reverbValue').textContent = val + '%';
+    const wetAmount = val / 100;
+    reverbWet.gain.value = wetAmount;
+    reverbDry.gain.value = 1 - wetAmount;
+  }
+};
+
+document.getElementById('delayValue').onclick = () => {
+  const current = patternEffects[currentPattern].delayMix;
+  const newVal = prompt('Enter delay mix (0-100%):', current);
+  if (newVal !== null && !isNaN(newVal) && newVal >= 0 && newVal <= 100) {
+    const val = parseInt(newVal);
+    patternEffects[currentPattern].delayMix = val;
+    document.getElementById('delayMix').value = val;
+    document.getElementById('delayValue').textContent = val + '%';
+    delayWet.gain.value = val / 100;
+  }
+};
+
+document.getElementById('delayTimeValue').onclick = () => {
+  const current = patternEffects[currentPattern].delayTime;
+  const newVal = prompt('Enter delay time (50-1000ms):', current);
+  if (newVal !== null && !isNaN(newVal) && newVal >= 50 && newVal <= 1000) {
+    const val = parseInt(newVal);
+    patternEffects[currentPattern].delayTime = val;
+    document.getElementById('delayTime').value = val;
+    document.getElementById('delayTimeValue').textContent = val + 'ms';
+    delayNode.delayTime.value = val / 1000;
+  }
+};
+
+document.getElementById('filterValue').onclick = () => {
+  const current = patternEffects[currentPattern].filter;
+  const newVal = prompt('Enter filter frequency (200-20000Hz):', current);
+  if (newVal !== null && !isNaN(newVal) && newVal >= 200 && newVal <= 20000) {
+    const val = parseInt(newVal);
+    patternEffects[currentPattern].filter = val;
+    document.getElementById('filter').value = val;
+    document.getElementById('filterValue').textContent = val >= 1000 ? (val/1000).toFixed(1)+'k' : val;
+    filterNode.frequency.value = val;
+  }
+};
+
+document.getElementById('gainValue').onclick = () => {
+  const current = patternEffects[currentPattern].gain;
+  const newVal = prompt('Enter gain amount (0-100%):', current);
+  if (newVal !== null && !isNaN(newVal) && newVal >= 0 && newVal <= 100) {
+    const val = parseInt(newVal);
+    patternEffects[currentPattern].gain = val;
+    document.getElementById('gain').value = val;
+    document.getElementById('gainValue').textContent = val + '%';
+    const boost = 1 + (val / 100) * 3;
+    gainBoost.gain.value = boost;
+    highShelf.gain.value = (val / 100) * 12;
+  }
+};
+
 document.getElementById('clear').onclick = () => {
   if (confirm('Clear current pattern?')) {
     trackConfig.forEach(t => {
