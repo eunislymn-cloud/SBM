@@ -2305,7 +2305,7 @@ function updateBeatDropdown() {
 document.getElementById('save').onclick = () => {
   const name = document.getElementById('beatName').value.trim();
   if (!name) return alert('Enter a beat name.');
-  const data = { bpm, swing, patterns, trackVolumes, patternSequence, patternSounds, patternPitch, patternDecay, patternBurst };
+  const data = { bpm, swing, patterns, trackVolumes, patternSequence, patternSounds, patternPitch, patternDecay, patternBurst, patternEffects };
   const library = JSON.parse(localStorage.getItem('beatLibrary') || '{}');
   library[name] = data;
   localStorage.setItem('beatLibrary', JSON.stringify(library));
