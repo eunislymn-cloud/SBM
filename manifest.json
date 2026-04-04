@@ -1,16 +1,17 @@
 {
   "name": "MPSeeker - Beat Maker on Solana",
-  "short_name": "MPSeeker",
+  "short_name": "MPSeeker", 
   "description": "Create beats, mint NFTs, and export audio on Solana",
-  "start_url": "/index.html",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0A0A0A",
   "theme_color": "#9945FF",
-  "orientation": "portrait",
+  "orientation": "any",
   "icons": [
     {
       "src": "mpseeker-logo.png",
-      "sizes": "512x512",
+      "sizes": "512x512", 
       "type": "image/png",
       "purpose": "any maskable"
     }
@@ -19,7 +20,7 @@
   "shortcuts": [
     {
       "name": "New Beat",
-      "url": "/index.html",
+      "url": "/",
       "description": "Start making a new beat"
     }
   ]
